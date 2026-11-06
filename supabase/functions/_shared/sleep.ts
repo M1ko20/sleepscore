@@ -278,5 +278,13 @@ export function computeScore(
     const v = breakdown[k];
     if (v !== null) breakdown[k] = Math.round(v);
   }
-  return { score: Math.round(sum / weight), breakdown };
+  const cap = durationCap(m.totalSleepMin);
+  return { score: Math.min(cap, Math.round(sum / weight)), breakdown };
+}
+
+/** Strop podle délky: krátká noc nemůže mít vysoké skóre, i když je klidná. */
+export function durationCap(totalMin: number): number {
+  if (totalMin < 5 * 60) return 50;
+  if (totalMin < 6 * 60) return 70;
+  return 100;
 }

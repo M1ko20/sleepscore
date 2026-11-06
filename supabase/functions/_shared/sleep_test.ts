@@ -117,6 +117,27 @@ Deno.test("skóre dobré noci je vysoké, bez fází se váhy přepočítají", 
   assert(r.score > 0 && r.score <= 100);
 });
 
+Deno.test("strop podle délky: pod 5 h max 50, pod 6 h max 70", () => {
+  // 4 h 50 min a 5 h 50 min klidného spánku s ideálními fázemi
+  for (const [min, cap] of [[290, 50], [350, 70], [360, 100]]) {
+    const m = {
+      sleepStart: Date.parse("2026-11-05T22:00:00Z"),
+      sleepEnd: Date.parse("2026-11-05T22:00:00Z") + min * 60000,
+      totalSleepMin: min,
+      awakeMin: 0,
+      coreMin: min * 0.5,
+      deepMin: min * 0.25,
+      remMin: min * 0.25,
+      wakeCount: 0,
+      hrAvg: null,
+      hrMin: null,
+    };
+    const { score } = computeScore(m, { startMinutesFromNoon: [], hrAvgs: [] }, TZ);
+    assert(score <= cap, `${min} min → ${score}, strop ${cap}`);
+    if (cap < 100) assertEquals(score, cap);
+  }
+});
+
 Deno.test("krátká rozbitá noc má nízké skóre", () => {
   const samples: SleepSample[] = [];
   // 4,5 h spánku s 8 probuzeními po 5 min

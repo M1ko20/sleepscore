@@ -13,6 +13,7 @@ Pokud se tento soubor a dokument liší, platí dokument – zeptej se Adama.
 - Hotovo: Edge Function `ingest-sleep` (nasazená, `supabase functions deploy ingest-sleep --use-api --yes`). Logika skóre v `supabase/functions/_shared/sleep.ts`, testy `cd supabase/functions && deno test _shared/`.
   - Hlavní spánek = nejdelší souvislý spánek (mezera > 60 min = nový) končící do 14:00; víc zdrojů se nesčítá, bere se ten delší.
   - Chybějící složka skóre (bez fází / bez tepu) se vynechá a váhy se přepočítají. Pravidelnost = průměr usnutí za 14 nocí, tep = normál za 30 nocí; při < 3 nocích historie plné body.
+  - Strop podle délky: pod 5 h max 50 bodů, pod 6 h max 70.
   - Minimální délka pro sérii: 6 h.
 - Apple Developer Program až bude appka skoro hotová → do té doby simulátor + testovací přihlášení, Sign in with Apple a HealthKit na reálném iPhonu na konec.
 - E2E test: `supabase/tests/e2e.py` (24 kontrol, po sobě uklidí). Prošel 2026-11-06.
