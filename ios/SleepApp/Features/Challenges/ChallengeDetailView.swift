@@ -66,7 +66,7 @@ struct ChallengeDetailView: View {
                     HStack {
                         Text(ChallengeCopy.name(p.profile, me: me)).foregroundStyle(Color.app.textSecondary)
                         Spacer()
-                        Text(p.status == .invited ? "nepřijal" : "odmítl").captionStyle()
+                        Text(p.status == .invited ? "čeká" : "odmítnuto").captionStyle()
                     }
                     .font(Font.app.body)
                     .frame(minHeight: 44)
@@ -175,7 +175,7 @@ struct ChallengeDetailView: View {
     private func cell(_ c: Challenge, _ user: UUID, _ day: String) -> some View {
         let s = c.score(user, on: day)
         let missing = s == 0 && !c.scores.contains { $0.userID == user && $0.day == day }
-        let won = c.winner(of: day) == user
+        let won = c.type != .teamGoal && c.winner(of: day) == user   // společný cíl: hrají spolu
         return Text(s.map(String.init) ?? "·")
             .font(Font.app.caption.monospacedDigit().weight(won ? .bold : .regular))
             .foregroundStyle(s == nil || missing ? Color.app.textTertiary : won ? Color.app.textPrimary : Color.app.textSecondary)

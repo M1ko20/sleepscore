@@ -9,8 +9,15 @@ Co je hotové a jak. Nejnovější nahoře. Detaily backendu v `backend.md`, vzh
 3. ~~Feed + karta noci + detail s hypnogramem~~ hotovo (bez fotek – přijdou se Storage).
 4. ~~HealthKit~~ hotovo (ověřeno v simulátoru, na telefonu s Garminem zatím ne).
 5. ~~Výzvy (seznam, detail, založení, výsledek)~~ hotovo.
-6. ~~Profil, přátelé, profil přítele + Vyzvat~~ hotovo. Chybí 3. testovací účet (skupinové výzvy v UI) – musí ho založit Adam v dashboardu (Authentication → Add user, auto-confirm), registrace přes API odmítá doménu `.test`.
+6. ~~Profil, přátelé, profil přítele + Vyzvat~~ hotovo. ~~Skupinové výzvy~~ otestované se 3. účtem.
 7. Další: fotky a profilovky (Storage, ~200 kB), zpřísnění skóre (vychází 88–99), pak push notifikace (až s Developer Programem).
+
+## 2026-11-06 – 3. testovací účet a skupinové výzvy
+- `karolina@sleepscore.test` (@karolina „Karolína Dvořáková“) – auth účet založil Adam v dashboardu (registrace přes API odmítá `.test`), profil přes Adamovu pozvánku (`redeem_invite`) → automaticky přítel Adama; přátelství s Jakubem přes žádost. 7 nocí ze `seed_dev.py`.
+- Skutečný tok přes RPC: Adam založí FFA s Jakubem a Karolínou → `start_challenge` s 1 přijatým selže („need at least 3 accepted“) → oba přijmou → start → active od zítřka.
+- `seed_dev_challenges.sql` rozšířen: uzavřená FFA (Karolína vyhrála průměrem 79,1, i když nevyhrála jediný den → dluhy Adama a Jakuba vůči ní), běžící FFA, běžící společný cíl 85.
+- Opraveno: texty bez rodu („Jakub Novotny: souboj, 14 dní, večeře.“, „čeká“/„odmítnuto“), u společného cíle se nezvýrazňuje vítěz dne. `-debugOpenChallenge` bere i typ (`free_for_all`, `team_goal`).
+- Supabase: bucket limity (avatars 150 kB, night-photos 400 kB, jen JPEG) a check, že `avatar_path`/`photo_path` vede do vlastní složky (migrace `…180000_photo_limits.sql`) – příprava na fotky.
 
 ## 2026-11-06 – Profil a přátelé
 - RPC `profile_summary(user)` (migrace `…170000_profile_summary.sql`, **security invoker** → vše přes RLS): profil, MMA bilance, série, průměr 30 dní (skóre + délka), duše seskupené podle poraženého, počty odznaků, vzájemná bilance s volajícím, stav přátelství. Celý profil = 1 call místo 6. U ne-přítele RLS vrátí `streak`/`avg30` null a appka ukáže jen hlavičku + žádost.

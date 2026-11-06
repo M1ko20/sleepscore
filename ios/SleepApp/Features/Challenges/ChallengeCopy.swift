@@ -15,11 +15,15 @@ enum ChallengeCopy {
         }
     }
 
-    /// Pozvánka: „Jakub tě vyzval. 7 dní, večeře.“
+    /// Pozvánka: „Jakub Novotny: souboj, 7 dní, večeře.“ (bez rodu – nevíme, kdo je kdo)
     static func invite(_ c: Challenge, me: UUID?) -> String {
         let who = c.creator?.profile.displayName ?? "Někdo"
-        var s = "\(who) tě vyzval. \(Fmt.days(c.durationDays))"
-        if c.type == .teamGoal, let t = c.targetScore { s += ", cíl \(t)" }
+        let kind = switch c.type {
+        case .duel: "souboj"
+        case .freeForAll: "všichni proti všem"
+        case .teamGoal: "společný cíl \(c.targetScore ?? 0)"
+        }
+        var s = "\(who): \(kind), \(Fmt.days(c.durationDays))"
         if let stake = c.stake { s += ", \(stake)" }
         return s + "."
     }

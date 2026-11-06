@@ -34,10 +34,10 @@ struct ChallengesView: View {
             .task {
                 if let me, !store.loaded { await store.load(me: me) }
                 #if DEBUG
-                // `-debugOpenChallenge active|finished|pending` otevře detail.
+                // `-debugOpenChallenge active|finished|pending|free_for_all|team_goal` otevře detail.
                 let args = ProcessInfo.processInfo.arguments
                 if let i = args.firstIndex(of: "-debugOpenChallenge"), i + 1 < args.count, path.isEmpty,
-                   let c = store.challenges.first(where: { $0.status.rawValue == args[i + 1] }) {
+                   let c = store.challenges.first(where: { $0.status.rawValue == args[i + 1] || $0.type.rawValue == args[i + 1] }) {
                     path = [c.id]
                 }
                 #endif
