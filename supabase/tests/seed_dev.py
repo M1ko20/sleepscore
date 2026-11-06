@@ -2,6 +2,12 @@
 """Testovací noci pro dev účty – posílá je přes ingest-sleep jako telefon.
 
   python3 -I supabase/tests/seed_dev.py adam@sleepscore.test:HESLO jakub@sleepscore.test:HESLO
+  python3 -I supabase/tests/seed_dev.py --history 42 adam@sleepscore.test:HESLO
+
+--history N: noci 8 až N dní zpět (posledních 7 nechá být) s tagy, které spánek opravdu
+ovlivňují (alkohol = méně deep a později, kafe = později usne, …) → data pro zjištění z tagů.
+Potom `supabase db query --remote --yes -f supabase/tests/seed_dev_history.sql` (posune
+created_at starých karet, ať nejsou ve feedu nahoře).
 
 Klíč: publishable z env SUPABASE_KEY (nebo pevně níže – je veřejný).
 Vygeneruje 7 nocí na uživatele (deterministicky podle e-mailu), u starších nocí název,
@@ -43,9 +49,9 @@ def iso(dt):
     return dt.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
 
 
-def make_night(rng, wake_date, style):
+def make_night(rng, wake_date, style, deep_factor=1.0, bed_shift=0.0):
     """Úseky fází a tep pro jednu noc končící ráno wake_date."""
-    bed_base = {"early": 22.6, "normal": 23.2, "late": 0.6}[style]
+    bed_base = {"early": 22.6, "normal": 23.2, "late": 0.6}[style] + bed_shift
     hour = bed_base + rng.uniform(-0.5, 0.5)
     day = wake_date - timedelta(days=1) if hour >= 12 or hour > 20 else wake_date
     if hour < 12:
@@ -57,7 +63,7 @@ def make_night(rng, wake_date, style):
     end = start + timedelta(minutes=total_min)
     while t < end:
         frac = (t - start) / (end - start)
-        deep = max(0.0, rng.uniform(25, 40) * (1 - frac * 1.3))
+        deep = max(0.0, rng.uniform(25, 40) * (1 - frac * 1.3)) * deep_factor
         rem = rng.uniform(8, 15) + frac * rng.uniform(15, 30)
         core = rng.uniform(35, 55)
         plan = [("core", core * 0.5), ("deep", deep), ("core", core * 0.5), ("rem", rem)]
@@ -143,7 +149,58 @@ def main(users):
     print("hotovo")
 
 
+# Tag → (styl, násobek deep, posun usnutí v h). Bez tagu normální noc.
+EFFECTS = {
+    "alcohol": ("normal", 0.55, 0.6),
+    "late_coffee": ("normal", 0.85, 0.7),
+    "evening_workout": ("early", 1.15, 0.0),
+    "phone_in_bed": ("normal", 0.95, 0.8),
+    "late_meal": ("normal", 0.8, 0.3),
+    "kid": ("normal", 0.9, 0.0),
+}
+
+
+def history(n_days, users):
+    today = datetime.now(TZ).date()
+    for spec in users:
+        email, password = spec.split(":", 1)
+        token, uid = login(email, password)
+        rng = random.Random("history:" + email)
+        samples, hr, plan = [], [], {}
+        for i in range(n_days, 7, -1):
+            wake = today - timedelta(days=i)
+            tags = rng.choices([[], ["alcohol"], ["late_coffee"], ["evening_workout"], ["phone_in_bed"],
+                                ["alcohol", "late_meal"], ["kid"]], [6, 2, 2, 2, 2, 1, 1])[0]
+            style, deep_f, shift = "normal", 1.0, 0.0
+            for t in tags:
+                st, df, sh = EFFECTS[t]
+                style = st if st != "normal" else style
+                deep_f *= df
+                shift += sh
+            s, h = make_night(rng, wake, style, deep_f, shift)
+            samples += s
+            hr += h
+            plan[wake.isoformat()] = tags
+        st, res = req("POST", "/functions/v1/ingest-sleep",
+                      {"timezone": "Europe/Prague", "samples": samples, "heart_rate": hr}, token)
+        assert st == 200, res
+        print(email, len(res["nights"]), "nocí", [n["status"] for n in res["nights"]][:3], "…")
+        st, posts = req("GET", f"/rest/v1/posts?select=night_id,night:nights(night_date)&user_id=eq.{uid}&kind=eq.night", token=token)
+        assert st == 200, posts
+        for p in posts:
+            tags = plan.get(p["night"]["night_date"])
+            if tags is None:
+                continue
+            req("DELETE", f"/rest/v1/night_tags?night_id=eq.{p['night_id']}", token=token)
+            for tag in tags:
+                req("POST", "/rest/v1/night_tags", {"night_id": p["night_id"], "tag": tag}, token)
+    print("hotovo – teď seed_dev_history.sql")
+
+
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         sys.exit(__doc__)
-    main(sys.argv[1:])
+    if sys.argv[1] == "--history":
+        history(int(sys.argv[2]), sys.argv[3:])
+    else:
+        main(sys.argv[1:])

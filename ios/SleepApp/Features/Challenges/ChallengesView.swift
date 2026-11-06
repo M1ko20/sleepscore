@@ -120,7 +120,7 @@ struct ChallengesView: View {
                     Text(subtitle(c, me: me)).captionStyle()
                 }
                 Spacer(minLength: 12)
-                Text(scoreText(c, me: me))
+                Text(ChallengeCopy.score(c, me: me))
                     .font(Font.app.stat)
                     .foregroundStyle(c.me(me)?.result == .win ? Color.app.accent : Color.app.textPrimary)
             }
@@ -154,20 +154,6 @@ struct ChallengesView: View {
         }
     }
 
-    private func scoreText(_ c: Challenge, me: UUID) -> String {
-        guard c.status != .pending else { return "" }
-        switch c.type {
-        case .duel:
-            let mine = c.average(me)
-            let other = c.accepted.first { $0.userID != me }.flatMap { c.average($0.userID) }
-            return "\(Fmt.avg(mine)) : \(Fmt.avg(other))"
-        case .freeForAll:
-            guard let i = c.standings.firstIndex(where: { $0.userID == me }) else { return "" }
-            return "\(i + 1). místo"
-        case .teamGoal:
-            return "\(Fmt.avg(c.teamAverage)) / \(c.targetScore ?? 0)"
-        }
-    }
 
     private func debtRow(_ d: Debt, me: UUID) -> some View {
         let iOwe = d.debtor.id == me

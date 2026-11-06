@@ -45,4 +45,20 @@ enum ChallengeCopy {
             return line
         }
     }
+
+    /// Skóre do řádku: „87,3 : 88,2“, „3. místo“, „89,8 / 85“.
+    static func score(_ c: Challenge, me: UUID) -> String {
+        guard c.status != .pending else { return "" }
+        switch c.type {
+        case .duel:
+            let mine = c.average(me)
+            let other = c.accepted.first { $0.userID != me }.flatMap { c.average($0.userID) }
+            return "\(Fmt.avg(mine)) : \(Fmt.avg(other))"
+        case .freeForAll:
+            guard let i = c.standings.firstIndex(where: { $0.userID == me }) else { return "" }
+            return "\(i + 1). místo"
+        case .teamGoal:
+            return "\(Fmt.avg(c.teamAverage)) / \(c.targetScore ?? 0)"
+        }
+    }
 }

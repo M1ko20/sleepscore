@@ -9,6 +9,8 @@ struct ProfileView: View {
     @State private var summary: ProfileSummary?
     @State private var error: String?
     @State private var showSettings = false
+    @State private var recap: WeeklyRecap?
+    @State private var loadingRecap = false
     @State private var path = NavigationPath()
 
     enum Route: Hashable { case friends, invites }
@@ -42,6 +44,9 @@ struct ProfileView: View {
                 }
             }
             .sheet(isPresented: $showSettings) { SettingsView() }
+            .sheet(item: Binding(get: { recap.map(RecapItem.init) }, set: { if $0 == nil { recap = nil } })) {
+                RecapView(recap: $0.recap)
+            }
             .navigationDestination(for: ProfileLite.self) { UserProfileView(profile: $0) }
             .navigationDestination(for: Route.self) { route in
                 switch route {
@@ -70,6 +75,18 @@ struct ProfileView: View {
             NavigationLink(value: Route.friends) {
                 ProfileRow(title: "Přátelé (\(friends.friends.count))", badge: friends.incoming.count)
             }
+            Divider().overlay(Color.app.hairline)
+            Button {
+                Task {
+                    loadingRecap = true
+                    recap = try? await API.weeklyRecap()
+                    loadingRecap = false
+                }
+            } label: {
+                ProfileRow(title: loadingRecap ? "Minulý týden…" : "Minulý týden v číslech")
+            }
+            .buttonStyle(.plain)
+            .disabled(loadingRecap)
             Divider().overlay(Color.app.hairline)
             NavigationLink(value: Route.invites) {
                 ProfileRow(title: "Pozvánky · zbývá \(session.profile?.invitesAvailable ?? 0)")
@@ -161,4 +178,10 @@ struct HealthSection: View {
         case .failed(let msg): return msg
         }
     }
+}
+
+/// Obal pro `.sheet(item:)` (recap nemá vlastní id).
+struct RecapItem: Identifiable {
+    let recap: WeeklyRecap
+    var id: String { recap.weekStart }
 }

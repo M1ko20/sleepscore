@@ -76,6 +76,8 @@ Storage: buckety `avatars` (max 150 kB), `night-photos` (max 400 kB) – privát
 | `username_available(username)` | volná a platná přezdívka? |
 | `send_friend_request(user)` | žádost; když protistrana už žádala, rovnou přijme |
 | `respond_friend_request(user, accept)` / `remove_friend(user)` | |
+| `tag_insights(user)` | tagy: noci s tagem vs. bez (90 dní, min. 3+3) – skóre, deep, usínání, délka |
+| `weekly_recap(week_start?)` | recap týdne volajícího (default minulý po–ne) |
 | `profile_summary(user)` | celý profil jedním callem (bilance, série, průměr 30 dní, duše, odznaky, vzájemná bilance, stav přátelství); security invoker → RLS |
 | `create_challenge(type, opponents[], duration_days, stake?, target_score?)` | jen s přáteli; duel = 1 soupeř, skupina ≥ 2 pozvaní |
 | `respond_challenge(challenge, accept)` | duel po přijetí startuje zítra (tz zakladatele) |

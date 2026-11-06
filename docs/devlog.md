@@ -11,7 +11,21 @@ Co je hotové a jak. Nejnovější nahoře. Detaily backendu v `backend.md`, vzh
 5. ~~Výzvy (seznam, detail, založení, výsledek)~~ hotovo.
 6. ~~Profil, přátelé, profil přítele + Vyzvat~~ hotovo. ~~Skupinové výzvy~~ otestované se 3. účtem.
 7. ~~Fotky a profilovky~~ hotovo.
-8. Další: zpřísnění skóre (vychází 88–99 – čeká na Adama), insighty z tagů, týdenní recap, pak push notifikace (až s Developer Programem).
+8. ~~Insighty z tagů a týdenní recap~~ hotovo.
+9. Další: zpřísnění skóre (vychází 88–99 – čeká na Adama), Sleep Wrapped (konec roku), smazání účtu (GDPR), push notifikace (až s Developer Programem – pak i pondělní push na recap).
+
+## 2026-11-06 – Zjištění z tagů a týdenní recap
+- Migrace `…190000_insights_recap.sql`, vše **security invoker + na požádání** (žádný cron ani Edge Function):
+  - `tag_insights(user)`: pro každý tag noci s tagem vs. bez něj za 90 dní (min. 3 + 3) – průměr skóre, podíl deep (jen noci s fázemi), čas usnutí (minuty od poledne, ať průměr funguje přes půlnoc – `minutes_since_noon`), délka spánku.
+  - `profile_summary` vrací `insights` + `nights_90` jen na vlastním profilu → bez callu navíc.
+  - `weekly_recap(week_start?)`: bez parametru minulý týden po–ne (tz uživatele) – počet nocí, průměr a průměr týdne předtím, nejlepší/nejhorší noc, průměrná délka, série, nové odznaky.
+- Věty skládá appka (`InsightCopy`): nejvýš 2 nejsilnější rozdíly nad prahem (deep ±10 %, usínání ±15 min, délka ±20 min, skóre ±3 body) → „S alkoholem usínáš o 32 min později a máš o 17 % méně deep.“ Zjištění se ukážou od 14 nocí za 90 dní, max. 4, sekce ZJIŠTĚNÍ na mém profilu.
+- Recap: karta „Tvůj týden“ nahoře ve feedu jen po–st (jinak se nevolá vůbec), křížkem skrýt do dalšího týdne (UserDefaults). Obrazovka: průměr (+/− proti minulému), nocí x/7, průměrná délka, série, nejlepší/nejhorší noc, nové odznaky, výzvy toho týdne (z ChallengeStore, bez callu). Sdílet = obrázek přes ImageRenderer (ShareLink). Z profilu kdykoliv „Minulý týden v číslech“.
+- `Calendar.iso.firstWeekday = 2` (týden od pondělí – dřív by recap začínal nedělí).
+- Dev data: `seed_dev.py --history 42` (noci 8–42 dní zpět s tagy, které spánek opravdu zhorší) + `seed_dev_history.sql` (posune `created_at` starých karet, ať nejsou ve feedu nahoře). Pozn.: odznaky z historie mají `earned_at` = dnešek → recap tohoto týdne ukazuje +34.
+- DEBUG: `-debugRecap` (karta kdykoliv, za tento týden), `-debugRecapOpen`.
+- Neověřeno: tlačítko Sdílet (neumím klepat) – obrázek se renderuje, ale náhled jsem neviděl.
+- Pozorování pro Adama: nahrané noci po přidání (backfill) dostanou kartu s `created_at` = teď → ve feedu se objeví nahoře. U reálných uživatelů to nastane jen při první synchronizaci (3 dny) – zatím nechávám.
 
 ## 2026-11-06 – Fotky a profilovky
 - Zmenšení na telefonu (`ImageResize`): profilovka 256×256 výřez ze středu, JPEG ≤ 60 kB; fotka karty max. 1280 px, kvalita se snižuje do ≤ 200 kB. Server (bucket limity z `…180000`) pustí max. 150 / 400 kB a jen JPEG.

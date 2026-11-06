@@ -4,6 +4,7 @@ struct FeedView: View {
     @Environment(Session.self) private var session
     @Environment(FeedStore.self) private var store
     @State private var editing: FeedPost?
+    @State private var showRecap = false
     @State private var path = NavigationPath()
 
     private var me: UUID? { session.profile?.id }
@@ -12,6 +13,9 @@ struct FeedView: View {
         NavigationStack(path: $path) {
             ScrollView {
                 LazyVStack(spacing: Metrics.cardSpacing) {
+                    if let recap = store.recap {
+                        RecapCard(recap: recap, onOpen: { showRecap = true }, onDismiss: { store.dismissRecap() })
+                    }
                     if store.loaded && store.isEmpty {
                         emptyState
                     }
@@ -47,6 +51,15 @@ struct FeedView: View {
                    path.isEmpty, n >= 1, n <= nights.count {
                     path.append(nights[n - 1])
                 }
+                #endif
+            }
+            .sheet(isPresented: $showRecap) {
+                if let recap = store.recap { RecapView(recap: recap) }
+            }
+            .task {
+                await store.loadRecap()
+                #if DEBUG
+                if ProcessInfo.processInfo.arguments.contains("-debugRecapOpen"), store.recap != nil { showRecap = true }
                 #endif
             }
             .sheet(item: $editing) { post in

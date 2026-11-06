@@ -255,6 +255,15 @@ enum API {
         try await db.from("profiles").update(["display_name": name]).eq("id", value: me).execute()
     }
 
+    /// nil = minulý celý týden (po–ne).
+    nonisolated static func weeklyRecap(weekStart: String? = nil) async throws -> WeeklyRecap {
+        struct Params: Encodable { let p_week_start: String? }
+        if let weekStart {
+            return try await decode(db.rpc("weekly_recap", params: Params(p_week_start: weekStart)).execute().data)
+        }
+        return try await decode(db.rpc("weekly_recap").execute().data)
+    }
+
     // MARK: Fotky
 
     /// Nahraje JPEG pod `<me>/<uuid>.jpg` (cesta je unikátní → cache podle cesty je navždy platná).

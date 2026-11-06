@@ -14,6 +14,8 @@ final class FeedStore {
     private(set) var achievementNames: [String: String] = [:]
     private(set) var achievementCatalog: [AchievementInfo] = []
     private(set) var streaks: [UUID: Int] = [:]
+    /// Recap minulého týdne – jen po–st a dokud ho neskryju (1 call týdně navíc).
+    private(set) var recap: WeeklyRecap?
 
     func load() async {
         do {
@@ -43,6 +45,36 @@ final class FeedStore {
         tagLabels = Dictionary(uniqueKeysWithValues: tags.map { ($0.slug, $0.label) })
         achievementNames = Dictionary(uniqueKeysWithValues: ach.map { ($0.code, $0.name) })
         achievementCatalog = ach
+    }
+
+    private static let dismissedRecapKey = "dismissedRecapWeek"
+
+    /// Pondělí minulého týdne (podle místního času) – klíč recapu.
+    private static var lastWeekStart: String {
+        let cal = Calendar.iso
+        let thisMonday = cal.dateInterval(of: .weekOfYear, for: .now)?.start ?? .now
+        return ISODay.string(cal.date(byAdding: .day, value: -7, to: thisMonday) ?? thisMonday)
+    }
+
+    func loadRecap() async {
+        #if DEBUG
+        // `-debugRecap`: karta kdykoliv, za tenhle týden (ať je na screenshotu co ukázat).
+        if ProcessInfo.processInfo.arguments.contains("-debugRecap") {
+            let weekStart = ISODay.string(Calendar.iso.dateInterval(of: .weekOfYear, for: .now)?.start ?? .now)
+            recap = try? await API.weeklyRecap(weekStart: weekStart)
+            return
+        }
+        #endif
+        let weekday = Calendar.iso.component(.weekday, from: .now)   // 2 = pondělí … 4 = středa
+        guard (2...4).contains(weekday),
+              UserDefaults.standard.string(forKey: Self.dismissedRecapKey) != Self.lastWeekStart,
+              recap == nil else { return }
+        if let r = try? await API.weeklyRecap(), r.nights > 0 { recap = r }
+    }
+
+    func dismissRecap() {
+        if let r = recap { UserDefaults.standard.set(r.weekStart, forKey: Self.dismissedRecapKey) }
+        recap = nil
     }
 
     func post(_ id: UUID) -> FeedPost? { posts.first { $0.id == id } }

@@ -24,6 +24,9 @@ struct ProfileStatsSections: View {
         VStack(alignment: .leading, spacing: 24) {
             recordAndStreak
             average
+            if let insights = summary.insights {
+                InsightsSection(insights: insights, nights: summary.nights90 ?? 0)
+            }
             SoulShowcase(souls: summary.souls, total: summary.soulCount)
             BadgeGrid(catalog: catalog, counts: summary.badgeCounts)
         }
@@ -82,6 +85,48 @@ private struct SectionTitle: View {
                 Spacer()
                 Text(value).font(Font.app.label.monospacedDigit()).foregroundStyle(Color.app.textSecondary)
             }
+        }
+    }
+}
+
+/// Zjištění z tagů (jen můj profil): jedna věta na tag, nejsilnější nahoře.
+struct InsightsSection: View {
+    let insights: [TagInsight]
+    let nights: Int
+
+    static let minNights = 14
+
+    private var lines: [(TagInsight, String)] {
+        insights.sorted { InsightCopy.strength($0) > InsightCopy.strength($1) }
+            .compactMap { i in InsightCopy.sentence(i).map { (i, $0) } }
+            .prefix(4).map { $0 }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            SectionTitle(title: "Zjištění", value: "90 dní")
+            if nights < Self.minNights {
+                Text("Ukážou se po \(Self.minNights) nocích s tagy. Zatím máš \(nights).").captionStyle()
+            } else if lines.isEmpty {
+                Text("Zatím nic průkazného. Přidávej tagy ke kartám.").captionStyle()
+            } else {
+                ForEach(lines, id: \.0.id) { insight, text in
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(text).font(Font.app.body).foregroundStyle(Color.app.textPrimary)
+                            .fixedSize(horizontal: false, vertical: true)
+                        Text("\(insight.label) · \(nightsText(insight.nWith)) s tagem").captionStyle()
+                    }
+                    .accessibilityElement(children: .combine)
+                }
+            }
+        }
+    }
+
+    private func nightsText(_ n: Int) -> String {
+        switch n {
+        case 1: "1 noc"
+        case 2...4: "\(n) noci"
+        default: "\(n) nocí"
         }
     }
 }

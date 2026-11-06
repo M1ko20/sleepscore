@@ -41,6 +41,11 @@ struct ProfileSummary: Decodable, Sendable {
         enum CodingKeys: String, CodingKey { case status; case requestedBy = "requested_by" }
     }
 
+    enum CodingKeys: String, CodingKey {
+        case profile, mma, streak, avg30, souls, achievements, h2h, friendship, insights
+        case nights90 = "nights_90"
+    }
+
     let profile: ProfileLite
     let mma: Record
     let streak: Streak?
@@ -49,6 +54,9 @@ struct ProfileSummary: Decodable, Sendable {
     let achievements: [Badge]
     let h2h: Record?
     let friendship: Friendship?
+    /// Jen na vlastním profilu (jinak nil).
+    let insights: [TagInsight]?
+    let nights90: Int?
 
     var soulCount: Int { souls.reduce(0) { $0 + $1.count } }
     var badgeCounts: [String: Int] { Dictionary(uniqueKeysWithValues: achievements.map { ($0.code, $0.count) }) }
@@ -97,5 +105,61 @@ enum BadgeGlyph {
 extension Profile {
     var lite: ProfileLite {
         ProfileLite(id: id, username: username, displayName: displayName, avatarPath: avatarPath, timezone: timezone)
+    }
+}
+
+/// Noci s tagem vs. bez něj (90 dní). Větu skládá `InsightCopy`.
+struct TagInsight: Decodable, Sendable, Identifiable {
+    let tag: String
+    let label: String
+    let nWith: Int
+    let nWithout: Int
+    let scoreWith: FlexDouble?
+    let scoreWithout: FlexDouble?
+    let deepWith: FlexDouble?
+    let deepWithout: FlexDouble?
+    let onsetWith: FlexDouble?
+    let onsetWithout: FlexDouble?
+    let sleepWith: FlexDouble?
+    let sleepWithout: FlexDouble?
+    var id: String { tag }
+
+    enum CodingKeys: String, CodingKey {
+        case tag, label
+        case nWith = "n_with", nWithout = "n_without"
+        case scoreWith = "score_with", scoreWithout = "score_without"
+        case deepWith = "deep_with", deepWithout = "deep_without"
+        case onsetWith = "onset_with", onsetWithout = "onset_without"
+        case sleepWith = "sleep_with", sleepWithout = "sleep_without"
+    }
+}
+
+/// Výstup RPC `weekly_recap`.
+struct WeeklyRecap: Decodable, Sendable {
+    struct Night: Decodable, Sendable { let date: String; let score: Int }
+    struct Streak: Decodable, Sendable { let current: Int; let best: Int }
+
+    let weekStart: String
+    let weekEnd: String
+    let nights: Int
+    let avgScore: FlexDouble?
+    let avgSleepMin: Int?
+    let prevAvgScore: FlexDouble?
+    let best: Night?
+    let worst: Night?
+    let streak: Streak?
+    let achievements: Int
+
+    enum CodingKeys: String, CodingKey {
+        case nights, best, worst, streak, achievements
+        case weekStart = "week_start", weekEnd = "week_end"
+        case avgScore = "avg_score", avgSleepMin = "avg_sleep_min", prevAvgScore = "prev_avg_score"
+    }
+
+    /// „26. 10. – 1. 11.“
+    var rangeText: String {
+        guard let a = ISODay.date(weekStart), let b = ISODay.date(weekEnd) else { return weekStart }
+        let f = Date.FormatStyle().day().month(.defaultDigits).locale(Locale(identifier: "cs_CZ"))
+        return "\(a.formatted(f)) – \(b.formatted(f))"
     }
 }

@@ -228,6 +228,7 @@ extension Calendar {
     static let iso: Calendar = {
         var c = Calendar(identifier: .gregorian)
         c.timeZone = .current
+        c.firstWeekday = 2   // týden od pondělí (recap, ISO týdny)
         return c
     }()
 }
