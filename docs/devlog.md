@@ -7,8 +7,18 @@ Co je hotové a jak. Nejnovější nahoře. Detaily backendu v `backend.md`, vzh
 1. ~~Xcode projekt, design tokeny, Supabase SDK, testovací přihlášení~~ hotovo.
 2. ~~Onboarding s pozvánkou → profil~~ hotovo (HealthKit tlačítko zatím jen pokračuje).
 3. ~~Feed + karta noci + detail s hypnogramem~~ hotovo (bez fotek – přijdou se Storage).
-4. HealthKit: čtení spánku a tepu, `HKObserverQuery`, odeslání na `ingest-sleep`.
+4. ~~HealthKit~~ hotovo (ověřeno v simulátoru, na telefonu s Garminem zatím ne).
 5. Výzvy (seznam, detail, založení, výsledek), profil, přátelé, pozvánky.
+
+## 2026-11-06 – HealthKit
+- `HealthSync` (`ios/SleepApp/Health/`): čte `sleepAnalysis` + `heartRate`, zahodí ruční záznamy (`HKMetadataKeyWasUserEntered`), `inBed` se neposílá. Mapování: asleepCore/Deep/REM/awake/asleepUnspecified → core/deep/rem/awake/asleep.
+- **Šetření callů:** `HKAnchoredObjectQuery` (anchor v UserDefaults, posune se až po úspěšném nahrání) → když nepřibyl spánkový vzorek, nic se neposílá. Když ano: okno 3 dnů + tep jen v oknech spánku (sloučené úseky, mezera ≤ 60 min).
+- Spouštění: `HKObserverQuery` + background delivery (hourly), při startu appky a při návratu do popředí; souběžný požadavek se zařadí a proběhne po dokončení. Ruční „Synchronizovat“ v Profilu (posílá i bez změn).
+- Onboarding „Povolit“ → `requestAuthorization`. Odhlášení zastaví observer a smaže anchor.
+- Entitlementy `healthkit` + `background-delivery` (z `project.yml`, soubor se generuje), texty `NSHealthShareUsageDescription` / `NSHealthUpdateUsageDescription`. Zápis do Zdraví se žádá jen v DEBUG.
+- DEBUG: Profil → „vložit noc do Zdraví“, nebo `simctl launch … -debugSeedHealth` (vloží noc končící dnes ráno a synchronizuje).
+- Ověřeno v simulátoru: 25 vzorků → `ingest-sleep` → noc 2026-11-06 vytvořena, karta ve feedu; další start = „nic nového“, bez callu.
+- Na telefonu: oprávnění ke Zdraví v simulátoru musí odklepnout člověk (simctl privacy Health neumí).
 
 ## 2026-11-06 – Feed, karta noci, detail
 - `FeedStore` (sdílený feedem a detailem): jeden dotaz na `posts` s embedy (autor `profiles!posts_user_id_fkey` – bez hintu je vazba nejednoznačná kvůli `reactions`), noc, `night_tags`, `night_raw(segments)`, `user_achievements`, reakce, `comments(count)`. K tomu jednou katalog tagů a achievementů + `user_stats` autorů.

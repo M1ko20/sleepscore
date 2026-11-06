@@ -1,9 +1,9 @@
 import SwiftUI
 
 /// Krok 4: Apple Health – co čteme a co nikdy.
-/// TODO(krok 4 – HealthKit): tlačítko spustí HKHealthStore.requestAuthorization.
 struct HealthIntroView: View {
     var onDone: () -> Void
+    @State private var busy = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 24) {
@@ -23,7 +23,17 @@ struct HealthIntroView: View {
             Text("Ruční záznamy se nepočítají. Jen data z hodinek nebo prstenu.").captionStyle()
 
             Spacer()
-            Button("Povolit", action: onDone).buttonStyle(.primary)
+            Button(busy ? "Čekám na Zdraví…" : "Povolit") {
+                busy = true
+                Task {
+                    // Odmítnutí není chyba – appka jen nebude mít data. iOS neřekne, co uživatel povolil.
+                    try? await HealthSync.shared.requestAuthorization()
+                    busy = false
+                    onDone()
+                }
+            }
+            .buttonStyle(.primary)
+            .disabled(busy)
         }
         .padding(Metrics.screenPadding)
     }

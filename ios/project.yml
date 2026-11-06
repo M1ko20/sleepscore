@@ -18,6 +18,13 @@ targets:
     sources: [SleepApp]
     dependencies:
       - package: Supabase
+      - sdk: HealthKit.framework
+    entitlements:
+      path: SleepApp/SleepApp.entitlements
+      properties:
+        com.apple.developer.healthkit: true
+        com.apple.developer.healthkit.access: []
+        com.apple.developer.healthkit.background-delivery: true
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: cz.mikolas.sleepscore
@@ -33,5 +40,7 @@ targets:
         UILaunchScreen: {}
         UIUserInterfaceStyle: Dark
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        NSHealthShareUsageDescription: Čteme jen spánek a tep z hodinek nebo prstenu. Nic dalšího a nic do reklamy.
+        NSHealthUpdateUsageDescription: Do Apple Health nic nezapisujeme. (Jen testovací build zapisuje vzorová data.)
         SupabaseURL: $(SUPABASE_URL)
         SupabaseKey: $(SUPABASE_KEY)

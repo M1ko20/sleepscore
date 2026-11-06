@@ -20,6 +20,7 @@ struct ProfileView: View {
                         }
                         Divider().overlay(Color.app.hairline)
                     }
+                    HealthSection()
                     Button("Odhlásit") { Task { await session.signOut() } }
                         .buttonStyle(.plainText)
                 }
@@ -69,6 +70,49 @@ struct ProfileView: View {
                 Text("SÉRIE 0").font(Font.app.stat).foregroundStyle(Color.app.textPrimary)
                 Text("nejlepší 0").captionStyle()
             }
+        }
+    }
+}
+
+/// Stav synchronizace s Apple Health + ruční synchronizace.
+private struct HealthSection: View {
+    @State private var health = HealthSync.shared
+    #if DEBUG
+    @State private var seeding = false
+    #endif
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Apple Health").statLabel()
+            Text(statusText).captionStyle()
+            Button(health.status == .syncing ? "Synchronizuju…" : "Synchronizovat") {
+                Task { await health.sync(force: true) }
+            }
+            .buttonStyle(.secondary)
+            .disabled(health.status == .syncing || !health.isAvailable)
+            #if DEBUG
+            Button(seeding ? "Vkládám…" : "DEBUG: vložit noc do Zdraví") {
+                seeding = true
+                Task {
+                    try? await health.requestAuthorization()
+                    do { try await DebugHealthSeeder.insertNight() } catch { log.error("seed: \(String(describing: error))") }
+                    seeding = false
+                    await health.sync()
+                }
+            }
+            .buttonStyle(.plainText)
+            #endif
+        }
+    }
+
+    private var statusText: String {
+        guard health.isAvailable else { return "Apple Health na tomhle zařízení není." }
+        switch health.status {
+        case .idle: return "Noci se nahrávají samy po synchronizaci hodinek."
+        case .syncing: return "Nahrávám…"
+        case .done(let d, let n): return n == 0 ? "\(Fmt.time(d)) · beze změny" : "\(Fmt.time(d)) · nahráno nocí: \(n)"
+        case .nothingNew(let d): return "\(Fmt.time(d)) · nic nového"
+        case .failed(let msg): return msg
         }
     }
 }

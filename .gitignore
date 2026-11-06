@@ -11,3 +11,4 @@ ios/Config/Secrets.xcconfig
 ios/*.xcodeproj
 ios/SleepApp/Info.plist
 ios/build/
+ios/SleepApp/SleepApp.entitlements

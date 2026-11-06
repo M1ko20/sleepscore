@@ -58,6 +58,8 @@ final class Session {
     }
 
     func signOut() async {
+        HealthSync.shared.stopObserving()
+        HealthSync.shared.resetAnchor()
         try? await Backend.client.auth.signOut()
     }
 
