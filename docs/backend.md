@@ -22,6 +22,7 @@ pg_cron každou hodinu v :05 ─▶ private.hourly_jobs()
                                 ├─ finalize_due_challenges (poslední den ve 14:00 tz zakladatele)
                                 ├─ díry v sériích (1× denně po 14:00, jen rozjeté série)
                                 └─ Dvojí život (pondělí 10:00)
+pg_cron denně 3:45 UTC ─▶ private.compact_old_night_raw()  (noci starší 120 dní)
 night_tags INSERT ─trigger─▶ Navzdory / Pivo vyhrálo
 ```
 
@@ -33,6 +34,7 @@ night_tags INSERT ─trigger─▶ Navzdory / Pivo vyhrálo
 | `…130000_private_helpers.sql` | RLS helpery přesunuté do schématu `private` |
 | `…140000_streaks_achievements_challenges.sql` | série, achievementy, uzavírání výzev |
 | `…140100_cron.sql` | pg_cron úlohy |
+| `…220000_compact_night_raw.sql` | zmenšení starých surových dat (viz níže) |
 | `supabase/functions/ingest-sleep/index.ts` | Edge Function pro příjem spánku |
 | `supabase/functions/_shared/sleep.ts` | čistá logika: hlavní spánek, metriky, skóre |
 | `supabase/functions/_shared/sleep_test.ts` | unit testy skóre (15) |
@@ -162,3 +164,12 @@ SQL logiku lze testovat lokálně: Postgres 16 (`/opt/homebrew/opt/postgresql@16
 - První uživatel (Adam) nemá pozvánku → profil založit ručně (service role insert do `profiles` + `user_stats`).
 - Insighty z tagů, týdenní recap, Sleep Wrapped.
 - Mazání účtu z appky (GDPR) – smazání `auth.users` vše kaskádově smaže, chybí jen endpoint.
+
+## Zmenšování starých surových dat (`night_raw`)
+Plná data se drží 120 dní (výzvy, insighty 90 dní, přepočet skóre). Pak je denně pg_cron
+(`compact-night-raw`, 3:45 UTC, max 5000 nocí/běh) zmenší a nastaví `compacted = true`:
+- `segments`: sousední úseky stejné fáze se slijí, `hk_uuid` zmizí. Délky fází zůstanou přesně.
+- `heart_rate`: průměry do 5min oken (`[t, bpm]`, stejný formát). Průměr a minimum tepu za noc jsou v `nights`.
+Formát zůstává, appka, Wrapped i export fungují beze změn. Test na dev datech (rollback):
+146 kB → 64 kB uloženo (−56 %), deep sedí na sekundu, průměr tepu ±0,1. Odhad pro 100 lidí trvale ~250 MB.
+Ruční spuštění: `select private.compact_old_night_raw(p_keep_days => 120);`
