@@ -15,7 +15,8 @@ Pokud se tento soubor a dokument liší, platí dokument – zeptej se Adama.
   - Chybějící složka skóre (bez fází / bez tepu) se vynechá a váhy se přepočítají. Pravidelnost = průměr usnutí za 14 nocí, tep = normál za 30 nocí; při < 3 nocích historie plné body.
   - Minimální délka pro sérii: 6 h.
 - Apple Developer Program až bude appka skoro hotová → do té doby simulátor + testovací přihlášení, Sign in with Apple a HealthKit na reálném iPhonu na konec.
-- **Další krok:** E2E test ingestu s testovacím uživatelem, pak cron funkce (uzavírání výzev, nuly za chybějící noci, série, achievementy). Nejdřív probrat.
+- E2E test: `supabase/tests/e2e.py` (24 kontrol, po sobě uklidí). Prošel 2026-11-06.
+- **Další krok:** cron funkce (uzavírání výzev, nuly za chybějící noci, série, achievementy). Nejdřív probrat.
 
 ## Produkt
 Sociální appka pro spánek: každé ráno se noc objeví jako karta, kamarádi ji komentují a lidi se měří ve výzvách. Tón hravý a soutěživý, ne wellness a ne „AI cringe“.
@@ -42,7 +43,7 @@ Sociální appka pro spánek: každé ráno se noc objeví jako karta, kamarádi
   - Výzvu vyhrává vyšší **průměrné** sleep score za celou dobu; vyhrané dny jsou jen statistika.
   - Remíza = stejný průměr.
 - Noc bez dat = sleep score **0** ve výzvě. Dokud výzva běží, jde nahrát zpětně a 0 se nahradí. Do feedu se chybějící noc nedostane.
-- Výzva se **uzavírá automaticky posledním dnem**; data nahraná po uzavření výsledek nemění.
+- Výzva se **uzavírá automaticky posledním dnem ve 14:00** (místní čas zakladatele) – poslední noc už nemůže přibýt; data nahraná po uzavření výsledek nemění.
 - Odměny: sázka, duše poraženého do vitríny, zápis do MMA bilance, pozvánka navíc.
 - **Všichni proti všem**: vítěz bere vše – každý ostatní mu dluží sázku, vítěz bere duše všech, v MMA má vítěz výhru, ostatní prohru. Shodný nejvyšší průměr = remíza.
 - **Společný cíl**: počítá se do MMA (splněno = výhra všem, nesplněno = prohra všem), nebere se duše, nepočítá se do vzájemné bilance. Sázka může být (bez účtu dluhů).
