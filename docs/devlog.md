@@ -150,3 +150,10 @@ Co je hotové a jak. Nejnovější nahoře. Detaily backendu v `backend.md`, vzh
 - Security Advisor: RLS helpery přesunuty do schématu `private` (dřív šlo přes API zjistit přátelství cizích lidí), opraven `search_path`. Zbylá varování = záměrné RPC funkce.
 - Testováno lokálně na Postgresu 16 se stuby Supabase (auth/storage) – Docker není k dispozici.
 - Rozhodnutí: pozvaný je automaticky přítel zvoucího; žádost o přátelství může poslat kdokoliv; jedna reakce na kartu; pevné tagy; achievementy opakovatelné; karta se zveřejní automaticky; FFA = vítěz bere vše; společný cíl se počítá do MMA, ale bez duší a bez vzájemné bilance.
+
+## 2026-11-06 – Web: landing page, zásady ochrany osobních údajů, podmínky
+- `site/` (statické HTML, barvy z design.md, žádné externí fonty/skripty/cookies): `index.html`, `privacy.html`, `terms.html`, `style.css`.
+- Nasazení: `.github/workflows/pages.yml` → GitHub Pages (`https://m1ko20.github.io/sleepscore/`), po zapnutí Settings → Pages → Source: GitHub Actions.
+- Omezení odpovědnosti je v podmínkách (ne zdravotnický prostředek, „tak, jak je“, sázky = soukromá dohoda hráčů).
+- Chybí doplnit (žlutě v textu): správce (jméno/IČO/adresa), kontaktní e-mail, datum účinnosti, věková hranice. Před ostrým spuštěním nechat zkontrolovat právníkem.
+- Další krok: notifikace (návrh u Adama).
