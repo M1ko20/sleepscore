@@ -5,6 +5,7 @@ struct FeedView: View {
     @Environment(FeedStore.self) private var store
     @State private var editing: FeedPost?
     @State private var showRecap = false
+    @State private var wrapped: SleepWrapped?
     @State private var path = NavigationPath()
 
     private var me: UUID? { session.profile?.id }
@@ -13,6 +14,11 @@ struct FeedView: View {
         NavigationStack(path: $path) {
             ScrollView {
                 LazyVStack(spacing: Metrics.cardSpacing) {
+                    if let year = WrappedWindow.year {
+                        WrappedCard(year: year) {
+                            Task { wrapped = try? await API.sleepWrapped(year: year) }
+                        }
+                    }
                     if let recap = store.recap {
                         RecapCard(recap: recap, onOpen: { showRecap = true }, onDismiss: { store.dismissRecap() })
                     }
@@ -53,6 +59,7 @@ struct FeedView: View {
                 }
                 #endif
             }
+            .fullScreenCover(item: $wrapped) { WrappedView(wrapped: $0) }
             .sheet(isPresented: $showRecap) {
                 if let recap = store.recap { RecapView(recap: recap) }
             }
@@ -60,6 +67,9 @@ struct FeedView: View {
                 await store.loadRecap()
                 #if DEBUG
                 if ProcessInfo.processInfo.arguments.contains("-debugRecapOpen"), store.recap != nil { showRecap = true }
+                if ProcessInfo.processInfo.arguments.contains("-debugWrappedOpen"), let y = WrappedWindow.year {
+                    wrapped = try? await API.sleepWrapped(year: y)
+                }
                 #endif
             }
             .sheet(item: $editing) { post in

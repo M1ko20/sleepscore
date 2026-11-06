@@ -13,7 +13,14 @@ Co je hotové a jak. Nejnovější nahoře. Detaily backendu v `backend.md`, vzh
 7. ~~Fotky a profilovky~~ hotovo.
 8. ~~Insighty z tagů a týdenní recap~~ hotovo.
 9. ~~Zpřísnění skóre (v2)~~ hotovo.
-10. Další: Sleep Wrapped (konec roku), smazání účtu (GDPR), push notifikace (až s Developer Programem – pak i pondělní push na recap).
+10. ~~Sleep Wrapped~~ hotovo.
+11. Další: (konec roku), smazání účtu (GDPR), push notifikace (až s Developer Programem – pak i pondělní push na recap).
+
+## 2026-11-06 – Sleep Wrapped
+- RPC `sleep_wrapped(year?)` (migrace `…200000`, security invoker, 1 call při otevření): noci, hodiny spánku a deepu, průměrné skóre, nejlepší noc, nejlepší měsíc (min. 5 nocí), průměrný čas usnutí, nejdelší série, top 3 tagy, bilance a počet výzev (podle `end_date`), duše, oblíbená oběť a nemesis, odznaky + nejčastější, reakce od kamarádů + nejčastější, komentáře. Bez parametru: v lednu uplynulý rok, jinak letošní.
+- Appka: stories na celou obrazovku (proužky nahoře, swipe nebo klepnutí = další), slide = popisek + velké číslo + suchá věta, slidy bez dat se vynechají. Poslední slide shrnutí + Sdílet (obrázek přes ImageRenderer).
+- Nabízí se jen v prosinci (letošní) a lednu (uplynulý): karta nahoře ve feedu + řádek v profilu. Mimo okno žádný call.
+- DEBUG: `-debugWrapped` (okno kdykoliv), `-debugWrappedOpen`, `-debugWrappedPage n`.
 
 ## 2026-11-06 – Sleep score v2 (přísnější)
 - Adam: „zpřísni skóre“. v1 dávalo běžným nocím 92–99. v2 (vzorec v `backend.md`): 100 jen za 8–9 h, deep a REM zvlášť proti běžným hodnotám dospělého, přísnější probuzení a pravidelnost, „normál“ (bez historie, běžný tep) = 85 místo 100, strop < 5 h 45 / < 6 h 65.

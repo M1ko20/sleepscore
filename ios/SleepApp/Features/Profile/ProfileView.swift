@@ -11,6 +11,7 @@ struct ProfileView: View {
     @State private var showSettings = false
     @State private var recap: WeeklyRecap?
     @State private var loadingRecap = false
+    @State private var wrapped: SleepWrapped?
     @State private var path = NavigationPath()
 
     enum Route: Hashable { case friends, invites }
@@ -44,6 +45,7 @@ struct ProfileView: View {
                 }
             }
             .sheet(isPresented: $showSettings) { SettingsView() }
+            .fullScreenCover(item: $wrapped) { WrappedView(wrapped: $0) }
             .sheet(item: Binding(get: { recap.map(RecapItem.init) }, set: { if $0 == nil { recap = nil } })) {
                 RecapView(recap: $0.recap)
             }
@@ -88,6 +90,15 @@ struct ProfileView: View {
             .buttonStyle(.plain)
             .disabled(loadingRecap)
             Divider().overlay(Color.app.hairline)
+            if let year = WrappedWindow.year {
+                Button {
+                    Task { wrapped = try? await API.sleepWrapped(year: year) }
+                } label: {
+                    ProfileRow(title: "Sleep Wrapped \(String(year))")
+                }
+                .buttonStyle(.plain)
+                Divider().overlay(Color.app.hairline)
+            }
             NavigationLink(value: Route.invites) {
                 ProfileRow(title: "Pozvánky · zbývá \(session.profile?.invitesAvailable ?? 0)")
             }

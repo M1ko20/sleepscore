@@ -163,3 +163,58 @@ struct WeeklyRecap: Decodable, Sendable {
         return "\(a.formatted(f)) – \(b.formatted(f))"
     }
 }
+
+/// Výstup RPC `sleep_wrapped` – rok jedním callem.
+struct SleepWrapped: Decodable, Sendable, Identifiable {
+    var id: Int { year }
+    struct Night: Decodable, Sendable { let date: String; let score: Int }
+    struct Month: Decodable, Sendable { let month: Int; let avg: FlexDouble }
+    struct TagCount: Decodable, Sendable { let tag: String; let label: String; let count: Int }
+    struct Person: Decodable, Sendable { let profile: ProfileLite; let count: Int }
+    struct Badge: Decodable, Sendable { let code: String; let count: Int }
+
+    let year: Int
+    let nights: Int
+    let totalSleepMin: Int
+    let deepMin: Int
+    let avgScore: FlexDouble?
+    let avgOnset: FlexDouble?
+    let bestNight: Night?
+    let bestMonth: Month?
+    let bestStreak: Int?
+    let topTags: [TagCount]
+    let record: Record
+    let challenges: Int
+    let souls: Int
+    let victim: Person?
+    let nemesis: Person?
+    let achievements: Int
+    let topAchievement: Badge?
+    let reactions: Int
+    let topReaction: ReactionKind?
+    let comments: Int
+
+    enum CodingKeys: String, CodingKey {
+        case year, nights, record, challenges, souls, victim, nemesis, achievements, reactions, comments
+        case totalSleepMin = "total_sleep_min", deepMin = "deep_min", avgScore = "avg_score", avgOnset = "avg_onset"
+        case bestNight = "best_night", bestMonth = "best_month", bestStreak = "best_streak", topTags = "top_tags"
+        case topAchievement = "top_achievement", topReaction = "top_reaction"
+    }
+}
+
+enum WrappedWindow {
+    /// Prosinec = letošní rok, leden = uplynulý. Jinak nil (Wrapped se nenabízí).
+    static var year: Int? {
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("-debugWrapped") {
+            return Calendar.iso.component(.year, from: .now)
+        }
+        #endif
+        let c = Calendar.iso.dateComponents([.year, .month], from: .now)
+        switch c.month {
+        case 12: return c.year
+        case 1: return c.year.map { $0 - 1 }
+        default: return nil
+        }
+    }
+}

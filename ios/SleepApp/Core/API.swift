@@ -264,6 +264,13 @@ enum API {
         return try await decode(db.rpc("weekly_recap").execute().data)
     }
 
+    /// nil = v lednu uplynulý rok, jinak letošní.
+    nonisolated static func sleepWrapped(year: Int? = nil) async throws -> SleepWrapped {
+        struct Params: Encodable { let p_year: Int }
+        if let year { return try await decode(db.rpc("sleep_wrapped", params: Params(p_year: year)).execute().data) }
+        return try await decode(db.rpc("sleep_wrapped").execute().data)
+    }
+
     // MARK: Fotky
 
     /// Nahraje JPEG pod `<me>/<uuid>.jpg` (cesta je unikátní → cache podle cesty je navždy platná).
