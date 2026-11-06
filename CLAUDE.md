@@ -7,8 +7,10 @@ Pokud se tento soubor a dokument liší, platí dokument – zeptej se Adama.
 
 ## Stav
 - Repo: https://github.com/M1ko20/sleepscore (veřejné – žádné klíče do gitu!). Název appky ještě není.
-- Hotovo: návrh DB jako migrace v `supabase/migrations/` (tabulky, RLS, RPC funkce, číselníky). Otestováno lokálně proti PG16 se stuby Supabase, **zatím nenasazeno** do Supabase projektu.
-- **Další krok:** nasadit migraci do Supabase, pak Edge Function pro ingest spánku + výpočet skóre.
+- Hotovo: DB schéma v `supabase/migrations/` (tabulky, RLS, RPC funkce, číselníky), **nasazeno** do Supabase projektu `tlespfcbqzddddhjsieu` (Sleepscore, eu-central-1). Nasazení: `supabase db push --remote --yes` (CLI je přihlášené a nalinkované).
+- Pomocné funkce pro RLS jsou ve schématu `private` (není v API). Zbylá varování Security Advisoru „SECURITY DEFINER callable“ jsou záměrné RPC funkce.
+- První uživatel (Adam) nemá pozvánku – profil mu po prvním přihlášení založit ručně.
+- **Další krok:** Edge Function pro ingest spánku + výpočet skóre (nejdřív probrat).
 
 ## Produkt
 Sociální appka pro spánek: každé ráno se noc objeví jako karta, kamarádi ji komentují a lidi se měří ve výzvách. Tón hravý a soutěživý, ne wellness a ne „AI cringe“.
