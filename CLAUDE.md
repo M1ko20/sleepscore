@@ -5,22 +5,20 @@ Komunikuj česky. Uživatel (Adam) je zakladatel projektu, kód píšeš ty. Př
 Kompletní specifikace V1 (živý dokument, Adam ho upravuje): https://claude.ai/artifact/GQNvwsfGShHdbMmEEPrqCK
 Pokud se tento soubor a dokument liší, platí dokument – zeptej se Adama.
 
-## Stav
-- Repo: https://github.com/M1ko20/sleepscore (veřejné – žádné klíče do gitu!). Název appky ještě není.
-- Hotovo: DB schéma v `supabase/migrations/` (tabulky, RLS, RPC funkce, číselníky), **nasazeno** do Supabase projektu `tlespfcbqzddddhjsieu` (Sleepscore, eu-central-1). Nasazení: `supabase db push --remote --yes` (CLI je přihlášené a nalinkované).
-- Pomocné funkce pro RLS jsou ve schématu `private` (není v API). Zbylá varování Security Advisoru „SECURITY DEFINER callable“ jsou záměrné RPC funkce.
-- První uživatel (Adam) nemá pozvánku – profil mu po prvním přihlášení založit ručně.
-- Hotovo: Edge Function `ingest-sleep` (nasazená, `supabase functions deploy ingest-sleep --use-api --yes`). Logika skóre v `supabase/functions/_shared/sleep.ts`, testy `cd supabase/functions && deno test _shared/`.
-  - Hlavní spánek = nejdelší souvislý spánek (mezera > 60 min = nový) končící do 14:00; víc zdrojů se nesčítá, bere se ten delší.
-  - Chybějící složka skóre (bez fází / bez tepu) se vynechá a váhy se přepočítají. Pravidelnost = průměr usnutí za 14 nocí, tep = normál za 30 nocí; při < 3 nocích historie plné body.
-  - Strop podle délky: pod 5 h max 50 bodů, pod 6 h max 70.
-  - Minimální délka pro sérii: 6 h.
-- Apple Developer Program až bude appka skoro hotová → do té doby simulátor + testovací přihlášení, Sign in with Apple a HealthKit na reálném iPhonu na konec.
-- E2E test: `supabase/tests/e2e.py` (25 kontrol, po sobě uklidí). Prošel 2026-11-06.
-- Hotovo: série, achievementy a uzavírání výzev – **vše v DB** (migrace `…140000_streaks_achievements_challenges.sql`), plánováno přes **pg_cron** (`hourly-jobs` v :05, úklid historie v 3:30). Žádné Edge Function volání navíc → šetří Free tier. Adam chce hlídat počet callů na Supabase.
-  - Série se přepočítává jen uživateli, který nahrál noc (`after_night_ingest`, volá ingest), a jednou denně po 14:00 lidem s rozjetou sérií bez dnešní noci.
-  - Tagové achievementy uděluje trigger při uložení tagu.
-- **Další krok:** iOS appka (SwiftUI) – nejdřív probrat strukturu obrazovek.
+## Stav a kde co najdeš
+Čti nejdřív tyhle soubory místo procházení kódu (šetří kontext):
+- `docs/devlog.md` – co je hotové, kdy a jak, další krok.
+- `docs/backend.md` – tabulky, RLS, RPC, ingest, skóre, série, výzvy, nasazení a testy.
+- `docs/design.md` – vzhled appky (barvy, typo, komponenty, obrazovky, tón textů, anti-slop pravidla).
+
+Po každé větší práci aktualizuj `docs/devlog.md` (a backend/design, pokud se měnily).
+
+Rychlá fakta:
+- Repo https://github.com/M1ko20/sleepscore (veřejné – žádné klíče do gitu). Název appky ještě není.
+- Supabase projekt `tlespfcbqzddddhjsieu` (Free). CLI přihlášené a nalinkované: `supabase db push --remote --yes`, `supabase functions deploy <fn> --use-api --yes`.
+- Adam hlídá počet callů na Supabase (Free tier) – plánované věci dělat v DB (pg_cron), ne Edge Functions.
+- Apple Developer Program až bude appka skoro hotová → do té doby simulátor + testovací přihlášení e-mailem.
+- Xcode 16.3, simulátor iOS 18.4. Deno a Postgres 16 nainstalované (testy).
 
 ## Produkt
 Sociální appka pro spánek: každé ráno se noc objeví jako karta, kamarádi ji komentují a lidi se měří ve výzvách. Tón hravý a soutěživý, ne wellness a ne „AI cringe“.
