@@ -56,12 +56,13 @@ export interface Baseline {
 export type ComponentKey = "duration" | "stages" | "interruptions" | "regularity" | "heart_rate";
 export type Breakdown = Record<ComponentKey, number | null>;
 
-export const SCORE_VERSION = 1;
+export const SCORE_VERSION = 2;
 export const DAY_CUTOFF_MIN = 14 * 60; // spánek patří ke dni, kdy skončil, pokud skončil do 14:00
 export const STREAK_MIN_SLEEP_MIN = 6 * 60; // minimální délka pro sérii
 export const REGULARITY_HISTORY_NIGHTS = 14;
 export const HR_HISTORY_NIGHTS = 30;
-const MIN_HISTORY = 3; // méně nocí v historii = plné body za pravidelnost/tep
+const MIN_HISTORY = 3; // méně nocí v historii = neutrální body za pravidelnost/tep
+const NEUTRAL = 85; // „normál“ – plných 100 jen za nadprůměr
 const SESSION_GAP_MS = 60 * 60 * 1000; // mezera > 60 min = nová session
 const WAKE_MIN_LEN_MS = 60 * 1000; // probuzení kratší než minuta se nepočítá
 
@@ -217,40 +218,59 @@ export function computeMetrics(session: Session, hr: HrSample[]): NightMetrics {
 const clamp = (x: number) => Math.max(0, Math.min(100, x));
 const mean = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
 
-/** Délka: 7–9 h = 100; pod 7 h klesá na 0 ve 4 h; nad 9 h klesá na 50 ve 11,5 h. */
-export function durationScore(totalMin: number): number {
-  const h = totalMin / 60;
-  if (h < 7) return clamp(100 - (7 - h) * (100 / 3));
-  if (h > 9) return Math.max(50, 100 - (h - 9) * 20);
-  return 100;
+/** Lineární interpolace mezi body [x, y] (seřazené podle x), mimo rozsah krajní hodnota. */
+function piecewise(x: number, pts: [number, number][]): number {
+  if (x <= pts[0][0]) return pts[0][1];
+  for (let i = 1; i < pts.length; i++) {
+    const [x1, y1] = pts[i];
+    if (x <= x1) {
+      const [x0, y0] = pts[i - 1];
+      return y0 + ((x - x0) / (x1 - x0)) * (y1 - y0);
+    }
+  }
+  return pts[pts.length - 1][1];
 }
 
-/** Fáze: podíl deep + REM na spánku s fázemi; 40 % a víc = 100. Bez fází = null. */
+/**
+ * Délka (v2): 100 jen za 8–9 h. 7 h = 80, 6 h = 55, 5 h = 30, 4 h = 0.
+ * Dlouhý spánek mírně klesá (10 h = 85, 11 h = 65, 12 h+ = 50).
+ */
+export function durationScore(totalMin: number): number {
+  return piecewise(totalMin / 60, [[4, 0], [5, 30], [6, 55], [7, 80], [8, 100], [9, 100], [10, 85], [11, 65], [12, 50]]);
+}
+
+/**
+ * Fáze (v2): deep a REM zvlášť, každý polovinou. Podíl na spánku s fázemi:
+ * deep 4 % = 0 → 16 % = 100, REM 8 % = 0 → 22 % = 100 (běžný dospělý: deep 13–23 %, REM 20–25 %).
+ * Bez fází = null.
+ */
 export function stagesScore(m: NightMetrics): number | null {
   const staged = m.coreMin + m.deepMin + m.remMin;
   if (staged < m.totalSleepMin * 0.5 || staged === 0) return null;
-  return clamp(((m.deepMin + m.remMin) / staged / 0.4) * 100);
+  const deep = clamp(((m.deepMin / staged - 0.04) / 0.12) * 100);
+  const rem = clamp(((m.remMin / staged - 0.08) / 0.14) * 100);
+  return (deep + rem) / 2;
 }
 
-/** Přerušovanost: −5 za každé probuzení, −1 za každou minutu vzhůru. */
+/** Přerušovanost (v2): −7 za každé probuzení, −1,2 za každou minutu vzhůru. */
 export function interruptionsScore(m: NightMetrics): number {
-  return clamp(100 - m.wakeCount * 5 - m.awakeMin);
+  return clamp(100 - m.wakeCount * 7 - m.awakeMin * 1.2);
 }
 
-/** Pravidelnost: odchylka usnutí od průměru; do 15 min = 100, 120 min a víc = 0. */
+/** Pravidelnost (v2): odchylka usnutí od průměru; do 10 min = 100, 90 min a víc = 0. Bez historie neutrálně. */
 export function regularityScore(startFromNoon: number, history: number[]): number {
-  if (history.length < MIN_HISTORY) return 100;
+  if (history.length < MIN_HISTORY) return NEUTRAL;
   const d = Math.abs(startFromNoon - mean(history));
-  if (d <= 15) return 100;
-  return clamp(100 - ((d - 15) / 105) * 100);
+  if (d <= 10) return 100;
+  return clamp(100 - ((d - 10) / 80) * 100);
 }
 
-/** Tep: průměr ve spánku vs. osobní normál; normál a níž = 100, +10 tepů = 0. */
+/** Tep (v2): průměr ve spánku vs. osobní normál; normál = 85, −2 tepy = 100, +10 tepů = 5. Bez historie neutrálně. */
 export function heartRateScore(hrAvg: number | null, history: number[]): number | null {
   if (hrAvg === null) return null;
-  if (history.length < MIN_HISTORY) return 100;
+  if (history.length < MIN_HISTORY) return NEUTRAL;
   const diff = hrAvg - mean(history);
-  return clamp(100 - diff * 10);
+  return clamp(NEUTRAL - diff * 8);
 }
 
 /** Vážené skóre 0–100. Chybějící složky (null) se vynechají a váhy se přepočítají. */
@@ -284,7 +304,7 @@ export function computeScore(
 
 /** Strop podle délky: krátká noc nemůže mít vysoké skóre, i když je klidná. */
 export function durationCap(totalMin: number): number {
-  if (totalMin < 5 * 60) return 50;
-  if (totalMin < 6 * 60) return 70;
+  if (totalMin < 5 * 60) return 45;
+  if (totalMin < 6 * 60) return 65;
   return 100;
 }

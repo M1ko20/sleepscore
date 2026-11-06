@@ -12,7 +12,14 @@ Co je hotové a jak. Nejnovější nahoře. Detaily backendu v `backend.md`, vzh
 6. ~~Profil, přátelé, profil přítele + Vyzvat~~ hotovo. ~~Skupinové výzvy~~ otestované se 3. účtem.
 7. ~~Fotky a profilovky~~ hotovo.
 8. ~~Insighty z tagů a týdenní recap~~ hotovo.
-9. Další: zpřísnění skóre (vychází 88–99 – čeká na Adama), Sleep Wrapped (konec roku), smazání účtu (GDPR), push notifikace (až s Developer Programem – pak i pondělní push na recap).
+9. ~~Zpřísnění skóre (v2)~~ hotovo.
+10. Další: Sleep Wrapped (konec roku), smazání účtu (GDPR), push notifikace (až s Developer Programem – pak i pondělní push na recap).
+
+## 2026-11-06 – Sleep score v2 (přísnější)
+- Adam: „zpřísni skóre“. v1 dávalo běžným nocím 92–99. v2 (vzorec v `backend.md`): 100 jen za 8–9 h, deep a REM zvlášť proti běžným hodnotám dospělého, přísnější probuzení a pravidelnost, „normál“ (bez historie, běžný tep) = 85 místo 100, strop < 5 h 45 / < 6 h 65.
+- Dev data přepočítaná znovunahráním (`seed_dev.py --ingest-only` + `--history`): průměr 84,9, rozptyl 55–95 (dřív 92,7 a 64–99). Seed generuje nadprůměrné fáze (složka fází ~98), reálná data z Garminu vyjdou níž.
+- Testy 15/15 (nové: fáze v2, tep v2). `ingest-sleep` nasazen.
+- Seed výzev opraven: maže i odznaky za smazané testovací výzvy (jinak unikátní klíč při znovuudělení). Uzavřené testovací výzvy teď: Jakub 71,0 : Adam 66,3; FFA Karolína 71,6.
 
 ## 2026-11-06 – Zjištění z tagů a týdenní recap
 - Migrace `…190000_insights_recap.sql`, vše **security invoker + na požádání** (žádný cron ani Edge Function):

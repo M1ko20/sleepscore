@@ -35,7 +35,7 @@ night_tags INSERT ─trigger─▶ Navzdory / Pivo vyhrálo
 | `…140100_cron.sql` | pg_cron úlohy |
 | `supabase/functions/ingest-sleep/index.ts` | Edge Function pro příjem spánku |
 | `supabase/functions/_shared/sleep.ts` | čistá logika: hlavní spánek, metriky, skóre |
-| `supabase/functions/_shared/sleep_test.ts` | unit testy skóre (13) |
+| `supabase/functions/_shared/sleep_test.ts` | unit testy skóre (15) |
 | `supabase/tests/e2e.py` | E2E test proti živému projektu (25 kontrol, uklidí po sobě) |
 
 ## Tabulky (public)
@@ -103,17 +103,22 @@ Pravidla:
 - Hlavní spánek dne = nejdelší session (napříč zdroji), která skončila do 14:00 místního času. Zdroje se nesčítají.
 - Kratší nepřekrývající se session nepřepíše uloženou noc (ochrana proti šlofíku při zpětném nahrání).
 
-## Sleep score v1 (`_shared/sleep.ts`)
+## Sleep score v2 (`_shared/sleep.ts`, `score_version = 2`)
+v1 dávalo běžným nocím 92–99 (plných 100 za 7–9 h, za 40 % deep+REM, za „normál“) → ve výzvách se noci skoro nelišily. v2: 100 jen za nadprůměr, „normál“ = 85.
+
 | Složka | Váha | Výpočet |
 |---|---|---|
-| Délka | 35 % | 7–9 h = 100; pod 7 h lineárně na 0 ve 4 h; nad 9 h −20/h, min 50 |
-| Fáze | 25 % | (deep + REM) / spánek s fázemi; 40 % = 100. Bez fází (< 50 % spánku má fázi) = vynechat |
-| Přerušovanost | 15 % | 100 − 5 × probuzení − minuty vzhůru (probuzení ≥ 1 min) |
-| Pravidelnost | 15 % | odchylka usnutí od průměru 14 nocí; ≤ 15 min = 100, 120 min = 0; < 3 noci historie = 100 |
-| Tep | 10 % | průměr ve spánku vs. normál 30 nocí; normál = 100, +10 tepů = 0; < 3 noci = 100; bez tepu = vynechat |
+| Délka | 35 % | body: 4 h = 0, 5 h = 30, 6 h = 55, 7 h = 80, 8–9 h = 100, 10 h = 85, 11 h = 65, 12 h+ = 50 (lineárně mezi) |
+| Fáze | 25 % | půl deep, půl REM (podíl na spánku s fázemi): deep 4 % = 0 → 16 % = 100, REM 8 % = 0 → 22 % = 100. Bez fází (< 50 % spánku má fázi) = vynechat |
+| Přerušovanost | 15 % | 100 − 7 × probuzení − 1,2 × minuty vzhůru (probuzení ≥ 1 min) |
+| Pravidelnost | 15 % | odchylka usnutí od průměru 14 nocí; ≤ 10 min = 100, 90 min = 0; < 3 noci historie = 85 |
+| Tep | 10 % | průměr ve spánku vs. normál 30 nocí; normál = 85, −2 tepy = 100, +10 tepů = 5; < 3 noci = 85; bez tepu = vynechat |
 
-Vynechané složky → váhy se přepočítají. **Strop podle délky:** < 5 h max 50, < 6 h max 70.
+Vynechané složky → váhy se přepočítají. **Strop podle délky:** < 5 h max 45, < 6 h max 65.
 Čas usnutí se počítá jako „minuty od poledne“ (bez skoku přes půlnoc).
+Referenční noc 8 h, 1 probuzení, 10 min vzhůru, deep 13 %, REM 19 %, bez historie → 88.
+Prahy achievementů zůstaly (Dokonalá noc ≥ 95, Navzdory = alkohol + ≥ 85, Pivo vyhrálo < 50) – s v2 jsou vzácnější, jak mají být.
+Přepočet starých nocí: zatím jen dev data → znovu nahrát (`seed_dev.py --ingest-only`). Až budou skuteční uživatelé, změna vzorce = nová verze + přepočet z `night_raw` (nenapsáno).
 
 ## Série
 - Dobrá noc = ≥ 6 h a usnutí ±30 min od průměru předchozích 14 nocí (při < 3 nocích stačí délka).

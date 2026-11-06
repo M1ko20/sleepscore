@@ -4,6 +4,8 @@
   python3 -I supabase/tests/seed_dev.py adam@sleepscore.test:HESLO jakub@sleepscore.test:HESLO
   python3 -I supabase/tests/seed_dev.py --history 42 adam@sleepscore.test:HESLO
 
+--ingest-only: jen znovu nahraje posledních 7 nocí (přepočet skóre po změně vzorce),
+názvy, tagy, reakce a komentáře nechá být.
 --history N: noci 8 až N dní zpět (posledních 7 nechá být) s tagy, které spánek opravdu
 ovlivňují (alkohol = méně deep a později, kafe = později usne, …) → data pro zjištění z tagů.
 Potom `supabase db query --remote --yes -f supabase/tests/seed_dev_history.sql` (posune
@@ -98,7 +100,7 @@ TITLES = [
 ]
 
 
-def main(users):
+def main(users, ingest_only=False):
     today = datetime.now(TZ).date()
     accounts = []
     for spec in users:
@@ -117,6 +119,9 @@ def main(users):
         assert st == 200, res
         print(email, [(n["date"], n.get("score"), n["status"]) for n in res["nights"]])
         accounts.append((email, token, uid, rng))
+    if ingest_only:
+        print("hotovo (jen ingest)")
+        return
 
     # Názvy, komentáře a tagy (vlastní karty, mimo dnešní noc).
     posts_by_user = {}
@@ -200,7 +205,9 @@ def history(n_days, users):
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         sys.exit(__doc__)
-    if sys.argv[1] == "--history":
+    if sys.argv[1] == "--ingest-only":
+        main(sys.argv[2:], ingest_only=True)
+    elif sys.argv[1] == "--history":
         history(int(sys.argv[2]), sys.argv[3:])
     else:
         main(sys.argv[1:])

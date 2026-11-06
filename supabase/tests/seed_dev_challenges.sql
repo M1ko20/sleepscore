@@ -9,6 +9,13 @@ declare
   today date := (now() at time zone 'Europe/Prague')::date;
   c_done uuid; c_run uuid; c_pend uuid; c_ffa uuid; c_ffa_run uuid; c_team uuid;
 begin
+  -- Odznaky za staré testovací výzvy pryč (po smazání výzvy by zůstaly s challenge_id null
+  -- a nové udělení by narazilo na unikátní klíč).
+  delete from public.user_achievements ua
+  where ua.user_id in (a, j, k)
+    and (ua.challenge_id in (select id from public.challenges where creator_id in (a, j, k))
+         or (ua.challenge_id is null and ua.night_id is null
+             and ua.code in ('first_soul', 'collector', 'undefeated', 'revenge', 'by_a_hair', 'forgot_watch')));
   delete from public.challenges where creator_id in (a, j, k);
 
   -- 1) Uzavřená: 7 dní končící včera, prohraný platí pivo.

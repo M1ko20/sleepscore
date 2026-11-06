@@ -4,6 +4,8 @@ import {
   buildSessions,
   computeMetrics,
   computeScore,
+  heartRateScore,
+  stagesScore,
   durationScore,
   minutesFromNoon,
   regularityScore,
@@ -86,17 +88,38 @@ Deno.test("metriky: fáze, probuzení, tep", () => {
   assertEquals(m.hrMin, 50);
 });
 
-Deno.test("délka: 7–9 h plný počet, 4 h nula, dlouhý spánek max −50", () => {
+Deno.test("délka v2: 100 jen 8–9 h, 7 h = 80, 4 h nula, dlouhý spánek min. 50", () => {
   assertEquals(durationScore(8 * 60), 100);
+  assertEquals(durationScore(9 * 60), 100);
+  assertEquals(durationScore(7 * 60), 80);
+  assertEquals(durationScore(6 * 60), 55);
   assertEquals(durationScore(4 * 60), 0);
-  assertEquals(Math.round(durationScore(5.5 * 60)), 50);
+  assertEquals(Math.round(durationScore(5.5 * 60)), 43);
   assertEquals(durationScore(14 * 60), 50);
 });
 
-Deno.test("pravidelnost: bez historie plné body, 2 h vedle nula", () => {
-  assertEquals(regularityScore(660, []), 100);
-  assertEquals(regularityScore(660, [660, 660, 660]), 100);
+Deno.test("pravidelnost v2: bez historie neutrálně 85, ±10 min plné, 50 min půl, 90 min nula", () => {
+  assertEquals(regularityScore(660, []), 85);
+  assertEquals(regularityScore(670, [660, 660, 660]), 100);
+  assertEquals(regularityScore(710, [660, 660, 660]), 50);
   assertEquals(regularityScore(780, [660, 660, 660]), 0);
+});
+
+Deno.test("fáze v2: deep a REM zvlášť, běžná noc kolem 75", () => {
+  const base = { sleepStart: 0, sleepEnd: 0, totalSleepMin: 470, awakeMin: 0, wakeCount: 0, hrAvg: null, hrMin: null };
+  // 60 deep (12,8 %) + 90 REM (19,1 %) z 470
+  assertEquals(Math.round(stagesScore({ ...base, coreMin: 320, deepMin: 60, remMin: 90 })!), 76);
+  // ideální: 20 % deep, 25 % REM
+  assertEquals(stagesScore({ ...base, coreMin: 258, deepMin: 94, remMin: 118 }), 100);
+  // téměř žádný deep (alkohol)
+  assert(stagesScore({ ...base, coreMin: 370, deepMin: 10, remMin: 90 })! < 50);
+});
+
+Deno.test("tep v2: normál 85, pod normálem až 100, +10 tepů skoro nula", () => {
+  assertEquals(heartRateScore(55, [55, 55, 55]), 85);
+  assertEquals(heartRateScore(53, [55, 55, 55]), 100);
+  assertEquals(heartRateScore(65, [55, 55, 55]), 5);
+  assertEquals(heartRateScore(55, []), 85);
 });
 
 Deno.test("minuty od poledne nepřeskočí přes půlnoc", () => {
@@ -104,12 +127,12 @@ Deno.test("minuty od poledne nepřeskočí přes půlnoc", () => {
   assertEquals(minutesFromNoon(Date.parse("2026-11-06T00:00:00Z"), TZ), 780); // 01:00
 });
 
-Deno.test("skóre dobré noci je vysoké, bez fází se váhy přepočítají", () => {
+Deno.test("skóre dobré noci (8 h, 1 probuzení) je kolem 88, bez fází se váhy přepočítají", () => {
   const sess = assignMainSleep(buildSessions(night()), TZ).get("2026-11-06")!;
   const m = computeMetrics(sess, []);
   const { score, breakdown } = computeScore(m, { startMinutesFromNoon: [], hrAvgs: [] }, TZ);
   assertEquals(breakdown.heart_rate, null);
-  assert(score >= 85 && score <= 100, `score ${score}`);
+  assert(score >= 82 && score <= 92, `score ${score}`);
 
   const unstaged = { ...m, coreMin: 0, deepMin: 0, remMin: 0 };
   const r = computeScore(unstaged, { startMinutesFromNoon: [], hrAvgs: [] }, TZ);
@@ -117,9 +140,9 @@ Deno.test("skóre dobré noci je vysoké, bez fází se váhy přepočítají", 
   assert(r.score > 0 && r.score <= 100);
 });
 
-Deno.test("strop podle délky: pod 5 h max 50, pod 6 h max 70", () => {
+Deno.test("strop podle délky: pod 5 h max 45, pod 6 h max 65", () => {
   // 4 h 50 min a 5 h 50 min klidného spánku s ideálními fázemi
-  for (const [min, cap] of [[290, 50], [350, 70], [360, 100]]) {
+  for (const [min, cap] of [[290, 45], [350, 65], [360, 100]]) {
     const m = {
       sleepStart: Date.parse("2026-11-05T22:00:00Z"),
       sleepEnd: Date.parse("2026-11-05T22:00:00Z") + min * 60000,
