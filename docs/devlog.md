@@ -5,10 +5,20 @@ Co je hotové a jak. Nejnovější nahoře. Detaily backendu v `backend.md`, vzh
 ## Další krok
 **iOS appka (SwiftUI)** podle `design.md`. Navržené pořadí (nejdřív probrat s Adamem):
 1. ~~Xcode projekt, design tokeny, Supabase SDK, testovací přihlášení~~ hotovo.
-2. Onboarding s pozvánkou → profil.
+2. ~~Onboarding s pozvánkou → profil~~ hotovo (HealthKit tlačítko zatím jen pokračuje).
 3. Feed + karta noci + detail s hypnogramem (zatím data z testovacího uživatele).
 4. HealthKit: čtení spánku a tepu, `HKObserverQuery`, odeslání na `ingest-sleep`.
 5. Výzvy (seznam, detail, založení, výsledek), profil, přátelé, pozvánky.
+
+## 2026-11-06 – Onboarding a pozvánky
+- Nepřihlášený: kód pozvánky („Sem se dostaneš jen přes kamaráda.“) → přihlášení; „Už mám účet“ jde rovnou na přihlášení. Kód se uloží (`Session.pendingInviteCode`, UserDefaults) a ověří až po přihlášení.
+- Přihlášený bez profilu (`OnboardingFlow`): ověření kódu → přezdívka (kontrola dostupnosti s debounce 400 ms) + jméno → `redeem_invite` → obrazovka Apple Health → appka.
+- Nové RPC (migrace `…160000_onboarding_checks.sql`): `check_invite(code)`, `username_available(username)` – jen `authenticated`, anon dostane 42501.
+- Profil → Pozvánky: zbývající počet, Vytvořit kód (`create_invite`), nepoužité kódy se sdílením „Pojď se měřit ve spaní. Kód: …“.
+- `Session.State.offline`: když se profil nenačte (síť), obrazovka „Bez připojení“ + Zkusit znovu – dřív by přihlášený skončil v onboardingu. Tvrdý timeout 15 s, `emitLocalSessionAsInitialSession` (obnova tokenu neblokuje start).
+- **Pozor simulátor:** HTTP/3 (QUIC) v simulátoru na tomhle Macu nefunguje (VPN/utun) → URLSession `.ephemeral` (bez Alt-Svc cache → HTTP/2).
+- `API.swift`: všechna volání nonisolated (odpovědi SDK nejsou Sendable), `serverMessage()` překládá chyby RPC do češtiny.
+- Testovací účty: `adam@sleepscore.test` (profil @adam), `jakub@sleepscore.test` (bez profilu – na test onboardingu). Hesla nejsou v gitu.
 
 ## 2026-11-06 – iOS kostra
 - `ios/`: projekt přes **XcodeGen** (`ios/project.yml`, `.xcodeproj` není v gitu → `cd ios && xcodegen generate`). iOS 17+, bundle `cz.mikolas.sleepscore`, jen iPhone na výšku, vynucený tmavý režim.

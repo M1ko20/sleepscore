@@ -7,9 +7,19 @@ struct ProfileView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
-                    header
+                    if let profile = session.profile {
+                        header(profile)
+                    }
                     stats
-                    Divider().overlay(Color.app.hairline)
+                    VStack(spacing: 0) {
+                        Divider().overlay(Color.app.hairline)
+                        NavigationLink {
+                            InvitesView()
+                        } label: {
+                            row("Pozvánky · zbývá \(session.profile?.invitesAvailable ?? 0)")
+                        }
+                        Divider().overlay(Color.app.hairline)
+                    }
                     Button("Odhlásit") { Task { await session.signOut() } }
                         .buttonStyle(.plainText)
                 }
@@ -18,29 +28,34 @@ struct ProfileView: View {
             .background(Color.app.bg)
             .navigationTitle("Profil")
             .navigationBarTitleDisplayMode(.inline)
+            .refreshable { await session.reloadProfile() }
         }
     }
 
-    @ViewBuilder private var header: some View {
-        switch session.state {
-        case .ready(let profile):
-            HStack(spacing: 12) {
-                Circle()
-                    .fill(Color.app.surfaceRaised)
-                    .frame(width: 56, height: 56)
-                    .overlay(Text(profile.displayName.prefix(1)).font(Font.app.title))
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(profile.displayName).font(Font.app.title)
-                    Text("@\(profile.username)").captionStyle()
-                }
-            }
-            .foregroundStyle(Color.app.textPrimary)
-        default:
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Bez profilu").font(Font.app.title).foregroundStyle(Color.app.textPrimary)
-                Text("Účet nemá profil. Založí se uplatněním pozvánky.").captionStyle()
+    private func header(_ profile: Profile) -> some View {
+        HStack(spacing: 12) {
+            Circle()
+                .fill(Color.app.surfaceRaised)
+                .frame(width: 56, height: 56)
+                .overlay(Text(profile.displayName.prefix(1)).font(Font.app.title))
+            VStack(alignment: .leading, spacing: 2) {
+                Text(profile.displayName).font(Font.app.title)
+                Text("@\(profile.username)").captionStyle()
             }
         }
+        .foregroundStyle(Color.app.textPrimary)
+    }
+
+    private func row(_ title: String) -> some View {
+        HStack {
+            Text(title).statLabel().foregroundStyle(Color.app.textPrimary)
+            Spacer()
+            Image(systemName: "chevron.right")
+                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(Color.app.textTertiary)
+        }
+        .frame(minHeight: 52)
+        .contentShape(Rectangle())
     }
 
     private var stats: some View {

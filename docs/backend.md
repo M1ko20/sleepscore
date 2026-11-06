@@ -72,6 +72,8 @@ Storage: buckety `avatars`, `night-photos` (privátní), cesta `<user_id>/<soubo
 |---|---|
 | `redeem_invite(code, username, display_name)` | registrace: založí profil, spotřebuje kód, udělá přátelství s tím, kdo pozval |
 | `create_invite()` | vrátí nový kód, ubere 1 pozvánku |
+| `check_invite(code)` | platí kód? (onboarding, nevrací zvoucího) |
+| `username_available(username)` | volná a platná přezdívka? |
 | `send_friend_request(user)` | žádost; když protistrana už žádala, rovnou přijme |
 | `respond_friend_request(user, accept)` / `remove_friend(user)` | |
 | `create_challenge(type, opponents[], duration_days, stake?, target_score?)` | jen s přáteli; duel = 1 soupeř, skupina ≥ 2 pozvaní |

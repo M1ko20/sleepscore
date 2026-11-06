@@ -10,6 +10,17 @@ enum Backend {
         else {
             fatalError("Chybí SUPABASE_URL / SUPABASE_KEY – zkopíruj ios/Config/Secrets.example.xcconfig na Secrets.xcconfig.")
         }
-        return SupabaseClient(supabaseURL: url, supabaseKey: key)
+        // Ephemeral: nepamatuje si Alt-Svc → nezkouší HTTP/3. QUIC přes UDP v simulátoru (VPN na Macu)
+        // padal s "Network is down" a požadavek visel do timeoutu. Session SDK drží v Keychainu, ne tady.
+        let config = URLSessionConfiguration.ephemeral
+        config.timeoutIntervalForRequest = 15
+        return SupabaseClient(
+            supabaseURL: url, supabaseKey: key,
+            options: SupabaseClientOptions(
+                // Uloženou session vydat hned (i prošlou) – obnova tokenu nesmí blokovat start appky.
+                auth: .init(emitLocalSessionAsInitialSession: true),
+                global: .init(session: URLSession(configuration: config))
+            )
+        )
     }()
 }

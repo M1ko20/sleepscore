@@ -1,6 +1,9 @@
 import Foundation
 import Observation
 import Supabase
+import os
+
+let log = Logger(subsystem: "cz.mikolas.sleepscore", category: "app")
 
 /// Stav přihlášení a vlastního profilu.
 @MainActor
@@ -9,19 +12,37 @@ final class Session {
     enum State: Equatable {
         case loading
         case signedOut
-        /// Přihlášen, ale bez profilu (ještě neuplatnil pozvánku).
+        /// Přihlášen, ale bez profilu (ještě neuplatnil pozvánku) – onboarding.
         case needsProfile(userID: UUID)
         case ready(Profile)
+        /// Přihlášen, ale profil se nepodařilo načíst (síť) – nehádat, nabídnout znovu.
+        case offline
     }
 
     private(set) var state: State = .loading
+
+    /// Kód zadaný před přihlášením. Přežije restart appky.
+    var pendingInviteCode: String? {
+        didSet { UserDefaults.standard.set(pendingInviteCode, forKey: "pendingInviteCode") }
+    }
+
     private var listenTask: Task<Void, Never>?
+
+    init() {
+        pendingInviteCode = UserDefaults.standard.string(forKey: "pendingInviteCode")
+    }
+
+    var profile: Profile? {
+        if case .ready(let p) = state { return p }
+        return nil
+    }
 
     func start() {
         guard listenTask == nil else { return }
         listenTask = Task { [weak self] in
             for await (event, session) in Backend.client.auth.authStateChanges {
                 guard let self else { return }
+                log.info("auth event \(String(describing: event)) session=\(session != nil) expired=\(session?.isExpired ?? false)")
                 switch event {
                 case .initialSession, .signedIn, .signedOut, .userDeleted:
                     await self.update(for: session)
@@ -40,35 +61,55 @@ final class Session {
         try? await Backend.client.auth.signOut()
     }
 
+    /// Onboarding skončil – přepne do appky.
+    func finishOnboarding(with profile: Profile) {
+        pendingInviteCode = nil
+        state = .ready(profile)
+    }
+
+    /// Znovu načte stav po chybě sítě.
+    func retry() async {
+        state = .loading
+        await update(for: try? await Backend.client.auth.session)
+    }
+
     func reloadProfile() async {
-        let session = try? await Backend.client.auth.session
-        await update(for: session)
+        guard case .ready(let current) = state,
+              let fresh = try? await API.profile(id: current.id) else { return }
+        state = .ready(fresh)
     }
 
     private func update(for session: Supabase.Session?) async {
-        guard let session, !session.isExpired else {
+        // Prošlá session nevadí – SDK token obnoví při dalším požadavku; když to nejde, přijde signedOut.
+        guard let session else {
             state = .signedOut
             return
         }
         let userID = session.user.id
         do {
-            let data = try await Self.fetchProfileData(userID: userID)
-            let profiles = try JSONDecoder().decode([Profile].self, from: data)
-            state = profiles.first.map(State.ready) ?? .needsProfile(userID: userID)
+            if let profile = try await withTimeout(seconds: 15, { try await API.profile(id: userID) }) {
+                state = .ready(profile)
+            } else {
+                state = .needsProfile(userID: userID)
+            }
         } catch {
-            // Bez sítě nechceme uživatele odhlásit – zkusí se znovu při dalším spuštění.
-            state = .needsProfile(userID: userID)
+            log.error("profile load failed: \(String(describing: error))")
+            state = .offline
         }
     }
+}
 
-    /// Mimo MainActor – PostgrestResponse není Sendable.
-    nonisolated private static func fetchProfileData(userID: UUID) async throws -> Data {
-        try await Backend.client
-            .from("profiles")
-            .select("id, username, display_name, avatar_path, timezone, invites_available")
-            .eq("id", value: userID)
-            .limit(1)
-            .execute()
-            .data
+struct TimeoutError: Error {}
+
+/// Pojistka nad timeoutem URLSession (retry v SDK ho umí natáhnout).
+func withTimeout<T: Sendable>(seconds: Double, _ work: @escaping @Sendable () async throws -> T) async throws -> T {
+    try await withThrowingTaskGroup(of: T.self) { group in
+        group.addTask { try await work() }
+        group.addTask {
+            try await Task.sleep(for: .seconds(seconds))
+            throw TimeoutError()
+        }
+        defer { group.cancelAll() }
+        return try await group.next()!
     }
 }
