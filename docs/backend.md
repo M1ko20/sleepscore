@@ -76,6 +76,7 @@ Storage: buckety `avatars`, `night-photos` (privátní), cesta `<user_id>/<soubo
 | `username_available(username)` | volná a platná přezdívka? |
 | `send_friend_request(user)` | žádost; když protistrana už žádala, rovnou přijme |
 | `respond_friend_request(user, accept)` / `remove_friend(user)` | |
+| `profile_summary(user)` | celý profil jedním callem (bilance, série, průměr 30 dní, duše, odznaky, vzájemná bilance, stav přátelství); security invoker → RLS |
 | `create_challenge(type, opponents[], duration_days, stake?, target_score?)` | jen s přáteli; duel = 1 soupeř, skupina ≥ 2 pozvaní |
 | `respond_challenge(challenge, accept)` | duel po přijetí startuje zítra (tz zakladatele) |
 | `start_challenge(challenge)` | skupinu spouští zakladatel, min. 3 přijatí |

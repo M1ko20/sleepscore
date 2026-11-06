@@ -3,6 +3,8 @@ import SwiftUI
 /// Nová výzva: typ → soupeři → délka → sázka (+ cíl) → odeslat.
 struct NewChallengeFlow: View {
     var prefill: ProfileLite?
+    /// true = Odplata po prohře, false = Vyzvat z profilu.
+    var rematch = true
 
     @Environment(Session.self) private var session
     @Environment(ChallengeStore.self) private var store
@@ -20,8 +22,9 @@ struct NewChallengeFlow: View {
     @State private var busy = false
     @State private var error: String?
 
-    init(prefill: ProfileLite? = nil) {
+    init(prefill: ProfileLite? = nil, rematch: Bool = true) {
         self.prefill = prefill
+        self.rematch = rematch
         if let prefill {
             _picked = State(initialValue: [prefill.id])
             _step = State(initialValue: .duration)
@@ -70,7 +73,7 @@ struct NewChallengeFlow: View {
         switch step {
         case .type: "Jaká výzva"
         case .opponents: type == .duel ? "Koho vyzveš" : "Koho pozveš"
-        case .duration: prefill.map { "Odplata: \($0.displayName)" } ?? "Na jak dlouho"
+        case .duration: prefill.map { "\(rematch ? "Odplata" : "Výzva"): \($0.displayName)" } ?? "Na jak dlouho"
         case .stake: type == .teamGoal ? "Cíl a sázka" : "O co se hraje"
         }
     }

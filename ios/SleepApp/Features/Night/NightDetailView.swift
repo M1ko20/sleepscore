@@ -35,14 +35,19 @@ struct NightDetailView: View {
         return ScrollView {
             VStack(alignment: .leading, spacing: 28) {
                 // Autor a datum
-                HStack(spacing: 10) {
-                    Avatar(name: post.author.displayName, size: 36)
-                    VStack(alignment: .leading, spacing: 0) {
-                        Text(isMine ? "Ty" : post.author.displayName)
-                            .font(Font.app.body.weight(.semibold)).foregroundStyle(Color.app.textPrimary)
-                        Text(Fmt.nightDate(night.nightDate)).captionStyle()
+                NavigationLink(value: post.author) {
+                    HStack(spacing: 10) {
+                        Avatar(name: post.author.displayName, size: 36)
+                        VStack(alignment: .leading, spacing: 0) {
+                            Text(isMine ? "Ty" : post.author.displayName)
+                                .font(Font.app.body.weight(.semibold)).foregroundStyle(Color.app.textPrimary)
+                            Text(Fmt.nightDate(night.nightDate)).captionStyle()
+                        }
                     }
+                    .contentShape(Rectangle())
                 }
+                .buttonStyle(.plain)
+                .disabled(isMine)
 
                 if let title = post.title, !title.isEmpty {
                     Text(title).font(Font.app.title).foregroundStyle(Color.app.textPrimary)

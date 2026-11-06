@@ -1,56 +1,116 @@
 import SwiftUI
 
+/// Můj profil: bilance, série, průměr, vitrína duší, odznaky, přátelé, pozvánky. Nastavení pod ozubeným kolem.
 struct ProfileView: View {
     @Environment(Session.self) private var session
+    @Environment(FeedStore.self) private var feed
+    @Environment(FriendsStore.self) private var friends
+
+    @State private var summary: ProfileSummary?
+    @State private var error: String?
+    @State private var showSettings = false
+    @State private var path = NavigationPath()
+
+    enum Route: Hashable { case friends, invites }
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $path) {
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
                     if let profile = session.profile {
-                        header(profile)
+                        ProfileHeader(profile: profile.lite)
                     }
-                    stats
-                    VStack(spacing: 0) {
-                        Divider().overlay(Color.app.hairline)
-                        NavigationLink {
-                            InvitesView()
-                        } label: {
-                            row("Pozvánky · zbývá \(session.profile?.invitesAvailable ?? 0)")
-                        }
-                        Divider().overlay(Color.app.hairline)
+                    if let summary {
+                        ProfileStatsSections(summary: summary, catalog: feed.achievementCatalog)
+                    } else if let error {
+                        Text(error).captionStyle()
+                    } else {
+                        ProgressView().tint(Color.app.textSecondary).frame(maxWidth: .infinity, minHeight: 200)
                     }
-                    HealthSection()
-                    Button("Odhlásit") { Task { await session.signOut() } }
-                        .buttonStyle(.plainText)
+                    links
                 }
                 .padding(Metrics.screenPadding)
             }
             .background(Color.app.bg)
             .navigationTitle("Profil")
             .navigationBarTitleDisplayMode(.inline)
-            .refreshable { await session.reloadProfile() }
-        }
-    }
-
-    private func header(_ profile: Profile) -> some View {
-        HStack(spacing: 12) {
-            Circle()
-                .fill(Color.app.surfaceRaised)
-                .frame(width: 56, height: 56)
-                .overlay(Text(profile.displayName.prefix(1)).font(Font.app.title))
-            VStack(alignment: .leading, spacing: 2) {
-                Text(profile.displayName).font(Font.app.title)
-                Text("@\(profile.username)").captionStyle()
+            .toolbar {
+                ToolbarItem(placement: .primaryAction) {
+                    Button { showSettings = true } label: { Image(systemName: "gearshape") }
+                        .tint(Color.app.textPrimary)
+                        .accessibilityLabel("Nastavení")
+                }
             }
+            .sheet(isPresented: $showSettings) { SettingsView() }
+            .navigationDestination(for: ProfileLite.self) { UserProfileView(profile: $0) }
+            .navigationDestination(for: Route.self) { route in
+                switch route {
+                case .friends: FriendsView()
+                case .invites: InvitesView()
+                }
+            }
+            .task {
+                await load()
+                #if DEBUG
+                // Screenshoty: `-debugProfile friends` / `-debugProfile <přezdívka>` otevře přátele / profil přítele.
+                let args = ProcessInfo.processInfo.arguments
+                if let i = args.firstIndex(of: "-debugProfile"), i + 1 < args.count, path.isEmpty {
+                    if args[i + 1] == "friends" { path.append(Route.friends) }
+                    else if let p = friends.entries.first(where: { $0.other.username == args[i + 1] })?.other { path.append(p) }
+                }
+                #endif
+            }
+            .refreshable { await load() }
         }
-        .foregroundStyle(Color.app.textPrimary)
     }
 
-    private func row(_ title: String) -> some View {
+    private var links: some View {
+        VStack(spacing: 0) {
+            Divider().overlay(Color.app.hairline)
+            NavigationLink(value: Route.friends) {
+                ProfileRow(title: "Přátelé (\(friends.friends.count))", badge: friends.incoming.count)
+            }
+            Divider().overlay(Color.app.hairline)
+            NavigationLink(value: Route.invites) {
+                ProfileRow(title: "Pozvánky · zbývá \(session.profile?.invitesAvailable ?? 0)")
+            }
+            Divider().overlay(Color.app.hairline)
+        }
+    }
+
+    private func load() async {
+        guard let me = session.profile?.id else { return }
+        async let s = API.profileSummary(me)
+        async let f: Void = friends.load(me: me)
+        async let p: Void = session.reloadProfile()
+        async let c: Void? = try? feed.loadCatalogs()
+        do {
+            summary = try await s
+            error = nil
+        } catch {
+            log.error("profile load failed: \(String(describing: error))")
+            if summary == nil { self.error = "Profil se nenačetl. Stáhni dolů a zkus to znovu." }
+        }
+        _ = await (f, p, c)
+    }
+}
+
+struct ProfileRow: View {
+    let title: String
+    var badge: Int = 0
+
+    var body: some View {
         HStack {
             Text(title).statLabel().foregroundStyle(Color.app.textPrimary)
             Spacer()
+            if badge > 0 {
+                Text("\(badge)")
+                    .font(Font.app.label.monospacedDigit())
+                    .foregroundStyle(Color.app.accentInk)
+                    .padding(.horizontal, 7).padding(.vertical, 3)
+                    .background(Color.app.accent, in: Capsule())
+                    .accessibilityLabel("\(badge) nových žádostí")
+            }
             Image(systemName: "chevron.right")
                 .font(.system(size: 13, weight: .medium))
                 .foregroundStyle(Color.app.textTertiary)
@@ -58,24 +118,10 @@ struct ProfileView: View {
         .frame(minHeight: 52)
         .contentShape(Rectangle())
     }
-
-    private var stats: some View {
-        HStack(alignment: .firstTextBaseline) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("0-0-0").font(Font.app.scoreXL).foregroundStyle(Color.app.textPrimary)
-                Text("Výhry-prohry-remízy").statLabel()
-            }
-            Spacer()
-            VStack(alignment: .trailing, spacing: 2) {
-                Text("SÉRIE 0").font(Font.app.stat).foregroundStyle(Color.app.textPrimary)
-                Text("nejlepší 0").captionStyle()
-            }
-        }
-    }
 }
 
 /// Stav synchronizace s Apple Health + ruční synchronizace.
-private struct HealthSection: View {
+struct HealthSection: View {
     @State private var health = HealthSync.shared
     #if DEBUG
     @State private var seeding = false

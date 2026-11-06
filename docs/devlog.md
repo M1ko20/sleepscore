@@ -8,7 +8,18 @@ Co je hotové a jak. Nejnovější nahoře. Detaily backendu v `backend.md`, vzh
 2. ~~Onboarding s pozvánkou → profil~~ hotovo (HealthKit tlačítko zatím jen pokračuje).
 3. ~~Feed + karta noci + detail s hypnogramem~~ hotovo (bez fotek – přijdou se Storage).
 4. ~~HealthKit~~ hotovo (ověřeno v simulátoru, na telefonu s Garminem zatím ne).
-5. ~~Výzvy (seznam, detail, založení, výsledek)~~ hotovo. Zbývá: profil (bilance, série, vitrína duší, odznaky, vzájemná bilance), přátelé (hledání, žádosti), profil přítele + Vyzvat.
+5. ~~Výzvy (seznam, detail, založení, výsledek)~~ hotovo.
+6. ~~Profil, přátelé, profil přítele + Vyzvat~~ hotovo. Chybí 3. testovací účet (skupinové výzvy v UI) – musí ho založit Adam v dashboardu (Authentication → Add user, auto-confirm), registrace přes API odmítá doménu `.test`.
+7. Další: fotky a profilovky (Storage, ~200 kB), zpřísnění skóre (vychází 88–99), pak push notifikace (až s Developer Programem).
+
+## 2026-11-06 – Profil a přátelé
+- RPC `profile_summary(user)` (migrace `…170000_profile_summary.sql`, **security invoker** → vše přes RLS): profil, MMA bilance, série, průměr 30 dní (skóre + délka), duše seskupené podle poraženého, počty odznaků, vzájemná bilance s volajícím, stav přátelství. Celý profil = 1 call místo 6. U ne-přítele RLS vrátí `streak`/`avg30` null a appka ukáže jen hlavičku + žádost.
+- Můj profil: bilance `0-1-0` (scoreXL), SÉRIE + nejlepší, PRŮMĚR 30 DNÍ, vitrína duší (4 sloupce, desaturovaný avatar, datum, `×N`), odznaky (22 šestiúhelníků, získané žlutě s `×N` první, klepnutí = název + podmínka), Přátelé (n) s odznakem žádostí, Pozvánky. Nastavení pod ⚙: jméno, Apple Health, Odhlásit.
+- Profil přítele (z Přátel, hledání i z detailu noci – klepnutí na autora): karta „Ty vs Jakub 0-1 · Jakub vede.“, Vyzvat (→ nová výzva s předvyplněným soupeřem, titulek „Výzva: …“), statistiky, menu Odebrat z přátel. Ne-přítel: Přidat do přátel / Stáhnout žádost / Přijmout + Odmítnout.
+- Přátelé: hledání podle začátku přezdívky (debounce 350 ms, min. 2 znaky), Žádosti, Odeslané, seznam. Žlutý odznak s počtem žádostí i na záložce Profil.
+- Texty bez rodu („Jakub ti posílá žádost“, „uvidíte si navzájem noci“).
+- Ověřeno: `profile_summary` přes REST (já / přítel / ne-přítel / anon 42501), tok žádosti Jakub → Adam přes RPC (remove → send → pending → screenshot žádosti v appce → accept), screenshoty všech obrazovek. Klikání v UI (hledání, tlačítka) jsem neověřil – neumím do simulátoru klepat.
+- DEBUG: `-debugProfile friends|<přezdívka>`.
 
 ## 2026-11-06 – Výzvy v appce
 - `ChallengeStore` (sdílený): moje výzvy jedním dotazem (`challenge_participants!inner` jako filtr `mine` + všichni účastníci s profily + denní skóre), otevřené dluhy, přátelé (`friendships` s hinty `profiles!friendships_user_a_fkey/_b_fkey`).

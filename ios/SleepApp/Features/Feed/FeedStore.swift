@@ -12,20 +12,14 @@ final class FeedStore {
     private(set) var tagLabels: [String: String] = [:]
     private(set) var tagCatalog: [Tag] = []
     private(set) var achievementNames: [String: String] = [:]
+    private(set) var achievementCatalog: [AchievementInfo] = []
     private(set) var streaks: [UUID: Int] = [:]
 
     func load() async {
         do {
             async let postsReq = API.feed()
             async let resultsReq = API.challengeResultPosts()
-            if tagCatalog.isEmpty {
-                async let tagsReq = API.tags()
-                async let achReq = API.achievements()
-                let (tags, ach) = try await (tagsReq, achReq)
-                tagCatalog = tags
-                tagLabels = Dictionary(uniqueKeysWithValues: tags.map { ($0.slug, $0.label) })
-                achievementNames = Dictionary(uniqueKeysWithValues: ach.map { ($0.code, $0.name) })
-            }
+            try await loadCatalogs()
             posts = try await postsReq
             results = (try? await resultsReq) ?? results
             let authors = Array(Set(posts.map(\.author.id)))
@@ -37,6 +31,18 @@ final class FeedStore {
             self.error = "Feed se nenačetl."
         }
         loaded = true
+    }
+
+    /// Číselníky tagů a achievementů (jednou za běh; volá feed i profil).
+    func loadCatalogs() async throws {
+        guard tagCatalog.isEmpty else { return }
+        async let tagsReq = API.tags()
+        async let achReq = API.achievements()
+        let (tags, ach) = try await (tagsReq, achReq)
+        tagCatalog = tags
+        tagLabels = Dictionary(uniqueKeysWithValues: tags.map { ($0.slug, $0.label) })
+        achievementNames = Dictionary(uniqueKeysWithValues: ach.map { ($0.code, $0.name) })
+        achievementCatalog = ach
     }
 
     func post(_ id: UUID) -> FeedPost? { posts.first { $0.id == id } }

@@ -3,6 +3,7 @@ import SwiftUI
 struct MainTabView: View {
     @State private var feed = FeedStore()
     @State private var challenges = ChallengeStore()
+    @State private var friends = FriendsStore()
     @State private var rematch: ProfileLite?
     @State private var tab: Int = {
         #if DEBUG
@@ -25,10 +26,12 @@ struct MainTabView: View {
                 .tag(1)
             ProfileView()
                 .tabItem { Label("Profil", systemImage: "person") }
+                .badge(friends.incoming.count)
                 .tag(2)
         }
         .environment(feed)
         .environment(challenges)
+        .environment(friends)
         .fullScreenCover(item: Binding(get: { challenges.unseenResult }, set: { _ in })) { c in
             if let me = session.profile?.id {
                 ChallengeResultView(
@@ -45,7 +48,11 @@ struct MainTabView: View {
             NewChallengeFlow(prefill: p).environment(challenges)
         }
         .task {
-            if let me = session.profile?.id { await challenges.load(me: me) }
+            if let me = session.profile?.id {
+                async let c: Void = challenges.load(me: me)
+                async let f: Void = friends.load(me: me)
+                _ = await (c, f)
+            }
         }
         .task {
             let health = HealthSync.shared

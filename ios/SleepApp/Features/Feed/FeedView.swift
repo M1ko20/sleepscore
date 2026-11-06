@@ -4,7 +4,7 @@ struct FeedView: View {
     @Environment(Session.self) private var session
     @Environment(FeedStore.self) private var store
     @State private var editing: FeedPost?
-    @State private var path: [UUID] = []
+    @State private var path = NavigationPath()
 
     private var me: UUID? { session.profile?.id }
 
@@ -35,6 +35,7 @@ struct FeedView: View {
             .navigationDestination(for: UUID.self) { id in
                 NightDetailView(postID: id)
             }
+            .navigationDestination(for: ProfileLite.self) { UserProfileView(profile: $0) }
             .refreshable { await store.load() }
             .task {
                 if !store.loaded { await store.load() }
@@ -44,7 +45,7 @@ struct FeedView: View {
                 let nights = store.items(me: me).compactMap { if case .night(let p) = $0 { p.id } else { nil } }
                 if let i = args.firstIndex(of: "-debugOpen"), i + 1 < args.count, let n = Int(args[i + 1]),
                    path.isEmpty, n >= 1, n <= nights.count {
-                    path = [nights[n - 1]]
+                    path.append(nights[n - 1])
                 }
                 #endif
             }

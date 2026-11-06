@@ -204,6 +204,58 @@ enum API {
             .execute().data)
     }
 
+    // MARK: Profil a přátelé
+
+    nonisolated static func profileSummary(_ userID: UUID) async throws -> ProfileSummary {
+        try await decode(db.rpc("profile_summary", params: ["p_user": userID]).execute().data)
+    }
+
+    /// Všechna moje přátelství včetně čekajících žádostí (RLS vrací jen moje řádky).
+    nonisolated static func friendships(me: UUID) async throws -> [FriendshipEntry] {
+        struct Row: Decodable {
+            let status: FriendshipStatus
+            let requested_by: UUID
+            let a: ProfileLite
+            let b: ProfileLite
+        }
+        let rows: [Row] = try await decode(db.from("friendships")
+            .select("status,requested_by,a:profiles!friendships_user_a_fkey(id,username,display_name,avatar_path,timezone),b:profiles!friendships_user_b_fkey(id,username,display_name,avatar_path,timezone)")
+            .execute().data)
+        return rows.map { r in
+            FriendshipEntry(other: r.a.id == me ? r.b : r.a, status: r.status, incoming: r.requested_by != me)
+        }
+        .sorted { $0.other.displayName.localizedCompare($1.other.displayName) == .orderedAscending }
+    }
+
+    /// Hledání podle začátku přezdívky (bez mě).
+    nonisolated static func searchProfiles(_ query: String, me: UUID) async throws -> [ProfileLite] {
+        let q = query.lowercased().filter { $0.isLetter || $0.isNumber || $0 == "_" || $0 == "." }
+        guard q.count >= 2 else { return [] }
+        return try await decode(db.from("profiles")
+            .select("id,username,display_name,avatar_path,timezone")
+            .ilike("username", pattern: q.replacingOccurrences(of: "_", with: "\\_") + "%")
+            .neq("id", value: me)
+            .order("username").limit(20)
+            .execute().data)
+    }
+
+    nonisolated static func sendFriendRequest(_ user: UUID) async throws {
+        try await db.rpc("send_friend_request", params: ["p_user": user]).execute()
+    }
+
+    nonisolated static func respondFriendRequest(_ user: UUID, accept: Bool) async throws {
+        struct Params: Encodable { let p_user: UUID; let p_accept: Bool }
+        try await db.rpc("respond_friend_request", params: Params(p_user: user, p_accept: accept)).execute()
+    }
+
+    nonisolated static func removeFriend(_ user: UUID) async throws {
+        try await db.rpc("remove_friend", params: ["p_user": user]).execute()
+    }
+
+    nonisolated static func updateDisplayName(_ name: String, me: UUID) async throws {
+        try await db.from("profiles").update(["display_name": name]).eq("id", value: me).execute()
+    }
+
     // MARK: Dekódování
 
     nonisolated static func decode<T: Decodable>(_ data: Data) throws -> T {
