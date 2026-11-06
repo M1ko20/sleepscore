@@ -10,7 +10,12 @@ Pokud se tento soubor a dokument liší, platí dokument – zeptej se Adama.
 - Hotovo: DB schéma v `supabase/migrations/` (tabulky, RLS, RPC funkce, číselníky), **nasazeno** do Supabase projektu `tlespfcbqzddddhjsieu` (Sleepscore, eu-central-1). Nasazení: `supabase db push --remote --yes` (CLI je přihlášené a nalinkované).
 - Pomocné funkce pro RLS jsou ve schématu `private` (není v API). Zbylá varování Security Advisoru „SECURITY DEFINER callable“ jsou záměrné RPC funkce.
 - První uživatel (Adam) nemá pozvánku – profil mu po prvním přihlášení založit ručně.
-- **Další krok:** Edge Function pro ingest spánku + výpočet skóre (nejdřív probrat).
+- Hotovo: Edge Function `ingest-sleep` (nasazená, `supabase functions deploy ingest-sleep --use-api --yes`). Logika skóre v `supabase/functions/_shared/sleep.ts`, testy `cd supabase/functions && deno test _shared/`.
+  - Hlavní spánek = nejdelší souvislý spánek (mezera > 60 min = nový) končící do 14:00; víc zdrojů se nesčítá, bere se ten delší.
+  - Chybějící složka skóre (bez fází / bez tepu) se vynechá a váhy se přepočítají. Pravidelnost = průměr usnutí za 14 nocí, tep = normál za 30 nocí; při < 3 nocích historie plné body.
+  - Minimální délka pro sérii: 6 h.
+- Apple Developer Program až bude appka skoro hotová → do té doby simulátor + testovací přihlášení, Sign in with Apple a HealthKit na reálném iPhonu na konec.
+- **Další krok:** E2E test ingestu s testovacím uživatelem, pak cron funkce (uzavírání výzev, nuly za chybějící noci, série, achievementy). Nejdřív probrat.
 
 ## Produkt
 Sociální appka pro spánek: každé ráno se noc objeví jako karta, kamarádi ji komentují a lidi se měří ve výzvách. Tón hravý a soutěživý, ne wellness a ne „AI cringe“.
