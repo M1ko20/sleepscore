@@ -1,0 +1,37 @@
+name: SleepApp
+options:
+  bundleIdPrefix: cz.mikolas
+  deploymentTarget:
+    iOS: "17.0"
+  createIntermediateGroups: true
+packages:
+  Supabase:
+    url: https://github.com/supabase/supabase-swift
+    from: 2.20.0
+configFiles:
+  Debug: Config/App.xcconfig
+  Release: Config/App.xcconfig
+targets:
+  SleepApp:
+    type: application
+    platform: iOS
+    sources: [SleepApp]
+    dependencies:
+      - package: Supabase
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: cz.mikolas.sleepscore
+        PRODUCT_NAME: SleepApp
+        MARKETING_VERSION: "0.1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        TARGETED_DEVICE_FAMILY: "1"
+        SWIFT_VERSION: "5.10"
+    info:
+      path: SleepApp/Info.plist
+      properties:
+        CFBundleDisplayName: Sleepscore
+        UILaunchScreen: {}
+        UIUserInterfaceStyle: Dark
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        SupabaseURL: $(SUPABASE_URL)
+        SupabaseKey: $(SUPABASE_KEY)

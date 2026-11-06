@@ -1,0 +1,2 @@
+// Sdílené nastavení. Klíče jsou v Secrets.xcconfig (není v gitu, viz Secrets.example.xcconfig).
+#include? "Secrets.xcconfig"

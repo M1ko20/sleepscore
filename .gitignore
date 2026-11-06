@@ -7,3 +7,7 @@ supabase/.branches/
 xcuserdata/
 DerivedData/
 *.xcuserstate
+ios/Config/Secrets.xcconfig
+ios/*.xcodeproj
+ios/SleepApp/Info.plist
+ios/build/
