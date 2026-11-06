@@ -113,8 +113,7 @@ enum API {
     // MARK: Úprava karty
 
     nonisolated static func updatePost(id: UUID, title: String?, body: String?) async throws {
-        struct Row: Encodable { let title: String?; let body: String? }
-        _ = try await db.from("posts").update(Row(title: title, body: body)).eq("id", value: id).execute().data
+        _ = try await db.from("posts").update(NullableRow(["title": title, "body": body])).eq("id", value: id).execute().data
     }
 
     nonisolated static func setTags(nightID: UUID, add: Set<String>, remove: Set<String>) async throws {
@@ -256,6 +255,29 @@ enum API {
         try await db.from("profiles").update(["display_name": name]).eq("id", value: me).execute()
     }
 
+    // MARK: Fotky
+
+    /// Nahraje JPEG pod `<me>/<uuid>.jpg` (cesta je unikátní → cache podle cesty je navždy platná).
+    nonisolated static func uploadImage(_ data: Data, bucket: Bucket, me: UUID) async throws -> String {
+        let path = "\(me.uuidString.lowercased())/\(UUID().uuidString.lowercased()).jpg"
+        _ = try await db.storage.from(bucket.rawValue).upload(
+            path, data: data, options: FileOptions(cacheControl: "31536000", contentType: "image/jpeg", upsert: false))
+        return path
+    }
+
+    nonisolated static func removeImage(_ path: String, bucket: Bucket) async {
+        do { _ = try await db.storage.from(bucket.rawValue).remove(paths: [path]) }
+        catch { log.error("remove image failed: \(String(describing: error))") }
+    }
+
+    nonisolated static func setAvatarPath(_ path: String?, me: UUID) async throws {
+        try await db.from("profiles").update(NullableRow(["avatar_path": path])).eq("id", value: me).execute()
+    }
+
+    nonisolated static func setPostPhoto(_ path: String?, postID: UUID) async throws {
+        try await db.from("posts").update(NullableRow(["photo_path": path])).eq("id", value: postID).execute()
+    }
+
     // MARK: Dekódování
 
     nonisolated static func decode<T: Decodable>(_ data: Data) throws -> T {
@@ -301,5 +323,26 @@ func serverMessage(_ error: Error) -> String {
     case let t where t.contains("duration_days"): return "Výzva musí mít aspoň 7 dní."
     case let t where t.contains("no pending invitation"): return "Pozvánka už neplatí."
     default: return "Nepovedlo se. \(text)"
+    }
+}
+
+/// Řádek pro UPDATE, kde nil = SQL null. Synteticky generované Encodable by nil vynechalo
+/// → smazaný název nebo odebraná fotka by se na serveru nikdy nevymazaly.
+struct NullableRow: Encodable, Sendable {
+    let fields: [String: String?]
+    init(_ fields: [String: String?]) { self.fields = fields }
+
+    private struct Key: CodingKey {
+        var stringValue: String
+        var intValue: Int? { nil }
+        init(stringValue: String) { self.stringValue = stringValue }
+        init?(intValue: Int) { nil }
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: Key.self)
+        for (k, v) in fields {
+            if let v { try c.encode(v, forKey: Key(stringValue: k)) } else { try c.encodeNil(forKey: Key(stringValue: k)) }
+        }
     }
 }

@@ -157,7 +157,7 @@ struct FeedPost: Decodable, Identifiable, Hashable, Sendable {
     let id: UUID
     var title: String?
     var body: String?
-    let photoPath: String?
+    var photoPath: String?
     let createdAt: Date
     let author: ProfileLite
     var night: Night

@@ -138,7 +138,7 @@ struct NewChallengeFlow: View {
                     else if on { picked.remove(f.id) } else { picked.insert(f.id) }
                 } label: {
                     HStack(spacing: 12) {
-                        Avatar(name: f.displayName, size: 36)
+                        Avatar(profile: f, size: 36)
                         VStack(alignment: .leading, spacing: 0) {
                             Text(f.displayName).font(Font.app.body.weight(.semibold)).foregroundStyle(Color.app.textPrimary)
                             Text("@\(f.username)").captionStyle()

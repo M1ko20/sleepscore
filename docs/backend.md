@@ -57,7 +57,7 @@ night_tags INSERT ─trigger─▶ Navzdory / Pivo vyhrálo
 
 Pohledy (security_invoker): `mma_records` (všechny typy výzev), `souls` (bez team_goal), `head_to_head` (bez team_goal).
 
-Storage: buckety `avatars`, `night-photos` (privátní), cesta `<user_id>/<soubor>`. Fotky karet vidí jen přátelé.
+Storage: buckety `avatars` (max 150 kB), `night-photos` (max 400 kB) – privátní, jen `image/jpeg`, cesta `<user_id>/<uuid>.jpg` (unikátní → klient cachuje navždy). Fotky karet vidí jen přátelé, profilovky všichni členové. Check constraint: `profiles.avatar_path` i `posts.photo_path` musí vést do vlastní složky.
 
 ## Kdo co vidí (RLS)
 - Základní profil (přezdívka, jméno, avatar): každý člen – kvůli hledání přátel.

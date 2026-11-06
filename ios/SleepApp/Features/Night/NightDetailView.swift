@@ -37,7 +37,7 @@ struct NightDetailView: View {
                 // Autor a datum
                 NavigationLink(value: post.author) {
                     HStack(spacing: 10) {
-                        Avatar(name: post.author.displayName, size: 36)
+                        Avatar(profile: post.author, size: 36)
                         VStack(alignment: .leading, spacing: 0) {
                             Text(isMine ? "Ty" : post.author.displayName)
                                 .font(Font.app.body.weight(.semibold)).foregroundStyle(Color.app.textPrimary)
@@ -78,6 +78,10 @@ struct NightDetailView: View {
 
                 if !night.tags.isEmpty {
                     section("Tagy") { Text(store.tagLine(night.tags)).statLabel().foregroundStyle(Color.app.textPrimary) }
+                }
+
+                if let photo = post.photoPath {
+                    PostPhoto(path: photo)
                 }
 
                 let achievements = night.achievementCodes.compactMap { store.achievementNames[$0] }
@@ -188,7 +192,7 @@ struct NightDetailView: View {
             }
             ForEach(comments) { c in
                 HStack(alignment: .top, spacing: 10) {
-                    Avatar(name: c.author.displayName)
+                    Avatar(profile: c.author)
                     VStack(alignment: .leading, spacing: 2) {
                         HStack(spacing: 6) {
                             Text(c.author.id == me ? "Ty" : c.author.displayName)

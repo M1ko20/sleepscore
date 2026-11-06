@@ -101,7 +101,7 @@ struct ChallengeDetailView: View {
     private func standingRow(_ c: Challenge, _ p: Participant, place: Int) -> some View {
         HStack(spacing: 12) {
             Text("\(place).").font(Font.app.stat).foregroundStyle(Color.app.textTertiary).frame(width: 32, alignment: .leading)
-            Avatar(name: p.profile.displayName)
+            Avatar(profile: p.profile)
             Text(ChallengeCopy.name(p.profile, me: me)).font(Font.app.body.weight(.semibold))
                 .foregroundStyle(Color.app.textPrimary)
             Spacer()

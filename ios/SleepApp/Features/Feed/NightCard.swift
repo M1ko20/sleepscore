@@ -28,6 +28,9 @@ struct NightCard: View {
             if let body = post.body, !body.isEmpty {
                 Text(body).font(Font.app.body).foregroundStyle(Color.app.textPrimary).lineLimit(3)
             }
+            if let photo = post.photoPath {
+                PostPhoto(path: photo)
+            }
 
             HStack(alignment: .firstTextBaseline, spacing: 28) {
                 VStack(alignment: .leading, spacing: 2) {
@@ -97,7 +100,7 @@ struct NightCard: View {
 
     private var header: some View {
         HStack(spacing: 8) {
-            Avatar(name: post.author.displayName)
+            Avatar(profile: post.author)
             Text(isMine ? "Ty" : post.author.displayName)
                 .font(Font.app.body.weight(.semibold))
                 .foregroundStyle(Color.app.textPrimary)

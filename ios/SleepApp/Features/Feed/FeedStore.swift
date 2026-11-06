@@ -79,8 +79,9 @@ final class FeedStore {
         }
     }
 
-    func applyEdit(postID: UUID, title: String?, body: String?, tags: [String]) {
+    func applyEdit(postID: UUID, title: String?, body: String?, tags: [String], photoPath: String?) {
         guard let i = posts.firstIndex(where: { $0.id == postID }) else { return }
+        posts[i].photoPath = photoPath
         posts[i].title = title
         posts[i].body = body
         posts[i].night.tags = tags

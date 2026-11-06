@@ -6,7 +6,7 @@ struct ProfileHeader: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            Avatar(name: profile.displayName, size: 56)
+            Avatar(profile: profile, size: 56)
             VStack(alignment: .leading, spacing: 2) {
                 Text(profile.displayName).font(Font.app.title).foregroundStyle(Color.app.textPrimary)
                 Text("@\(profile.username)").captionStyle()
@@ -102,7 +102,7 @@ struct SoulShowcase: View {
                 LazyVGrid(columns: columns, alignment: .leading, spacing: 16) {
                     ForEach(souls) { soul in
                         VStack(spacing: 6) {
-                            Avatar(name: soul.loser.displayName, size: 52)
+                            Avatar(profile: soul.loser, size: 52)
                                 .grayscale(1)
                                 .opacity(0.75)
                                 .overlay(alignment: .bottomTrailing) {

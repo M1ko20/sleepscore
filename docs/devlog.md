@@ -10,7 +10,16 @@ Co je hotové a jak. Nejnovější nahoře. Detaily backendu v `backend.md`, vzh
 4. ~~HealthKit~~ hotovo (ověřeno v simulátoru, na telefonu s Garminem zatím ne).
 5. ~~Výzvy (seznam, detail, založení, výsledek)~~ hotovo.
 6. ~~Profil, přátelé, profil přítele + Vyzvat~~ hotovo. ~~Skupinové výzvy~~ otestované se 3. účtem.
-7. Další: fotky a profilovky (Storage, ~200 kB), zpřísnění skóre (vychází 88–99), pak push notifikace (až s Developer Programem).
+7. ~~Fotky a profilovky~~ hotovo.
+8. Další: zpřísnění skóre (vychází 88–99 – čeká na Adama), insighty z tagů, týdenní recap, pak push notifikace (až s Developer Programem).
+
+## 2026-11-06 – Fotky a profilovky
+- Zmenšení na telefonu (`ImageResize`): profilovka 256×256 výřez ze středu, JPEG ≤ 60 kB; fotka karty max. 1280 px, kvalita se snižuje do ≤ 200 kB. Server (bucket limity z `…180000`) pustí max. 150 / 400 kB a jen JPEG.
+- Cesta `<user_id>/<uuid>.jpg` – nový soubor = nové jméno → `ImageStore` (actor) cachuje v paměti i na disku (Caches) navždy podle cesty, stahuje přes autorizovaný download (1 request na obrázek za celou dobu života, souběžné požadavky na stejný obrázek se spojí). Nahraná vlastní fotka jde rovnou do cache.
+- Výměna/odebrání: starý soubor se smaže ze Storage; když selže zápis cesty do DB, nově nahraný se smaže (žádní sirotci).
+- UI: Nastavení → Přidat/Změnit fotku + Odebrat (PhotosPicker, nepotřebuje oprávnění k fotkám). Úprava karty → Fotka (náhled 4:5, Změnit, Odebrat). Karta ve feedu: fotka nad čísly 4:5, rádius 10; detail: fotka pod tagy. `Avatar(profile:)` všude ukazuje profilovku, iniciála jako zástupce.
+- **Opravena chyba:** syntetické `Encodable` vynechává `nil` → smazaný název/komentář karty se na serveru nikdy nevymazal. Nový `NullableRow` posílá explicitní `null`.
+- Ověřeno přes API: upload 200, 6,8MB soubor 400, PNG 400, cizí složka 400, cizí `avatar_path` 400 (check), přítel čte fotku 200, anon 400. Screenshot feedu s fotkou a profilovkou (testovací data u @adam a @jakub). Výběr fotky v UI neověřen (neumím klepat).
 
 ## 2026-11-06 – 3. testovací účet a skupinové výzvy
 - `karolina@sleepscore.test` (@karolina „Karolína Dvořáková“) – auth účet založil Adam v dashboardu (registrace přes API odmítá `.test`), profil přes Adamovu pozvánku (`redeem_invite`) → automaticky přítel Adama; přátelství s Jakubem přes žádost. 7 nocí ze `seed_dev.py`.

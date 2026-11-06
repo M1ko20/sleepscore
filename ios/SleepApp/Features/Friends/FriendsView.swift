@@ -105,7 +105,7 @@ struct FriendsView: View {
         HStack(spacing: 12) {
             NavigationLink(value: p) {
                 HStack(spacing: 12) {
-                    Avatar(name: p.displayName, size: 40)
+                    Avatar(profile: p, size: 40)
                     VStack(alignment: .leading, spacing: 0) {
                         Text(p.displayName).font(Font.app.body.weight(.semibold))
                             .foregroundStyle(Color.app.textPrimary).lineLimit(1)

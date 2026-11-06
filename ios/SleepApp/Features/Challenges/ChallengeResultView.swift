@@ -40,7 +40,7 @@ struct ChallengeResultView: View {
                 if result == .win, challenge.type != .teamGoal, !losers.isEmpty {
                     HStack(spacing: 8) {
                         ForEach(losers) { l in
-                            Avatar(name: l.profile.displayName, size: 48).saturation(0)
+                            Avatar(profile: l.profile, size: 48).saturation(0)
                         }
                     }
                     .scaleEffect(soulLanded ? 1 : 1.6)
