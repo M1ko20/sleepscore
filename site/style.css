@@ -1,0 +1,63 @@
+/* Stejné barvy jako appka (docs/design.md). Žádné externí fonty, skripty ani cookies. */
+:root {
+  --bg: #0B0D12; --surface: #14171F; --hairline: #262B36;
+  --text: #F2F1EC; --text2: #9AA0AB; --text3: #5D636E;
+  --accent: #F5C542; --ink: #0B0D12;
+  --rem: #7FB4FF; --core: #3D6FD1; --deep: #2A4BB0; --awake: #E8E4D8;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; background: var(--bg); color: var(--text);
+  font: 17px/1.55 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+a { color: var(--accent); }
+.wrap { max-width: 720px; margin: 0 auto; padding: 0 16px; }
+header.top { display: flex; justify-content: space-between; align-items: center; padding: 20px 0; }
+.brand { font-weight: 800; letter-spacing: .12em; text-transform: uppercase; font-size: 14px; color: var(--accent); text-decoration: none; }
+nav a { color: var(--text2); text-decoration: none; font-size: 15px; margin-left: 16px; }
+nav a:hover { color: var(--text); }
+
+.hero { padding: 64px 0 40px; }
+.hero h1 { font-size: clamp(40px, 9vw, 72px); line-height: 1.02; margin: 0 0 20px; font-weight: 900; letter-spacing: -0.02em; }
+.hero p { color: var(--text2); font-size: 20px; max-width: 34em; margin: 0 0 28px; }
+.pill { display: inline-block; background: var(--accent); color: var(--ink); font-weight: 700; padding: 12px 20px; border-radius: 12px; text-decoration: none; }
+.muted { color: var(--text3); font-size: 15px; }
+
+.card { background: var(--surface); border: 1px solid var(--hairline); border-radius: 16px; padding: 20px; }
+.score { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 16px; }
+.score b { font-size: 64px; line-height: 1; font-weight: 900; font-variant-numeric: tabular-nums; }
+.label { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--text2); font-weight: 600; }
+.hypno { display: grid; grid-template-columns: repeat(32, 1fr); gap: 2px; height: 72px; align-items: end; }
+.hypno i { display: block; border-radius: 2px; }
+.reacts { margin-top: 14px; color: var(--text2); font-size: 15px; }
+
+.features { display: grid; gap: 28px; padding: 56px 0; }
+.features h3 { margin: 0 0 6px; font-size: 20px; }
+.features p { margin: 0; color: var(--text2); }
+@media (min-width: 640px) { .features { grid-template-columns: 1fr 1fr; } }
+
+footer { border-top: 1px solid var(--hairline); padding: 28px 0 48px; margin-top: 40px; color: var(--text3); font-size: 14px; }
+footer a { color: var(--text2); margin-right: 16px; }
+
+/* Právní stránky */
+.doc { padding: 24px 0 0; }
+.doc h1 { font-size: 34px; line-height: 1.15; margin: 8px 0 4px; }
+.doc h2 { font-size: 21px; margin: 36px 0 8px; }
+.doc p, .doc li { color: #D6D5CF; }
+.doc ul { padding-left: 20px; }
+.doc li { margin: 4px 0; }
+.doc table { width: 100%; border-collapse: collapse; font-size: 15px; margin: 8px 0; }
+.doc th, .doc td { text-align: left; vertical-align: top; border-bottom: 1px solid var(--hairline); padding: 8px 8px 8px 0; }
+.doc th { color: var(--text2); font-weight: 600; }
+.tablewrap { overflow-x: auto; }
+.todo { background: rgba(245,197,66,.15); color: var(--accent); padding: 0 4px; border-radius: 4px; }
+.box { background: var(--surface); border: 1px solid var(--hairline); border-radius: 12px; padding: 14px 16px; margin: 16px 0; }
+@media (max-width: 560px) {
+  .doc table, .doc tr, .doc td { display: block; width: 100%; }
+  .doc tr:first-child { display: none; }
+  .doc tr { border-bottom: 1px solid var(--hairline); padding: 10px 0; }
+  .doc td { border: 0; padding: 2px 0; }
+  .doc td:nth-child(2)::before { content: "Účel: "; color: var(--text2); }
+  .doc td:nth-child(3)::before { content: "Základ: "; color: var(--text2); }
+}
