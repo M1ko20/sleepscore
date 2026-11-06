@@ -67,6 +67,13 @@ actor ImageStore {
         if let img = UIImage(data: data) { memory.set(img, k) }
     }
 
+    /// Po smazání účtu / odhlášení: nic cizího ani vlastního nesmí zůstat v cache.
+    func clearAll() {
+        memory.removeAll()
+        try? FileManager.default.removeItem(at: dir)
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+    }
+
     func remove(_ bucket: Bucket, _ path: String) {
         let k = key(bucket, path)
         memory.remove(k)
@@ -84,6 +91,7 @@ final class MemoryCache: @unchecked Sendable {
     func get(_ k: String) -> UIImage? { cache.object(forKey: k as NSString) }
     func set(_ img: UIImage, _ k: String) { cache.setObject(img, forKey: k as NSString) }
     func remove(_ k: String) { cache.removeObject(forKey: k as NSString) }
+    func removeAll() { cache.removeAllObjects() }
 }
 
 /// Zmenšení na telefonu: profilovka 256 px čtverec, fotka karty max. 1280 px a ~200 kB.

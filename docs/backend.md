@@ -78,6 +78,8 @@ Storage: buckety `avatars` (max 150 kB), `night-photos` (max 400 kB) – privát
 | `respond_friend_request(user, accept)` / `remove_friend(user)` | |
 | `tag_insights(user)` | tagy: noci s tagem vs. bez (90 dní, min. 3+3) – skóre, deep, usínání, délka |
 | `weekly_recap(week_start?)` | recap týdne volajícího (default minulý po–ne) |
+| `export_my_data()` | GDPR export: všechna moje data jako JSON (vč. surových dat nocí) |
+| `delete_my_account()` | GDPR smazání: zruší neuzavřené souboje se mnou a moje čekající výzvy, smaže `auth.users` → kaskáda |
 | `sleep_wrapped(year?)` | rok volajícího (Wrapped) jedním callem |
 | `profile_summary(user)` | celý profil jedním callem (bilance, série, průměr 30 dní, duše, odznaky, vzájemná bilance, stav přátelství); security invoker → RLS |
 | `create_challenge(type, opponents[], duration_days, stake?, target_score?)` | jen s přáteli; duel = 1 soupeř, skupina ≥ 2 pozvaní |
@@ -103,6 +105,14 @@ Pravidla:
 - Session = souvislé vzorky jednoho zdroje, mezera > 60 min = nová session. Úvodní/koncové awake se ořízne.
 - Hlavní spánek dne = nejdelší session (napříč zdroji), která skončila do 14:00 místního času. Zdroje se nesčítají.
 - Kratší nepřekrývající se session nepřepíše uloženou noc (ochrana proti šlofíku při zpětném nahrání).
+
+## GDPR
+- Data: Supabase eu-central-1 (Frankfurt). Spánek = zdravotní data (čl. 9) → jen přátelé (RLS), HealthKit data nikdy do reklamy ani třetím stranám.
+- **Export** (`export_my_data`, security invoker): profil, statistiky, noci + `night_raw` + tagy, karty, moje komentáře a reakce, přátelství, účasti ve výzvách, denní skóre, dluhy, odznaky, pozvánky. Appka uloží `sleepscore-<přezdívka>-<datum>.json` (ochrana souboru `complete`) a nabídne sdílení.
+- **Smazání** (Nastavení → Soukromí → Smazat účet, potvrzení napsáním přezdívky): appka smaže moje soubory v `avatars/` a `night-photos/` (`<uid>/…`; přímý DELETE ze `storage.objects` Supabase blokuje), pak `delete_my_account()`: neuzavřené souboje se mnou → `cancelled`, moje čekající výzvy → `cancelled`, `delete from auth.users` → kaskáda na `profiles` a vše navázané. Výzvy mají vlastní `timezone` a `creator_id … on delete set null` → ostatním zůstanou výsledky, MMA i duše proti jiným hráčům; skupinové výzvy běží dál beze mě.
+- Po odhlášení / smazání appka vyčistí cache obrázků a lokální klíče (`seenChallengeResults`, `dismissedRecapWeek`).
+- Ověřeno: export přes REST (Karolína 92 kB), anon 401, smazání v transakci s `rollback` (účet, profil, noci, přátelství, dluhy pryč; její výzvy zůstaly s `creator_id null`, výsledky ostatních zůstaly).
+- Chybí: zásady ochrany osobních údajů (privacy policy) a jejich odkaz v onboardingu – přijde s landing page (nutné i pro App Store a Garmin).
 
 ## Sleep score v2 (`_shared/sleep.ts`, `score_version = 2`)
 v1 dávalo běžným nocím 92–99 (plných 100 za 7–9 h, za 40 % deep+REM, za „normál“) → ve výzvách se noci skoro nelišily. v2: 100 jen za nadprůměr, „normál“ = 85.

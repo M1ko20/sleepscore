@@ -14,7 +14,14 @@ Co je hotové a jak. Nejnovější nahoře. Detaily backendu v `backend.md`, vzh
 8. ~~Insighty z tagů a týdenní recap~~ hotovo.
 9. ~~Zpřísnění skóre (v2)~~ hotovo.
 10. ~~Sleep Wrapped~~ hotovo.
-11. Další: (konec roku), smazání účtu (GDPR), push notifikace (až s Developer Programem – pak i pondělní push na recap).
+11. ~~GDPR (export, smazání účtu, Soukromí)~~ hotovo.
+12. Další: privacy policy + landing page (Adam), push notifikace (Developer Program), test na iPhonu s Garminem. (konec roku), smazání účtu (GDPR), push notifikace (až s Developer Programem – pak i pondělní push na recap).
+
+## 2026-11-06 – GDPR: export a smazání účtu
+- Migrace `…210000_gdpr.sql`: `challenges.timezone` (doplní trigger ze zakladatele; start a uzavírání ve 14:00 už nečtou profil zakladatele), `creator_id` nullable + `on delete set null` (dřív by smazání zakladatele smazalo výzvu i ostatním hráčům, včetně jejich výher a duší). RPC `delete_my_account()` a `export_my_data()`, detaily v `backend.md` → GDPR.
+- Appka: Nastavení → Soukromí a moje data (co ukládáme, jak vypnout Zdraví, Stáhnout moje data → JSON soubor ke sdílení, Smazat účet s potvrzením přezdívkou → smaže soubory ve Storage, pak účet, odhlásí). Odhlášení teď maže cache obrázků a lokální klíče.
+- Ověřeno: export 200 (92 kB), smazání v rollback transakci (viz backend.md). Klikací tok smazání v UI netestován – smazal by testovací účet; Storage mazání jde přes SDK `list` + `remove`.
+- DEBUG: `-debugPrivacy`.
 
 ## 2026-11-06 – Sleep Wrapped
 - RPC `sleep_wrapped(year?)` (migrace `…200000`, security invoker, 1 call při otevření): noci, hodiny spánku a deepu, průměrné skóre, nejlepší noc, nejlepší měsíc (min. 5 nocí), průměrný čas usnutí, nejdelší série, top 3 tagy, bilance a počet výzev (podle `end_date`), duše, oblíbená oběť a nemesis, odznaky + nejčastější, reakce od kamarádů + nejčastější, komentáře. Bez parametru: v lednu uplynulý rok, jinak letošní.

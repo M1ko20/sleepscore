@@ -271,6 +271,29 @@ enum API {
         return try await decode(db.rpc("sleep_wrapped").execute().data)
     }
 
+    // MARK: GDPR
+
+    /// Všechna moje data jako JSON (export_my_data).
+    nonisolated static func exportMyData() async throws -> Data {
+        try await db.rpc("export_my_data").execute().data
+    }
+
+    /// Smaže moje soubory ve Storage (přímo v SQL to Supabase nedovolí) a pak účet i data.
+    nonisolated static func deleteMyAccount(me: UUID) async throws {
+        let folder = me.uuidString.lowercased()
+        for bucket in [Bucket.avatars, .nightPhotos] {
+            let store = db.storage.from(bucket.rawValue)
+            while true {
+                let files = try await store.list(path: folder, options: SearchOptions(limit: 100))
+                let paths = files.map { "\(folder)/\($0.name)" }
+                if paths.isEmpty { break }
+                _ = try await store.remove(paths: paths)
+                if files.count < 100 { break }
+            }
+        }
+        try await db.rpc("delete_my_account").execute()
+    }
+
     // MARK: Fotky
 
     /// Nahraje JPEG pod `<me>/<uuid>.jpg` (cesta je unikátní → cache podle cesty je navždy platná).

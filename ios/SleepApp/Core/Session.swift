@@ -81,6 +81,8 @@ final class Session {
     func signOut() async {
         HealthSync.shared.stopObserving()
         HealthSync.shared.resetAnchor()
+        await ImageStore.shared.clearAll()
+        for key in ["seenChallengeResults", "dismissedRecapWeek"] { UserDefaults.standard.removeObject(forKey: key) }
         try? await Backend.client.auth.signOut()
     }
 

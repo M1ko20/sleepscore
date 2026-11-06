@@ -12,6 +12,13 @@ struct SettingsView: View {
     @State private var pickedItem: PhotosPickerItem?
     @State private var avatarBusy = false
     @State private var avatarError: String?
+    @State private var showPrivacy: Bool = {
+        #if DEBUG
+        return ProcessInfo.processInfo.arguments.contains("-debugPrivacy")
+        #else
+        return false
+        #endif
+    }()
 
     private var trimmed: String { name.trimmingCharacters(in: .whitespacesAndNewlines) }
     private var canSave: Bool {
@@ -42,6 +49,12 @@ struct SettingsView: View {
                         if let error { Text(error).captionStyle() }
                     }
                     HealthSection()
+                    NavigationLink {
+                        PrivacyView()
+                    } label: {
+                        ProfileRow(title: "Soukromí a moje data")
+                    }
+                    .buttonStyle(.plain)
                     Button("Odhlásit") {
                         dismiss()
                         Task { await session.signOut() }
@@ -59,6 +72,7 @@ struct SettingsView: View {
                 }
             }
             .onAppear { name = session.profile?.displayName ?? "" }
+            .navigationDestination(isPresented: $showPrivacy) { PrivacyView() }
         }
         .presentationBackground(Color.app.bg)
     }
