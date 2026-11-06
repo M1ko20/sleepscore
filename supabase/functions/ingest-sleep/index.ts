@@ -69,7 +69,7 @@ Deno.serve(async (req) => {
 
   // --- zpracování -----------------------------------------------------
   const nights = assignMainSleep(buildSessions(samples), tz);
-  const results: { date: string; score: number | null; status: string }[] = [];
+  const results: { date: string; score: number | null; status: string; [k: string]: unknown }[] = [];
 
   // chronologicky, aby se baseline dalších nocí počítala z už uložených
   for (const date of [...nights.keys()].sort()) {
@@ -211,6 +211,16 @@ async function saveNight(
     if (error) throw error;
   }
 
-  // TODO: push „tvoje noc je tady, doplň komentář“ (až bude APNs), série, achievementy
-  return { date, score, status: isNewPost ? "created" : "updated" };
+  // Achievementy za noc + přepočet série (v DB, jeden dotaz)
+  const { data: after, error: afterErr } = await admin.rpc("after_night_ingest", { p_night: night.id });
+  if (afterErr) throw afterErr;
+
+  // TODO: push „tvoje noc je tady, doplň komentář“ (až bude APNs)
+  return {
+    date,
+    score,
+    status: isNewPost ? "created" : "updated",
+    streak: after?.current_streak ?? null,
+    new_achievements: after?.new_achievements ?? [],
+  };
 }

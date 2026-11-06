@@ -126,6 +126,7 @@ try:
     dates = [n["date"] for n in (res or {}).get("nights", [])]
     check("A: dvě noci, šlofík ani ruční záznam ne", st == 200 and dates == ["2026-11-05", "2026-11-06"], res)
     check("A: karty vytvořené", all(n["status"] == "created" for n in res["nights"]), res)
+    check("A: série 2 noci", res["nights"][1].get("streak") == 2, res)
 
     # B: jen 11-06, krátká rozbitá noc (02:00–06:30)
     b_samples = []

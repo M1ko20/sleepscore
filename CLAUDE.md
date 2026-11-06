@@ -16,8 +16,11 @@ Pokud se tento soubor a dokument liší, platí dokument – zeptej se Adama.
   - Strop podle délky: pod 5 h max 50 bodů, pod 6 h max 70.
   - Minimální délka pro sérii: 6 h.
 - Apple Developer Program až bude appka skoro hotová → do té doby simulátor + testovací přihlášení, Sign in with Apple a HealthKit na reálném iPhonu na konec.
-- E2E test: `supabase/tests/e2e.py` (24 kontrol, po sobě uklidí). Prošel 2026-11-06.
-- **Další krok:** cron funkce (uzavírání výzev, nuly za chybějící noci, série, achievementy). Nejdřív probrat.
+- E2E test: `supabase/tests/e2e.py` (25 kontrol, po sobě uklidí). Prošel 2026-11-06.
+- Hotovo: série, achievementy a uzavírání výzev – **vše v DB** (migrace `…140000_streaks_achievements_challenges.sql`), plánováno přes **pg_cron** (`hourly-jobs` v :05, úklid historie v 3:30). Žádné Edge Function volání navíc → šetří Free tier. Adam chce hlídat počet callů na Supabase.
+  - Série se přepočítává jen uživateli, který nahrál noc (`after_night_ingest`, volá ingest), a jednou denně po 14:00 lidem s rozjetou sérií bez dnešní noci.
+  - Tagové achievementy uděluje trigger při uložení tagu.
+- **Další krok:** iOS appka (SwiftUI) – nejdřív probrat strukturu obrazovek.
 
 ## Produkt
 Sociální appka pro spánek: každé ráno se noc objeví jako karta, kamarádi ji komentují a lidi se měří ve výzvách. Tón hravý a soutěživý, ne wellness a ne „AI cringe“.
@@ -30,7 +33,8 @@ Sociální appka pro spánek: každé ráno se noc objeví jako karta, kamarádi
 - **Přátelé**: kdo tě pozval, je automaticky kamarád. Žádost o přátelství může poslat kdokoliv komukoliv.
 - Achievementy jdou získat **opakovaně**.
 - **Profil**: profilovka, MMA bilance z výzev (výhry-prohry-remízy, např. 12-3-1), vitrína „duší“ (trofej za každého poraženého), vzájemná bilance se soupeřem.
-- **Série**: odměňuje pravidelnost (usnutí ±30 min od průměru + minimální délka), streak freeze 1× týdně.
+- **Série**: odměňuje pravidelnost (usnutí ±30 min od průměru 14 nocí + min. 6 h), streak freeze 1× týdně automaticky (první špatná/chybějící noc v týdnu nepřeruší, ale nepřičte se).
+- Opakované achievementy: Sběratel za každých 10 duší, Neporazitelný za každých 5 výher v řadě, Švýcarské hodinky za každý další 14denní úsek. Ukradená hodina = noc na poslední neděli v březnu, Dvojí život se vyhodnocuje v pondělí.
 - **Achievementy**: viz dokument (Kóma, Zombie, Noční směna, Ani se nehnul, Hlubinář, Dokonalá noc, Švýcarské hodinky, Dvojí život, Stovka, Navzdory, Pivo vyhrálo, První duše, Sběratel, Neporazitelný, Odplata, O chlup, Zapomněl hodinky, Ukradená hodina, Novoroční přeživší…).
 - **Tagy → insighty** („s alkoholem máš o 38 % méně deep“), **týdenní recap** v pondělí, **Sleep Wrapped** na konci roku.
 - Vyřazeno: tlačítko „Jdu spát“, týdenní ligy.
@@ -48,6 +52,8 @@ Sociální appka pro spánek: každé ráno se noc objeví jako karta, kamarádi
 - Odměny: sázka, duše poraženého do vitríny, zápis do MMA bilance, pozvánka navíc.
 - **Všichni proti všem**: vítěz bere vše – každý ostatní mu dluží sázku, vítěz bere duše všech, v MMA má vítěz výhru, ostatní prohru. Shodný nejvyšší průměr = remíza.
 - **Společný cíl**: počítá se do MMA (splněno = výhra všem, nesplněno = prohra všem), nebere se duše, nepočítá se do vzájemné bilance. Sázka může být (bez účtu dluhů).
+- Shoda na 1. místě (všichni proti všem) = remíza mezi nimi, ostatní prohra, žádné dluhy ani duše. Den vyhrává jen jasně nejvyšší skóre (shoda = nikdo).
+- Pozvánka navíc: +1 za výhru v duelu / všichni proti všem, +1 za sérii 30 a 100 dní. Za společný cíl ne.
 - Výzvy jen mezi přáteli. Duel startuje den po přijetí; skupinovou spouští zakladatel (min. 3 přijatí).
 
 ## Data
