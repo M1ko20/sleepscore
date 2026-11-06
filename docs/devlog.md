@@ -8,7 +8,21 @@ Co je hotové a jak. Nejnovější nahoře. Detaily backendu v `backend.md`, vzh
 2. ~~Onboarding s pozvánkou → profil~~ hotovo (HealthKit tlačítko zatím jen pokračuje).
 3. ~~Feed + karta noci + detail s hypnogramem~~ hotovo (bez fotek – přijdou se Storage).
 4. ~~HealthKit~~ hotovo (ověřeno v simulátoru, na telefonu s Garminem zatím ne).
-5. Výzvy (seznam, detail, založení, výsledek), profil, přátelé, pozvánky.
+5. ~~Výzvy (seznam, detail, založení, výsledek)~~ hotovo. Zbývá: profil (bilance, série, vitrína duší, odznaky, vzájemná bilance), přátelé (hledání, žádosti), profil přítele + Vyzvat.
+
+## 2026-11-06 – Výzvy v appce
+- `ChallengeStore` (sdílený): moje výzvy jedním dotazem (`challenge_participants!inner` jako filtr `mine` + všichni účastníci s profily + denní skóre), otevřené dluhy, přátelé (`friendships` s hinty `profiles!friendships_user_a_fkey/_b_fkey`).
+- Seznam: ČEKÁ NA TEBE (Přijmout/Odmítnout), BĚŽÍ (vč. mých čekajících), DLUHY (Splaceno – jen dlužník), HOTOVÉ. Žlutý odznak s počtem pozvánek na záložce (`badgeBackgroundColor` = accent).
+- Detail: plakát (duel = 2 sloupce s průměry, FFA = pořadí, team_goal = pruh proti cíli), mřížka dní (vítěz dne zvýrazněný, chybějící uplynulá noc 0 šedě + „dá se dohrát“, budoucí den „·“), sázka, konec („končí pondělí 9. 11. ve 14:00“). Akce: přijmout/odmítnout, spustit skupinu (od 3 přijatých), zrušit, Odplata.
+- Průběžný průměr počítá appka (uplynulý den bez noci = 0, dnešek jen když noc dorazila); po uzavření bere `final_avg`/`days_won` ze serveru. Den vyhrává jen jasně nejvyšší skóre (stejně jako server).
+- Nová výzva (sheet, 4 kroky): typ → soupeři (jen přátelé; duel 1, skupina ≥ 2) → délka 7/14/30/vlastní (≥ 7) → sázka (+ cílový průměr 50–100 u společného cíle).
+- Výsledek (fullScreenCover, jednou – viděné v UserDefaults, jen výzvy do týdne staré): VÝHRA s konfetami (jediné v appce, žlutá + bílá, 3 s) a duší letící do vitríny / PROHRA bez animace + Odplata / REMÍZA / společný cíl.
+- Feed: karty výsledků výzev mezi kartami nocí (jedna suchá věta: „Jakub bere duši. Sázka: …“).
+- Zaokrouhlení průměrů `.halfUp` (NumberFormatter má defaultně bankéřské: 87,25 → 87,2).
+- `supabase/tests/seed_dev_challenges.sql` (`supabase db query --remote --yes -f …`): uzavřená (přes `private.finalize_challenge`), běžící a čekající výzva mezi @adam a @jakub.
+- DEBUG launch argumenty: `-debugLogin email:heslo`, `-debugTab n`, `-debugNoResult`, `-debugOpenChallenge active|finished|pending`.
+- **Chyba, opraveno:** první verze `-debugLogin` volala `start()` rekurzivně → ~330 pokusů o přihlášení za 2 min → Supabase Auth 429 (rate limit) na pár minut. Teď jednorázový příznak. Auth se na Free nepočítá po requestech, takže bez nákladů.
+- Skupinové výzvy v UI netestované (potřeba 3. testovací účet – přijde s přáteli).
 
 ## 2026-11-06 – HealthKit
 - `HealthSync` (`ios/SleepApp/Health/`): čte `sleepAnalysis` + `heartRate`, zahodí ruční záznamy (`HKMetadataKeyWasUserEntered`), `inBed` se neposílá. Mapování: asleepCore/Deep/REM/awake/asleepUnspecified → core/deep/rem/awake/asleep.

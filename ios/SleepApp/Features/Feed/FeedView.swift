@@ -12,27 +12,19 @@ struct FeedView: View {
         NavigationStack(path: $path) {
             ScrollView {
                 LazyVStack(spacing: Metrics.cardSpacing) {
-                    if store.loaded && store.posts.isEmpty {
+                    if store.loaded && store.isEmpty {
                         emptyState
                     }
-                    if let error = store.error, store.posts.isEmpty {
+                    if let error = store.error, store.isEmpty {
                         Text(error).captionStyle().padding(.top, 40)
                     }
-                    ForEach(store.ordered(me: me)) { post in
-                        NavigationLink(value: post.id) {
-                            NightCard(
-                                post: post, me: me,
-                                streak: store.streakBadge(for: post),
-                                tagLine: store.tagLine(post.night.tags),
-                                achievementNames: post.night.achievementCodes.compactMap { store.achievementNames[$0] },
-                                onEdit: { editing = post },
-                                onReact: { kind in
-                                    guard let me else { return }
-                                    Task { await store.react(post.id, me: me, kind: kind) }
-                                }
-                            )
+                    ForEach(store.items(me: me)) { item in
+                        switch item {
+                        case .result(let r):
+                            ChallengeResultCard(post: r, me: me)
+                        case .night(let post):
+                            nightCard(post)
                         }
-                        .buttonStyle(.plain)
                     }
                 }
                 .padding(.horizontal, Metrics.screenPadding)
@@ -47,11 +39,12 @@ struct FeedView: View {
             .task {
                 if !store.loaded { await store.load() }
                 #if DEBUG
-                // Screenshoty ze simulátoru: `simctl launch … -debugOpen 1` otevře n-tou kartu.
+                // Screenshoty ze simulátoru: `simctl launch … -debugOpen 1` otevře n-tou kartu noci.
                 let args = ProcessInfo.processInfo.arguments
+                let nights = store.items(me: me).compactMap { if case .night(let p) = $0 { p.id } else { nil } }
                 if let i = args.firstIndex(of: "-debugOpen"), i + 1 < args.count, let n = Int(args[i + 1]),
-                   path.isEmpty, n >= 1, n <= store.posts.count {
-                    path = [store.ordered(me: me)[n - 1].id]
+                   path.isEmpty, n >= 1, n <= nights.count {
+                    path = [nights[n - 1]]
                 }
                 #endif
             }
@@ -59,6 +52,23 @@ struct FeedView: View {
                 EditPostSheet(post: post)
             }
         }
+    }
+
+    private func nightCard(_ post: FeedPost) -> some View {
+                        NavigationLink(value: post.id) {
+                            NightCard(
+                                post: post, me: me,
+                                streak: store.streakBadge(for: post),
+                                tagLine: store.tagLine(post.night.tags),
+                                achievementNames: post.night.achievementCodes.compactMap { store.achievementNames[$0] },
+                                onEdit: { editing = post },
+                                onReact: { kind in
+                                    guard let me else { return }
+                                    Task { await store.react(post.id, me: me, kind: kind) }
+                                }
+                            )
+                        }
+                        .buttonStyle(.plain)
     }
 
     private var emptyState: some View {

@@ -13,6 +13,11 @@ enum Appearance {
         item.normal.titleTextAttributes = [.foregroundColor: UIColor(Color.app.textTertiary)]
         item.selected.iconColor = UIColor(Color.app.textPrimary)
         item.selected.titleTextAttributes = [.foregroundColor: UIColor(Color.app.textPrimary)]
+        // Odznak = žlutá (jediná akcentní barva), ne systémová červená.
+        for state in [item.normal, item.selected] {
+            state.badgeBackgroundColor = UIColor(Color.app.accent)
+            state.badgeTextAttributes = [.foregroundColor: UIColor(Color.app.accentInk)]
+        }
         tab.stackedLayoutAppearance = item
         UITabBar.appearance().standardAppearance = tab
         UITabBar.appearance().scrollEdgeAppearance = tab

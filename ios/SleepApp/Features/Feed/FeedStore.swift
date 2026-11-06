@@ -6,6 +6,7 @@ import Observation
 @Observable
 final class FeedStore {
     private(set) var posts: [FeedPost] = []
+    private(set) var results: [ChallengeResultPost] = []
     private(set) var loaded = false
     private(set) var error: String?
     private(set) var tagLabels: [String: String] = [:]
@@ -16,6 +17,7 @@ final class FeedStore {
     func load() async {
         do {
             async let postsReq = API.feed()
+            async let resultsReq = API.challengeResultPosts()
             if tagCatalog.isEmpty {
                 async let tagsReq = API.tags()
                 async let achReq = API.achievements()
@@ -25,6 +27,7 @@ final class FeedStore {
                 achievementNames = Dictionary(uniqueKeysWithValues: ach.map { ($0.code, $0.name) })
             }
             posts = try await postsReq
+            results = (try? await resultsReq) ?? results
             let authors = Array(Set(posts.map(\.author.id)))
             let stats = try await API.stats(userIDs: authors)
             streaks = Dictionary(uniqueKeysWithValues: stats.map { ($0.userID, $0.currentStreak) })
@@ -38,14 +41,18 @@ final class FeedStore {
 
     func post(_ id: UUID) -> FeedPost? { posts.first { $0.id == id } }
 
-    /// Moje dnešní karta nahoru, pak ostatní od nejnovější.
-    func ordered(me: UUID?) -> [FeedPost] {
-        guard let me, let i = posts.firstIndex(where: { $0.author.id == me && Calendar.current.isDateInToday($0.createdAt) })
-        else { return posts }
-        var list = posts
-        let mine = list.remove(at: i)
-        return [mine] + list
+    /// Moje dnešní karta nahoru, pak karty nocí a výsledky výzev od nejnovější.
+    func items(me: UUID?) -> [FeedItem] {
+        var nights = posts
+        var head: [FeedItem] = []
+        if let me, let i = nights.firstIndex(where: { $0.author.id == me && Calendar.current.isDateInToday($0.createdAt) }) {
+            head = [.night(nights.remove(at: i))]
+        }
+        let rest = (nights.map(FeedItem.night) + results.map(FeedItem.result)).sorted { $0.createdAt > $1.createdAt }
+        return head + rest
     }
+
+    var isEmpty: Bool { posts.isEmpty && results.isEmpty }
 
     /// Série se ukazuje jen na nejnovější kartě autora a od 3 nocí.
     func streakBadge(for post: FeedPost) -> Int? {

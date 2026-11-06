@@ -27,6 +27,9 @@ final class Session {
     }
 
     private var listenTask: Task<Void, Never>?
+    #if DEBUG
+    private static var debugLoginDone = false
+    #endif
 
     init() {
         pendingInviteCode = UserDefaults.standard.string(forKey: "pendingInviteCode")
@@ -39,6 +42,24 @@ final class Session {
 
     func start() {
         guard listenTask == nil else { return }
+        #if DEBUG
+        // Screenshoty ze simulátoru: `simctl launch … -debugLogin email:heslo`
+        let args = ProcessInfo.processInfo.arguments
+        if !Self.debugLoginDone, let i = args.firstIndex(of: "-debugLogin"), i + 1 < args.count {
+            Self.debugLoginDone = true   // jen jednou – jinak se start() volá dokola
+            let parts = args[i + 1].split(separator: ":", maxSplits: 1).map(String.init)
+            if parts.count == 2 {
+                listenTask = Task {
+                    try? await Backend.client.auth.signOut()
+                    do { try await Backend.client.auth.signIn(email: parts[0], password: parts[1]) }
+                    catch { log.error("debugLogin failed: \(String(describing: error))") }
+                    self.listenTask = nil
+                    self.start()
+                }
+                return
+            }
+        }
+        #endif
         listenTask = Task { [weak self] in
             for await (event, session) in Backend.client.auth.authStateChanges {
                 guard let self else { return }

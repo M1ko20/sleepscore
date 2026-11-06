@@ -129,6 +129,81 @@ enum API {
         }
     }
 
+    // MARK: Výzvy
+
+    /// Výzvy, kterých se účastním (pozvaný, přijatý). Zrušené a odmítnuté ne.
+    nonisolated static func myChallenges(userID: UUID) async throws -> [Challenge] {
+        try await decode(db.from("challenges")
+            .select(Challenge.select + ",mine:challenge_participants!inner(user_id,status)")
+            .eq("mine.user_id", value: userID)
+            .neq("mine.status", value: "declined")
+            .neq("status", value: "cancelled")
+            .order("created_at", ascending: false)
+            .execute().data)
+    }
+
+    nonisolated static func challenge(id: UUID) async throws -> Challenge? {
+        let list: [Challenge] = try await decode(db.from("challenges").select(Challenge.select)
+            .eq("id", value: id).limit(1).execute().data)
+        return list.first
+    }
+
+    nonisolated static func openDebts() async throws -> [Debt] {
+        try await decode(db.from("debts").select(Debt.select)
+            .is("settled_at", value: nil).order("created_at", ascending: false).execute().data)
+    }
+
+    nonisolated static func friends(of userID: UUID) async throws -> [ProfileLite] {
+        struct Row: Decodable { let a: ProfileLite; let b: ProfileLite }
+        let rows: [Row] = try await decode(db.from("friendships")
+            .select("a:profiles!friendships_user_a_fkey(id,username,display_name,avatar_path,timezone),b:profiles!friendships_user_b_fkey(id,username,display_name,avatar_path,timezone)")
+            .eq("status", value: "accepted")
+            .execute().data)
+        return rows.map { $0.a.id == userID ? $0.b : $0.a }
+            .sorted { $0.displayName.localizedCompare($1.displayName) == .orderedAscending }
+    }
+
+    nonisolated static func createChallenge(type: ChallengeType, opponents: [UUID], days: Int,
+                                            stake: String?, target: Int?) async throws -> UUID {
+        struct Params: Encodable {
+            let p_type: String
+            let p_opponents: [UUID]
+            let p_duration_days: Int
+            let p_stake: String?
+            let p_target_score: Int?
+        }
+        return try await decode(db.rpc("create_challenge", params: Params(
+            p_type: type.rawValue, p_opponents: opponents, p_duration_days: days,
+            p_stake: stake, p_target_score: target
+        )).execute().data)
+    }
+
+    nonisolated static func respondChallenge(_ id: UUID, accept: Bool) async throws {
+        struct Params: Encodable { let p_challenge: UUID; let p_accept: Bool }
+        _ = try await db.rpc("respond_challenge", params: Params(p_challenge: id, p_accept: accept)).execute().data
+    }
+
+    nonisolated static func startChallenge(_ id: UUID) async throws {
+        _ = try await db.rpc("start_challenge", params: ["p_challenge": id]).execute().data
+    }
+
+    nonisolated static func cancelChallenge(_ id: UUID) async throws {
+        _ = try await db.rpc("cancel_challenge", params: ["p_challenge": id]).execute().data
+    }
+
+    nonisolated static func settleDebt(_ id: UUID) async throws {
+        _ = try await db.rpc("settle_debt", params: ["p_debt": id]).execute().data
+    }
+
+    /// Karty výsledků výzev do feedu.
+    nonisolated static func challengeResultPosts(limit: Int = 20) async throws -> [ChallengeResultPost] {
+        try await decode(db.from("posts")
+            .select("id,created_at,challenge:challenges(\(Challenge.select))")
+            .eq("kind", value: "challenge_result")
+            .order("created_at", ascending: false).limit(limit)
+            .execute().data)
+    }
+
     // MARK: Dekódování
 
     nonisolated static func decode<T: Decodable>(_ data: Data) throws -> T {
@@ -168,6 +243,11 @@ func serverMessage(_ error: Error) -> String {
     case let t where t.contains("profiles_username_key"): return "Přezdívka je zabraná."
     case let t where t.contains("profile already exists"): return "Profil už máš."
     case let t where t.contains("no invites available"): return "Došly ti pozvánky."
+    case let t where t.contains("need at least 3 accepted"): return "Potřebuješ aspoň 3 přijaté (včetně tebe)."
+    case let t where t.contains("is not a friend"): return "Vyzvat jde jen kamarády."
+    case let t where t.contains("group challenge needs"): return "Skupinová výzva potřebuje aspoň 2 pozvané."
+    case let t where t.contains("duration_days"): return "Výzva musí mít aspoň 7 dní."
+    case let t where t.contains("no pending invitation"): return "Pozvánka už neplatí."
     default: return "Nepovedlo se. \(text)"
     }
 }

@@ -234,3 +234,33 @@ struct UserStats: Decodable, Hashable, Sendable {
         case bestStreak = "best_streak"
     }
 }
+
+struct ChallengeResultPost: Decodable, Identifiable, Hashable, Sendable {
+    let id: UUID
+    let createdAt: Date
+    let challenge: Challenge
+
+    enum CodingKeys: String, CodingKey {
+        case id, challenge
+        case createdAt = "created_at"
+    }
+}
+
+enum FeedItem: Identifiable, Hashable {
+    case night(FeedPost)
+    case result(ChallengeResultPost)
+
+    var id: UUID {
+        switch self {
+        case .night(let p): p.id
+        case .result(let r): r.id
+        }
+    }
+
+    var createdAt: Date {
+        switch self {
+        case .night(let p): p.createdAt
+        case .result(let r): r.createdAt
+        }
+    }
+}
