@@ -6,9 +6,20 @@ Co je hotové a jak. Nejnovější nahoře. Detaily backendu v `backend.md`, vzh
 **iOS appka (SwiftUI)** podle `design.md`. Navržené pořadí (nejdřív probrat s Adamem):
 1. ~~Xcode projekt, design tokeny, Supabase SDK, testovací přihlášení~~ hotovo.
 2. ~~Onboarding s pozvánkou → profil~~ hotovo (HealthKit tlačítko zatím jen pokračuje).
-3. Feed + karta noci + detail s hypnogramem (zatím data z testovacího uživatele).
+3. ~~Feed + karta noci + detail s hypnogramem~~ hotovo (bez fotek – přijdou se Storage).
 4. HealthKit: čtení spánku a tepu, `HKObserverQuery`, odeslání na `ingest-sleep`.
 5. Výzvy (seznam, detail, založení, výsledek), profil, přátelé, pozvánky.
+
+## 2026-11-06 – Feed, karta noci, detail
+- `FeedStore` (sdílený feedem a detailem): jeden dotaz na `posts` s embedy (autor `profiles!posts_user_id_fkey` – bez hintu je vazba nejednoznačná kvůli `reactions`), noc, `night_tags`, `night_raw(segments)`, `user_achievements`, reakce, `comments(count)`. K tomu jednou katalog tagů a achievementů + `user_stats` autorů.
+- Karta noci podle design.md: skóre (naběhne za 0,6 s), délka, usnutí, mini hypnogram, tagy textem, nový odznak, reakce (max. 3 + „+N“), počet komentářů. Moje dnešní nedoplněná karta nahoře se žlutým obrysem a „Doplň název a tagy“. Série jen na nejnovější kartě autora a od 3.
+- Reakce: tlačítko nebo dlouhý stisk → lišta 5 ikon (zatím SF Symbols), moje = žlutá, opětovné klepnutí zruší; optimisticky, při chybě vrátí.
+- Detail: autor + datum, skóre XL, délka/usnutí/vstávání, hypnogram s tepem (klouzavý průměr ±5 min, tah prstem = čas/fáze/tep), délky fází, rozpad skóre („bez dat“ šedě), tagy, odznaky, reakce, komentáře (přidat, smazat dlouhým stiskem – autor komentáře nebo karty).
+- Úprava karty (sheet): název (80), komentář (1000), tagy jako chipy. Fotka zatím ne.
+- Časy z Postgresu mají 6 desetinných míst → vlastní `parseTimestamp`.
+- `supabase/tests/seed_dev.py email:heslo …` – 7 realistických nocí na účet přes `ingest-sleep` + názvy, tagy, reakce, komentáře.
+- DEBUG: `xcrun simctl launch "iPhone 16" cz.mikolas.sleepscore -debugOpen 2` otevře 2. kartu (screenshoty bez klikání).
+- Postřeh: vygenerované noci (7–8 h, 40 %+ deep+REM) mají skóre 92–99 – složky Délka a Fáze snadno dosáhnou 100. Probrat, jestli skóre nezpřísnit.
 
 ## 2026-11-06 – Onboarding a pozvánky
 - Nepřihlášený: kód pozvánky („Sem se dostaneš jen přes kamaráda.“) → přihlášení; „Už mám účet“ jde rovnou na přihlášení. Kód se uloží (`Session.pendingInviteCode`, UserDefaults) a ověří až po přihlášení.

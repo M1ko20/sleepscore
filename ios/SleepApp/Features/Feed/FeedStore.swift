@@ -1,0 +1,87 @@
+import Foundation
+import Observation
+
+/// Data feedu sdílená mezi feedem a detailem (reakce a úpravy se propíšou všude).
+@MainActor
+@Observable
+final class FeedStore {
+    private(set) var posts: [FeedPost] = []
+    private(set) var loaded = false
+    private(set) var error: String?
+    private(set) var tagLabels: [String: String] = [:]
+    private(set) var tagCatalog: [Tag] = []
+    private(set) var achievementNames: [String: String] = [:]
+    private(set) var streaks: [UUID: Int] = [:]
+
+    func load() async {
+        do {
+            async let postsReq = API.feed()
+            if tagCatalog.isEmpty {
+                async let tagsReq = API.tags()
+                async let achReq = API.achievements()
+                let (tags, ach) = try await (tagsReq, achReq)
+                tagCatalog = tags
+                tagLabels = Dictionary(uniqueKeysWithValues: tags.map { ($0.slug, $0.label) })
+                achievementNames = Dictionary(uniqueKeysWithValues: ach.map { ($0.code, $0.name) })
+            }
+            posts = try await postsReq
+            let authors = Array(Set(posts.map(\.author.id)))
+            let stats = try await API.stats(userIDs: authors)
+            streaks = Dictionary(uniqueKeysWithValues: stats.map { ($0.userID, $0.currentStreak) })
+            error = nil
+        } catch {
+            log.error("feed load failed: \(String(describing: error))")
+            self.error = "Feed se nenačetl."
+        }
+        loaded = true
+    }
+
+    func post(_ id: UUID) -> FeedPost? { posts.first { $0.id == id } }
+
+    /// Moje dnešní karta nahoru, pak ostatní od nejnovější.
+    func ordered(me: UUID?) -> [FeedPost] {
+        guard let me, let i = posts.firstIndex(where: { $0.author.id == me && Calendar.current.isDateInToday($0.createdAt) })
+        else { return posts }
+        var list = posts
+        let mine = list.remove(at: i)
+        return [mine] + list
+    }
+
+    /// Série se ukazuje jen na nejnovější kartě autora a od 3 nocí.
+    func streakBadge(for post: FeedPost) -> Int? {
+        guard let s = streaks[post.author.id], s >= 3,
+              posts.first(where: { $0.author.id == post.author.id })?.id == post.id else { return nil }
+        return s
+    }
+
+    func react(_ postID: UUID, me: UUID, kind: ReactionKind?) async {
+        guard let i = posts.firstIndex(where: { $0.id == postID }) else { return }
+        let before = posts[i].reactions
+        posts[i].reactions.removeAll { $0.userID == me }
+        if let kind { posts[i].reactions.append(Reaction(userID: me, kind: kind)) }
+        do {
+            try await API.setReaction(postID: postID, userID: me, kind: kind)
+        } catch {
+            if let j = posts.firstIndex(where: { $0.id == postID }) { posts[j].reactions = before }
+        }
+    }
+
+    func applyEdit(postID: UUID, title: String?, body: String?, tags: [String]) {
+        guard let i = posts.firstIndex(where: { $0.id == postID }) else { return }
+        posts[i].title = title
+        posts[i].body = body
+        posts[i].night.tags = tags
+    }
+
+    func setCommentCount(postID: UUID, _ count: Int) {
+        guard let i = posts.firstIndex(where: { $0.id == postID }) else { return }
+        posts[i].commentCount = count
+    }
+
+    func tagLine(_ tags: [String]) -> String {
+        let order = Dictionary(uniqueKeysWithValues: tagCatalog.enumerated().map { ($1.slug, $0) })
+        return tags.sorted { (order[$0] ?? 99) < (order[$1] ?? 99) }
+            .map { tagLabels[$0] ?? $0 }
+            .joined(separator: " · ")
+    }
+}

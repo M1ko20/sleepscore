@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct MainTabView: View {
+    @State private var feed = FeedStore()
+
     var body: some View {
         TabView {
             FeedView()
@@ -10,5 +12,6 @@ struct MainTabView: View {
             ProfileView()
                 .tabItem { Label("Profil", systemImage: "person") }
         }
+        .environment(feed)
     }
 }
