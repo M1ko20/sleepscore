@@ -14,6 +14,7 @@ create function auth.uid() returns uuid language sql stable as $$
   select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid
 $$;
 grant usage on schema auth to anon, authenticated, service_role;
+grant execute on function auth.uid() to anon, authenticated;
 
 create schema storage;
 create table storage.buckets (
@@ -30,16 +31,21 @@ create function storage.foldername(name text) returns text[] language sql immuta
   select (string_to_array(name, '/'))[1:array_length(string_to_array(name, '/'), 1) - 1]
 $$;
 grant usage on schema storage to authenticated;
+grant execute on function storage.foldername(text) to authenticated;
+grant select, insert, update, delete on storage.objects to authenticated;
 
 -- pg_cron: jen zaznamená úlohu.
 create schema cron;
-create table cron.job (jobname text primary key, schedule text, command text);
+create table cron.job (jobid serial, jobname text primary key, schedule text, command text);
 create table cron.job_run_details (end_time timestamptz);
 create function cron.schedule(p_name text, p_schedule text, p_command text) returns bigint
 language sql as $$
-  insert into cron.job values (p_name, p_schedule, p_command)
+  insert into cron.job (jobname, schedule, command) values (p_name, p_schedule, p_command)
   on conflict (jobname) do update set schedule = excluded.schedule, command = excluded.command;
-  select 1::bigint;
+  select jobid::bigint from cron.job where jobname = p_name;
+$$;
+create function cron.unschedule(p_name text) returns boolean language sql as $$
+  delete from cron.job where jobname = p_name returning true
 $$;
 
 -- pg_net: zaznamená požadavek (upozornění pro nás).

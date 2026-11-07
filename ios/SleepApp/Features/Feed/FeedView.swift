@@ -46,12 +46,26 @@ struct FeedView: View {
                 NightDetailView(postID: id)
             }
             .navigationDestination(for: ProfileLite.self) { UserProfileView(profile: $0) }
+            .navigationDestination(for: ChallengeLink.self) { ChallengeDetailView(challengeID: $0.id) }
+            .navigationDestination(for: FeedRoute.self) { route in
+                switch route {
+                case .notifications: NotificationsView()
+                }
+            }
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    NavigationLink(value: FeedRoute.notifications) {
+                        BellButton(unread: store.unreadNotifications)
+                    }
+                }
+            }
             .refreshable { await store.load() }
             .task {
                 if !store.loaded { await store.load() }
                 #if DEBUG
                 // Screenshoty ze simulátoru: `simctl launch … -debugOpen 1` otevře n-tou kartu noci.
                 let args = ProcessInfo.processInfo.arguments
+                if args.contains("-debugNotifications"), path.isEmpty { path.append(FeedRoute.notifications) }
                 let nights = store.items(me: me).compactMap { if case .night(let p) = $0 { p.id } else { nil } }
                 if let i = args.firstIndex(of: "-debugOpen"), i + 1 < args.count, let n = Int(args[i + 1]),
                    path.isEmpty, n >= 1, n <= nights.count {
@@ -108,4 +122,8 @@ struct FeedView: View {
         }
         .padding(.top, 120)
     }
+}
+
+enum FeedRoute: Hashable {
+    case notifications
 }

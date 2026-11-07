@@ -180,10 +180,29 @@ DEEP       ████            ███
 5. Hotovo → feed s kartou toho, kdo tě pozval, a větou „První noc se ukáže zítra ráno.“
 
 ### 2. Feed
-- Nahoře „Feed“ (title), vpravo nic.
+- Nahoře „Feed“ (title), vpravo zvoneček (`bell`, 44 × 44 pt). Nepřečtené = malý žlutý štítek s číslem (`accent`, text `accentInk`, max. „99+“).
 - Moje dnešní karta (když je), pak karty přátel od nejnovější, karty výsledků výzev mezi nimi.
 - Prázdný feed: „Zatím tu nikdo není. Pošli pozvánku.“ + sekundární tlačítko.
 - Chybějící noc se nezobrazuje vůbec (žádné „Jakub dnes nespal“).
+
+### 2b. Upozornění (zvoneček)
+```
+‹ Feed            Upozornění
+─────────────────────────────────
+(○) Cyril a 2 další reagují na    •
+    tvoji noc.
+    7:14
+─────────────────────────────────
+(☾) Tvoje noc: 78. Doplň komentář.
+    6:52
+─────────────────────────────────
+(○) Adam tě vyzývá: 7 dní, pivo.
+    včera
+```
+- Řádek: avatar aktéra 36 pt (u notifikací od appky glyf v kroužku `surfaceRaised`: `moon.zzz` karta, `hexagon` odznak, `chart.bar` recap, `flag.2.crossed` výzva), text `body` max. 3 řádky, čas `caption`. Oddělení tenkou linkou, bez karet.
+- Nové = žlutá tečka 8 pt vpravo (jen při tomhle otevření; otevření výpisu označí vše jako přečtené).
+- Klepnutí: karta, výzva, profil nebo recap. Prázdný stav: „Ticho. Až někdo zareaguje, uvidíš to tady.“
+- Texty skládá server, sloveso v přítomném čase (nemusíme znát rod): „Bára jde do toho.“, „Adam přijímá žádost o přátelství.“
 
 ### 3. Detail noci
 Shora: autor a datum → `scoreXL` + 3 statistiky (délka, usnutí, vstávání) → hypnogram → délky fází (4 vodorovné pruhy s minutami) → **rozpad skóre** (5 řádků: název složky, tenký pruh, číslo; vynechaná složka šedě „bez dat“) → tagy → fotka → komentáře.
@@ -259,6 +278,8 @@ Stejný, ale místo nastavení: **vzájemná bilance** nahoře („Ty vs Jakub 7
 | Výzva | „Jakub tě vyzval. 7 dní, prohraný platí pivo.“ | „Nová výzva čeká na tvou odpověď!“ |
 | Prohra | „Jakub bere tvoji duši.“ | „Bohužel jsi tentokrát prohrál.“ |
 | Chybějící noc ve výzvě | „Včera nic. Zatím 0, dá se dohrát.“ | „Zapomněl jsi synchronizovat zařízení.“ |
+| Konec výzvy | „Zítra konec. Prohráváš o 3,2 bodu.“ | „Výzva se blíží ke konci, nevzdávej to!“ |
+| Opakovaný odznak | „Hlubinář. Zase.“ | „Gratulujeme, opět jsi získal odznak!“ |
 
 ## Pohyb
 - Výchozí systémové přechody. Pružina jen u reakce (lehký „pop“) a u počítání skóre (číslo naběhne při prvním zobrazení karty, 0,6 s).

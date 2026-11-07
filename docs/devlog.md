@@ -15,8 +15,9 @@ Co je hotové a jak. Nejnovější nahoře. Detaily backendu v `backend.md`, vzh
 9. ~~Zpřísnění skóre (v2)~~ hotovo.
 10. ~~Sleep Wrapped~~ hotovo.
 11. ~~GDPR (export, smazání účtu, Soukromí)~~ hotovo.
-12. ~~Nahlášení obsahu a blokování (App Store 1.2)~~ hotovo, čeká na nasazení migrace a nastavení webhooku.
-13. Další: privacy policy + landing page (Adam), push notifikace (Developer Program), test na iPhonu s Garminem. (konec roku), smazání účtu (GDPR), push notifikace (až s Developer Programem – pak i pondělní push na recap).
+12. ~~Nahlášení obsahu a blokování (App Store 1.2)~~ hotovo (#6), čeká na nasazení migrace a nastavení webhooku.
+13. ~~Notifikace ve zvonečku~~ hotovo (#9). ~~Zneplatnění Apple tokenu~~ (#7), ~~Release bez zápisu do Health~~ (#8), ~~anglické zásady~~ (#3) hotovo.
+14. Další: push přes APNs (#10, Developer Program, pak i pondělní push na recap), nastavení notifikací (#11), test na iPhonu s Garminem.
 
 ## 2026-11-07 – Nahlášení obsahu a blokování (App Store 1.2, issue #6)
 - Migrace `20261107010215_moderation.sql` (**nenasazeno** – `supabase db push` udělá Adam):
@@ -36,6 +37,15 @@ Co je hotové a jak. Nejnovější nahoře. Detaily backendu v `backend.md`, vzh
 - Appka: `Session.signInWithApple(idToken:nonce:authorizationCode:)` (připravené, zatím ho nic nevolá – přihlašovací obrazovka přijde s Developer Programem), `API.deleteMyAccount` volá u Apple účtů `delete-account`, jinak dál RPC.
 - Bez Apple secrets se výměna i revokace přeskočí, mazání funguje dál. Revokace je best effort – selhání Apple nezablokuje smazání dat.
 - Ověřeno: `deno test _shared/` 23/23, `deno check` obou funkcí, migrace na lokálním Postgres 16 (service role čte/zapisuje, anon/authenticated odmítnuti, kaskáda s `auth.users`), xcodebuild OK. Nenasazeno – migrace i funkce čekají na deploy (viz backend.md → nasazování). Proti skutečnému Apple API netestováno (chybí účet).
+
+
+## 2026-11-07 – Notifikace: zvoneček (issue #9)
+- Migrace `…20261107010500_notifications.sql`: tabulka `notifications`, vznik jen v DB (triggery + pg_cron), text skládá SQL funkce `notification_text` (stejná pro zvoneček i budoucí push). Detail v `backend.md` → Notifikace.
+- Události: reakce (1 řádek na kartu, slučuje se), komentář, žádost / přijetí přátelství (i „je tu přes tvoji pozvánku“), pozvánka do výzvy, odpověď zakladateli, start, „zítra konec“ (20:00 místního času), výsledek, splacený dluh, odznak (opakovaný = „Zase.“), ranní karta, pondělní recap (9:00). Vynecháno: „kamarád tě předběhl“ (ke zvážení v issue).
+- Appka: zvoneček vpravo nahoře ve feedu s počtem nepřečtených (počet se načte jedním `HEAD` dotazem s feedem, žádný polling). Výpis „Upozornění“: avatar nebo glyf, text, čas, žlutá tečka u nových; otevření = `mark_notifications_read()` (1 call). Proklik: karta (i starší, než je ve feedu – dotáhne se), výzva, profil, recap.
+- Lokální SQL testy jsou nově v repu: `supabase/tests/local/run.sh` (stub Supabase + pg_cron, všechny migrace) a `notifications_test.sql` (62 kontrol). Starý test sérií/výzev s triggery prošel beze změny výsledků.
+- **Nenasazeno** – Adam: `supabase db push --remote --yes`. Do nasazení appka funguje dál, jen zvoneček ukáže „Upozornění se nenačetla.“
+- DEBUG: `-debugNotifications` otevře výpis.
 
 ## 2026-11-06 – GDPR: export a smazání účtu
 - Migrace `…210000_gdpr.sql`: `challenges.timezone` (doplní trigger ze zakladatele; start a uzavírání ve 14:00 už nečtou profil zakladatele), `creator_id` nullable + `on delete set null` (dřív by smazání zakladatele smazalo výzvu i ostatním hráčům, včetně jejich výher a duší). RPC `delete_my_account()` a `export_my_data()`, detaily v `backend.md` → GDPR.
@@ -189,3 +199,11 @@ Co je hotové a jak. Nejnovější nahoře. Detaily backendu v `backend.md`, vzh
 - `NSHealthUpdateUsageDescription` už není v `info:` v `ios/project.yml`; přidává se jen v Debug přes `INFOPLIST_KEY_NSHealthUpdateUsageDescription` (+ `GENERATE_INFOPLIST_FILE` jen pro Debug, Xcode klíč přimíchá do Info.plist).
 - `toShare` v `HealthSync.requestAuthorization()` byl už dřív jen v `#if DEBUG`, `DebugHealthSeeder` celý v `#if DEBUG`.
 - Ověřeno: Debug i Release build pro simulátor; v Release Info.plist klíč chybí.
+
+## 2026-11-07 – Sloučení #3, #6, #7, #8, #9 (větev `issues-3-6-7-8-9`)
+- Pět issues dělali paralelně subagenti ve worktree, sloučeno do jedné větve. Nic nenasazeno.
+- Při slučování: společný `supabase/tests/local/run.sh` + `stub.sql` (z #6 a #9) – každý test běží na čisté kopii DB po migracích, bez argumentu pouští testy v `tests/local` i `tests/`.
+- Nová migrace `20261107120000_export_moderation_notifications.sql`: `export_my_data` přidává bloky, podaná hlášení (bez snapshotu a interní poznámky) a notifikace; kvůli hlášením je teď `security definer` (vše filtrované přes `auth.uid()`).
+- `site/en/terms.html` doplněné o hlášení a blokování (jako česká verze z #6).
+- Oprava: `Challenge.creatorID` je volitelné (po smazání zakladatele je v DB null, výzva se jinak nenačetla).
+- Ověřeno: lokální SQL testy (moderace + notifikace + export), `deno test _shared/` 23/23, xcodebuild OK.

@@ -69,7 +69,7 @@ struct DayScore: Decodable, Hashable, Sendable {
 struct Challenge: Decodable, Hashable, Sendable, Identifiable {
     let id: UUID
     let type: ChallengeType
-    let creatorID: UUID
+    let creatorID: UUID?   // null, když zakladatel smazal účet
     let stake: String?
     let durationDays: Int
     let targetScore: Int?
@@ -101,7 +101,7 @@ struct Challenge: Decodable, Hashable, Sendable, Identifiable {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         id = try c.decode(UUID.self, forKey: .id)
         type = try c.decode(ChallengeType.self, forKey: .type)
-        creatorID = try c.decode(UUID.self, forKey: .creatorID)
+        creatorID = try c.decodeIfPresent(UUID.self, forKey: .creatorID)
         stake = try c.decodeIfPresent(String.self, forKey: .stake)
         durationDays = try c.decode(Int.self, forKey: .durationDays)
         targetScore = try c.decodeIfPresent(Int.self, forKey: .targetScore)

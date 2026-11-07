@@ -239,6 +239,14 @@ select private.unban_user('00000000-0000-0000-0000-00000000000b');
 select t_ok((select banned_at is null from public.profiles where id = '00000000-0000-0000-0000-00000000000b'), 'unban');
 
 -- Smazání účtu hlásícího: hlášení zůstane bez reportera
+-- export dat obsahuje podaná hlášení (bez snapshotu) a bloky
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-00000000000a', false);
+set role authenticated;
+select t_ok(jsonb_array_length(public.export_my_data()->'reports_filed') >= 1, 'export: podaná hlášení');
+select t_ok(not (public.export_my_data()->'reports_filed'->0 ? 'snapshot'), 'export: hlášení bez snapshotu');
+select t_ok(jsonb_typeof(public.export_my_data()->'blocks') = 'array', 'export: bloky');
+select t_ok(jsonb_typeof(public.export_my_data()->'notifications') = 'array', 'export: notifikace');
+reset role;
 delete from auth.users where id = '00000000-0000-0000-0000-00000000000a';
 select t_ok((select count(*) from public.reports where reporter_id is null) >= 1, 'po smazání hlásícího hlášení zůstane');
 select t_ok((select count(*) from public.blocks) = 1, 'bloky smazaného zmizely, ostatní zůstaly');

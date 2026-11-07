@@ -17,6 +17,7 @@ struct NightDetailView: View {
     @State private var reported: (request: ReportRequest, blocked: Bool)?
     @State private var blockTarget: ProfileLite?
     @FocusState private var composing: Bool
+    @State private var looked = false
 
     private var me: UUID? { session.profile?.id }
 
@@ -24,7 +25,7 @@ struct NightDetailView: View {
         Group {
             if let post = store.post(postID) {
                 content(post)
-            } else {
+            } else if looked {
                 Text("Karta už není k dispozici.").captionStyle()
             }
         }
@@ -272,6 +273,8 @@ struct NightDetailView: View {
     // MARK: Akce
 
     private func loadExtras() async {
+        await store.ensurePost(postID)   // starší karta ze zvonečku
+        looked = true
         guard let post = store.post(postID) else { return }
         async let hr = API.heartRate(nightID: post.night.id)
         async let cs = API.comments(postID: postID)

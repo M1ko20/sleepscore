@@ -307,6 +307,24 @@ enum API {
         return try await decode(db.rpc("sleep_wrapped").execute().data)
     }
 
+    // MARK: Notifikace
+
+    /// Zvoneček: posledních 50 (starší než 30 dní maže pg_cron).
+    nonisolated static func notifications(limit: Int = 50) async throws -> [AppNotification] {
+        try await decode(db.from("notifications").select(AppNotification.select)
+            .order("created_at", ascending: false).limit(limit).execute().data)
+    }
+
+    /// Počet nepřečtených – jen hlavička s počtem, bez dat. Volá se s feedem.
+    nonisolated static func unreadNotificationCount() async throws -> Int {
+        try await db.from("notifications").select("id", head: true, count: .exact)
+            .is("read_at", value: nil).execute().count ?? 0
+    }
+
+    nonisolated static func markNotificationsRead() async throws {
+        _ = try await db.rpc("mark_notifications_read").execute().data
+    }
+
     // MARK: GDPR
 
     /// Všechna moje data jako JSON (export_my_data).

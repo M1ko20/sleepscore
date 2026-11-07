@@ -40,6 +40,10 @@ struct ChallengeDetailView: View {
                 }
             }
         }
+        .task {
+            // proklik ze zvonečku na výzvu, kterou seznam ještě nezná
+            if store.challenge(challengeID) == nil, let me { await store.load(me: me) }
+        }
     }
 
     private func content(_ c: Challenge) -> some View {
