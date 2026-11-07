@@ -234,6 +234,7 @@ enum API {
             .select("id,username,display_name,avatar_path,timezone")
             .ilike("username", pattern: q.replacingOccurrences(of: "_", with: "\\_") + "%")
             .neq("id", value: me)
+            .is("banned_at", value: nil)
             .order("username").limit(20)
             .execute().data)
     }
@@ -249,6 +250,41 @@ enum API {
 
     nonisolated static func removeFriend(_ user: UUID) async throws {
         try await db.rpc("remove_friend", params: ["p_user": user]).execute()
+    }
+
+    // MARK: Moderace
+
+    /// Nahlášení obsahu. `block` = rovnou zablokovat autora (jedním callem).
+    nonisolated static func report(_ kind: ReportTarget, id: UUID, reason: ReportReason,
+                                   note: String?, block: Bool) async throws {
+        struct Params: Encodable {
+            let p_kind: String
+            let p_target: UUID
+            let p_reason: String
+            let p_note: String?
+            let p_block: Bool
+        }
+        _ = try await db.rpc("report_content", params: Params(
+            p_kind: kind.rawValue, p_target: id, p_reason: reason.rawValue, p_note: note, p_block: block
+        )).execute().data
+    }
+
+    nonisolated static func blockUser(_ user: UUID) async throws {
+        try await db.rpc("block_user", params: ["p_user": user]).execute()
+    }
+
+    nonisolated static func unblockUser(_ user: UUID) async throws {
+        try await db.rpc("unblock_user", params: ["p_user": user]).execute()
+    }
+
+    /// Koho jsem zablokoval (RLS vrací jen moje bloky).
+    nonisolated static func blockedUsers() async throws -> [ProfileLite] {
+        struct Row: Decodable { let blocked: ProfileLite }
+        let rows: [Row] = try await decode(db.from("blocks")
+            .select("blocked:profiles!blocks_blocked_id_fkey(id,username,display_name,avatar_path,timezone)")
+            .order("created_at", ascending: false)
+            .execute().data)
+        return rows.map(\.blocked)
     }
 
     nonisolated static func updateDisplayName(_ name: String, me: UUID) async throws {
@@ -361,6 +397,10 @@ func serverMessage(_ error: Error) -> String {
     case let t where t.contains("group challenge needs"): return "Skupinová výzva potřebuje aspoň 2 pozvané."
     case let t where t.contains("duration_days"): return "Výzva musí mít aspoň 7 dní."
     case let t where t.contains("no pending invitation"): return "Pozvánka už neplatí."
+    case let t where t.contains("you blocked this user"): return "Nejdřív zruš blokování."
+    case let t where t.contains("too many reports"): return "Na dnešek stačí. Zkus to zítra."
+    case let t where t.contains("content not found"): return "Tohle už neexistuje."
+    case let t where t.contains("not allowed"): return "Tohle nejde."
     default: return "Nepovedlo se. \(text)"
     }
 }

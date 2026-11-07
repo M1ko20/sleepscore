@@ -79,6 +79,15 @@ struct FriendsView: View {
                             }
                         }
                     }
+                    if !store.blocked.isEmpty {
+                        section("Zablokovaní") {
+                            ForEach(store.blocked) { p in
+                                row(p) {
+                                    smallButton("Zrušit blok") { act(p.id) { try await store.unblock(p.id, me: $0) } }
+                                }
+                            }
+                        }
+                    }
                 }
             }
             .padding(Metrics.screenPadding)
@@ -125,6 +134,15 @@ struct FriendsView: View {
 
     @ViewBuilder
     private func searchAction(_ p: ProfileLite) -> some View {
+        if store.isBlocked(p.id) {
+            Text("zablokováno").captionStyle()
+        } else {
+            friendshipAction(p)
+        }
+    }
+
+    @ViewBuilder
+    private func friendshipAction(_ p: ProfileLite) -> some View {
         switch store.entry(p.id) {
         case .some(let e) where e.status == .accepted:
             Text("přítel").captionStyle()

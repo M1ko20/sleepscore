@@ -16,10 +16,13 @@ struct UserProfileView: View {
     @State private var busy = false
     @State private var challengeTarget: ProfileLite?
     @State private var confirmRemove = false
+    @State private var reporting: ReportRequest?
+    @State private var blockTarget: ProfileLite?
 
     private var me: UUID? { session.profile?.id }
     private var friendship: ProfileSummary.Friendship? { summary?.friendship }
     private var isFriend: Bool { friendship?.status == .accepted }
+    private var isBlocked: Bool { friends.isBlocked(profile.id) }
     private var shown: ProfileLite { summary?.profile ?? profile }
     private var firstName: String { shown.displayName.split(separator: " ").first.map(String.init) ?? shown.displayName }
 
@@ -27,7 +30,9 @@ struct UserProfileView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
                 ProfileHeader(profile: shown)
-                if let summary {
+                if isBlocked {
+                    blockedBlock
+                } else if let summary {
                     if isFriend {
                         headToHead(summary.h2h ?? .zero)
                         Button("Vyzvat") { challengeTarget = shown }
@@ -49,10 +54,20 @@ struct UserProfileView: View {
         .navigationTitle("@\(shown.username)")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            if isFriend {
+            if profile.id != me {
                 ToolbarItem(placement: .primaryAction) {
                     Menu {
-                        Button("Odebrat z přátel", role: .destructive) { confirmRemove = true }
+                        if isFriend {
+                            Button("Odebrat z přátel", role: .destructive) { confirmRemove = true }
+                        }
+                        Button("Nahlásit profil") {
+                            reporting = ReportRequest(kind: .profile, targetID: shown.id, author: shown)
+                        }
+                        if isBlocked {
+                            Button("Zrušit blokování") { act { try await friends.unblock(shown.id, me: $0) } }
+                        } else {
+                            Button("Zablokovat", role: .destructive) { blockTarget = shown }
+                        }
                     } label: {
                         Image(systemName: "ellipsis")
                     }
@@ -67,6 +82,14 @@ struct UserProfileView: View {
             Button("Zrušit", role: .cancel) {}
         } message: {
             Text("Přestanete si vidět noci. Výzvy a bilance zůstanou.")
+        }
+        .sheet(item: $reporting) { req in
+            ReportSheet(request: req) { didBlock in
+                if didBlock, let me { Task { await afterBlock(req.author ?? shown, me: me) } }
+            }
+        }
+        .blockConfirmation($blockTarget) { p in
+            if let me { Task { await afterBlock(p, me: me, alreadyReloaded: true) } }
         }
         .sheet(item: $challengeTarget) { p in
             NewChallengeFlow(prefill: p, rematch: false).environment(challenges)
@@ -94,6 +117,19 @@ struct UserProfileView: View {
         if r.wins > r.losses { return "Vedeš." }
         if r.wins < r.losses { return "\(firstName) vede." }
         return "Nerozhodně."
+    }
+
+    private var blockedBlock: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Zablokováno. Nevidíte si noci, komentáře ani reakce a nejde se vyzvat ani poslat žádost.")
+                .captionStyle()
+            Button(busy ? "Ruším…" : "Zrušit blokování") {
+                act { try await friends.unblock(shown.id, me: $0) }
+            }
+            .buttonStyle(.secondary)
+            if let actionError { Text(actionError).captionStyle() }
+        }
+        .disabled(busy)
     }
 
     @ViewBuilder
@@ -134,6 +170,14 @@ struct UserProfileView: View {
             log.error("user profile load failed: \(String(describing: error))")
             if summary == nil { loadError = "Profil se nenačetl. Stáhni dolů a zkus to znovu." }
         }
+    }
+
+    /// Po zablokování: karty pryč z feedu, přátelé, výzvy a profil znovu.
+    private func afterBlock(_ p: ProfileLite, me: UUID, alreadyReloaded: Bool = false) async {
+        feed.removeAuthor(p.id)
+        if !alreadyReloaded { await friends.markBlocked(p, me: me) }
+        await load()
+        await challenges.load(me: me)
     }
 
     /// Akce s přátelstvím → znovu načíst profil i seznam přátel pro výzvy.
