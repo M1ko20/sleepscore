@@ -161,3 +161,6 @@ Co je hotové a jak. Nejnovější nahoře. Detaily backendu v `backend.md`, vzh
 ## 2026-11-06 – Zmenšování starých nocí
 - Migrace `…220000_compact_night_raw.sql`: noci starší 120 dní denně zmenší pg_cron (slití úseků, tep do 5min průměrů). Na dev datech −56 % místa, nic se neztratilo z toho, co appka zobrazuje. Detail v backend.md.
 - Notifikace: návrh (zvoneček v appce + pushe přes frontu a pg_cron, mazání po 30 dnech) čeká na Adamovo OK.
+
+## 2026-11-07 – Web: anglické zásady a podmínky (issue #3)
+- `site/en/privacy.html`, `site/en/terms.html` – věrný překlad, s poznámkou, že rozhoduje česká verze. Přepínač CZ/EN v hlavičce (`nav a.lang`), `hreflang` odkazy. Anglická landing page zatím ne (EN odkaz z úvodu vede na en/privacy.html).

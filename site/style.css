@@ -61,3 +61,5 @@ footer a { color: var(--text2); margin-right: 16px; }
   .doc td:nth-child(2)::before { content: "Účel: "; color: var(--text2); }
   .doc td:nth-child(3)::before { content: "Základ: "; color: var(--text2); }
 }
+.lang { border: 1px solid var(--text2); border-radius: 6px; padding: 1px 6px; font-size: 13px !important; }
+nav a.lang { border: 1px solid var(--text2); border-radius: 6px; padding: 1px 6px; font-size: 13px; }
