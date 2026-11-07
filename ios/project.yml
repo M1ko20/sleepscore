@@ -48,3 +48,24 @@ targets:
         NSHealthShareUsageDescription: Čteme jen spánek a tep z hodinek nebo prstenu. Nic dalšího a nic do reklamy.
         SupabaseURL: $(SUPABASE_URL)
         SupabaseKey: $(SUPABASE_KEY)
+  # UI testy (XCUITest): ruční test #13 a průchod appkou na promo video.
+  SleepAppUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources: [SleepAppUITests]
+    dependencies:
+      - target: SleepApp
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: cz.mikolas.sleepscore.uitests
+        GENERATE_INFOPLIST_FILE: YES
+        SWIFT_VERSION: "5.10"
+        TEST_TARGET_NAME: SleepApp
+schemes:
+  SleepApp:
+    build:
+      targets:
+        SleepApp: all
+        SleepAppUITests: [test]
+    test:
+      targets: [SleepAppUITests]
