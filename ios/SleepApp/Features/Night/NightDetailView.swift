@@ -6,11 +6,16 @@ struct NightDetailView: View {
 
     @Environment(Session.self) private var session
     @Environment(FeedStore.self) private var store
+    @Environment(FriendsStore.self) private var friends
+    @Environment(\.dismiss) private var dismiss
     @State private var heartRate: [HeartRatePoint] = []
     @State private var comments: [Comment] = []
     @State private var draft = ""
     @State private var sending = false
     @State private var editing = false
+    @State private var reporting: ReportRequest?
+    @State private var reported: (request: ReportRequest, blocked: Bool)?
+    @State private var blockTarget: ProfileLite?
     @FocusState private var composing: Bool
 
     private var me: UUID? { session.profile?.id }
@@ -116,9 +121,28 @@ struct NightDetailView: View {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Upravit") { editing = true }
                 }
+            } else {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Menu {
+                        Button("Nahlásit kartu") {
+                            reporting = ReportRequest(kind: .post, targetID: post.id, author: post.author)
+                        }
+                        Button("Zablokovat \(post.author.displayName)", role: .destructive) {
+                            blockTarget = post.author
+                        }
+                    } label: {
+                        Image(systemName: "ellipsis")
+                    }
+                    .tint(Color.app.textPrimary)
+                    .accessibilityLabel("Další možnosti")
+                }
             }
         }
         .sheet(isPresented: $editing) { EditPostSheet(post: post) }
+        .sheet(item: $reporting, onDismiss: applyReport) { req in
+            ReportSheet(request: req) { blocked in reported = (req, blocked) }
+        }
+        .blockConfirmation($blockTarget) { blocked(user: $0, post: post) }
     }
 
     // MARK: Sekce
@@ -204,6 +228,12 @@ struct NightDetailView: View {
                     Spacer(minLength: 0)
                 }
                 .contextMenu {
+                    if c.author.id != me {
+                        Button("Nahlásit") {
+                            reporting = ReportRequest(kind: .comment, targetID: c.id, author: c.author)
+                        }
+                        Button("Zablokovat", role: .destructive) { blockTarget = c.author }
+                    }
                     if c.author.id == me || post.author.id == me {
                         Button("Smazat", role: .destructive) { delete(c, post: post) }
                     }
@@ -265,6 +295,30 @@ struct NightDetailView: View {
                 store.setCommentCount(postID: post.id, comments.count)
             }
         }
+    }
+
+    /// Po zavření hlášení: nahlášený obsah a případně blokovaný pryč z obrazovky.
+    private func applyReport() {
+        guard let r = reported else { return }
+        let req = r.request, didBlock = r.blocked
+        reported = nil
+        let authorID = store.post(postID)?.author.id
+        comments.removeAll { $0.id == req.targetID || (didBlock && $0.author.id == req.author?.id) }
+        store.setCommentCount(postID: postID, comments.count)
+        if req.kind == .post { store.removePost(req.targetID) }
+        if didBlock, let author = req.author {
+            store.removeAuthor(author.id)
+            if let me { Task { await friends.markBlocked(author, me: me) } }
+        }
+        if req.kind == .post || (didBlock && req.author?.id == authorID) { dismiss() }
+    }
+
+    private func blocked(user: ProfileLite, post: FeedPost?) {
+        comments.removeAll { $0.author.id == user.id }
+        store.setCommentCount(postID: postID, comments.count)
+        let authorBlocked = post?.author.id == user.id
+        store.removeAuthor(user.id)
+        if authorBlocked { dismiss() }
     }
 
     private func delete(_ c: Comment, post: FeedPost) {

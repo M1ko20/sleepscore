@@ -23,6 +23,8 @@ pg_cron každou hodinu v :05 ─▶ private.hourly_jobs()
                                 ├─ díry v sériích (1× denně po 14:00, jen rozjeté série)
                                 └─ Dvojí život (pondělí 10:00)
 pg_cron denně 3:45 UTC ─▶ private.compact_old_night_raw()  (noci starší 120 dní)
+pg_cron každou hodinu v :35 ─▶ private.remind_open_reports()  (hlášení otevřená > 12 h)
+reports INSERT ─trigger─▶ webhook pro nás (pg_net, bez Edge Function)
 night_tags INSERT ─trigger─▶ Navzdory / Pivo vyhrálo
 ```
 
@@ -36,6 +38,7 @@ night_tags INSERT ─trigger─▶ Navzdory / Pivo vyhrálo
 | `…140100_cron.sql` | pg_cron úlohy |
 | `…220000_compact_night_raw.sql` | zmenšení starých surových dat (viz níže) |
 | `20261107100000_apple_tokens.sql` | `apple_tokens` (Apple refresh token kvůli revokaci) |
+| `20261107010215_moderation.sql` | blokování, nahlášení, ban, upozornění (viz Moderace) |
 | `supabase/functions/ingest-sleep/index.ts` | Edge Function pro příjem spánku |
 | `supabase/functions/_shared/sleep.ts` | čistá logika: hlavní spánek, metriky, skóre |
 | `supabase/functions/_shared/sleep_test.ts` | unit testy skóre (15) |
@@ -43,6 +46,8 @@ night_tags INSERT ─trigger─▶ Navzdory / Pivo vyhrálo
 | `supabase/functions/delete-account/index.ts` | smazání Apple účtu: revokace tokenu + `delete_my_account` |
 | `supabase/functions/_shared/apple.ts` (+ `apple_test.ts`, 8 testů) | Apple REST API: client_secret (ES256), `/auth/token`, `/auth/revoke` |
 | `supabase/tests/e2e.py` | E2E test proti živému projektu (25 kontrol, uklidí po sobě) |
+| `supabase/tests/local/run.sh` | lokální SQL testy: dočasný Postgres 16 + `stub.sql` (auth, storage, cron, net) + všechny migrace + `*_test.sql` |
+| `supabase/tests/local/moderation_test.sql` | moderace (68 kontrol) |
 
 ## Tabulky (public)
 - `profiles` – přezdívka (`^[a-z0-9_.]{3,20}$`), jméno, avatar, timezone, `invites_available` (start 3), `invited_by`
@@ -61,6 +66,10 @@ night_tags INSERT ─trigger─▶ Navzdory / Pivo vyhrálo
 - `user_stats` – aktuální a nejlepší série, poslední týden s freeze
 - `push_tokens`
 - `apple_tokens` – Apple refresh token (Sign in with Apple), jen service role (RLS bez politik, práva anon/authenticated odebraná), kaskáda s `auth.users`
+- `blocks` – kdo koho zablokoval (`blocker_id`, `blocked_id`); řádek vidí jen blokující
+- `reports` – hlášení: co (`post | comment | profile | challenge` + id), kdo, na koho, důvod (`harassment | hate | sexual | spam | other`), poznámka, `snapshot` obsahu, `open/resolved/dismissed`. Klient nemá k tabulce žádný přístup.
+- `profiles.banned_at` – zabanovaný účet (`private.is_member()` pak vrací false)
+- `private.app_config` – klíč/hodnota pro nastavení mimo repo (URL webhooku)
 
 Pohledy (security_invoker): `mma_records` (všechny typy výzev), `souls` (bez team_goal), `head_to_head` (bez team_goal).
 
@@ -71,7 +80,9 @@ Storage: buckety `avatars` (max 150 kB), `night-photos` (max 400 kB) – privát
 - Noci, hypnogram, karty, komentáře, reakce, série, achievementy: vlastník + přátelé.
 - Výzvy, účastníci, denní skóre: účastníci + přátelé účastníků.
 - Dluhy: jen dlužník a věřitel.
-- Bez profilu (Apple login bez pozvánky) nevidí nic. `anon` nemá přístup nikam.
+- Bez profilu (Apple login bez pozvánky) nevidí nic. Zabanovaný taky ne. `anon` nemá přístup nikam.
+- Blok (oběma směry): komentáře a reakce toho druhého nevidím a nemůžu komentovat/reagovat na jeho karty. Noci a karty mizí samy – blok ruší přátelství.
+- Co jsem nahlásil (karta, komentář), se mi hned skryje (`private.reported_by_me`). Ostatní to vidí dál, dokud hlášení nevyřídíme.
 - Helpery `private.is_member / are_friends / can_view_challenge / can_view_post / is_friend_folder` – schéma `private` není v API.
 
 ## RPC pro appku
@@ -94,6 +105,9 @@ Storage: buckety `avatars` (max 150 kB), `night-photos` (max 400 kB) – privát
 | `start_challenge(challenge)` | skupinu spouští zakladatel, min. 3 přijatí |
 | `cancel_challenge(challenge)` | zakladatel, jen pending |
 | `settle_debt(debt)` | dlužník označí splacení |
+| `block_user(user)` | blok + zruší přátelství/žádost, čekající souboj mezi nimi zruší, z čekající skupinové výzvy jednoho z nich vyřadí druhého |
+| `unblock_user(user)` | zruší blok (přátelství se neobnoví) |
+| `report_content(kind, target, reason, note?, block?)` | nahlášení (jen viditelný obsah, ne vlastní, 1× na obsah, max. 20/den); `block = true` rovnou zablokuje autora |
 
 Přímé zápisy: `profiles` (display_name, avatar_path, timezone), `posts` (title, body, photo_path – jen vlastní noční karta), `night_tags`, `comments`, `reactions`, `push_tokens`.
 
@@ -126,6 +140,30 @@ Pravidla:
   - `client_secret` = JWT ES256 podepsaný `.p8` klíčem (platnost 5 min), generuje se při každém volání.
   - Secrets: `APPLE_TEAM_ID`, `APPLE_KEY_ID`, `APPLE_CLIENT_ID` (= bundle `cz.mikolas.sleepscore`), `APPLE_PRIVATE_KEY` (obsah `.p8`). Bez nich se výměna i revokace přeskočí (`apple-token` vrátí `{ stored: false }`).
 - Chybí: zásady ochrany osobních údajů (privacy policy) a jejich odkaz v onboardingu – přijde s landing page (nutné i pro App Store a Garmin).
+
+## Moderace (App Store 1.2)
+Slib v podmínkách: hlášení vyřídíme do 24 h, nulová tolerance.
+- **Nahlášení** z appky: detail karty (⋯ → Nahlásit kartu), komentář (dlouhý stisk → Nahlásit), profil (⋯ → Nahlásit profil), detail výzvy se sázkou (⋯ → Nahlásit sázku). Důvod + nepovinná poznámka + „Zablokovat @x“.
+- **Upozornění pro nás:** trigger na `reports` pošle přes `pg_net` webhook (Discord / Slack / ntfy) – jen druh, důvod a id, žádný obsah ani jména. Hodinový pg_cron `report-reminder` (:35) jednou připomene hlášení otevřená přes 12 h. Bez nastavené URL se nic neposílá (hlášení se uloží).
+  ```sql
+  insert into private.app_config values ('report_webhook_url', 'https://discord.com/api/webhooks/…'),
+                                        ('report_webhook_format', 'discord');   -- discord | slack | ntfy
+  -- ntfy: URL https://ntfy.sh/<tajné-téma>, formát 'ntfy'
+  ```
+- **Vyřízení** (SQL editor v dashboardu, jako postgres):
+  ```sql
+  select id, target_kind, reason, note, snapshot, reported_user_id, created_at
+  from public.reports where status = 'open' order by created_at;
+  select private.resolve_report('<id>', 'dismiss', 'poznámka');  -- nic se nemaže
+  select private.resolve_report('<id>', 'remove');  -- komentář smazat / karta: název+komentář+fotka null / profil: jméno = přezdívka, bez fotky / sázka null
+  select private.resolve_report('<id>', 'ban');     -- remove + ban autora
+  select private.unban_user('<user>');
+  ```
+  Vyřídí všechna otevřená hlášení stejného obsahu. Soubory ve Storage SQL smazat nejde → `notice` řekne cestu, smazat ručně v dashboardu.
+- **Ban** (`private.ban_user`): `profiles.banned_at`, `auth.users.banned_until = infinity` (nepřihlásí se; platný JWT dožije max. 1 h, ale `is_member()` už vrací false), přátelství, komentáře, reakce, nepoužité pozvánky a push tokeny pryč, texty a fotky karet null, čekající výzvy zrušené. Běžící souboje doběhnou (zabanovaný nic nenahraje → nuly). Účet a noci zůstávají (důkaz, případné odvolání); úplné smazání = `delete from auth.users`.
+- **Blok** běžící výzvy neruší (jinak by šlo blokem utéct před prohrou). Skupinovou výzvu od někoho třetího můžou hrát i dva lidé s blokem mezi sebou (vidí jen skóre).
+- Smazání účtu: moje bloky zmizí, moje hlášení zůstanou bez `reporter_id`.
+- Export dat (`export_my_data`) zatím bloky a hlášení neobsahuje.
 
 ## Sleep score v2 (`_shared/sleep.ts`, `score_version = 2`)
 v1 dávalo běžným nocím 92–99 (plných 100 za 7–9 h, za 40 % deep+REM, za „normál“) → ve výzvách se noci skoro nelišily. v2: 100 jen za nadprůměr, „normál“ = 85.
@@ -172,7 +210,12 @@ cd supabase/functions && deno test _shared/               # unit testy
 supabase projects api-keys --project-ref tlespfcbqzddddhjsieu -o json > /tmp/keys.json
 python3 -I supabase/tests/e2e.py /tmp/keys.json && rm /tmp/keys.json
 ```
-SQL logiku lze testovat lokálně: Postgres 16 (`/opt/homebrew/opt/postgresql@16/bin`) + stub schémat `auth`/`storage` (role anon/authenticated/service_role, `auth.uid()` z `request.jwt.claim.sub`). Docker není, `supabase start` nejde. Postgres potřebuje `LC_ALL=C`.
+SQL logiku lze testovat lokálně: Postgres 16 (`/opt/homebrew/opt/postgresql@16/bin`) + stub schémat `auth`/`storage`/`cron`/`net` (role anon/authenticated/service_role, `auth.uid()` z `request.jwt.claim.sub`, výchozí granty jako Supabase). Docker není, `supabase start` nejde. Postgres potřebuje `LC_ALL=C`.
+```bash
+supabase/tests/local/run.sh                      # všechny migrace + všechny *_test.sql
+supabase/tests/local/run.sh cesta/x_test.sql     # jen jeden test
+```
+Testy: `select t_ok(podmínka, 'popis')`, `select t_err($$sql$$, 'část chyby', 'popis')`; role přes `set role authenticated` + `set_config('request.jwt.claim.sub', …)`.
 
 ## Chybí / TODO
 - Push notifikace (APNs) – až bude Apple Developer Program.

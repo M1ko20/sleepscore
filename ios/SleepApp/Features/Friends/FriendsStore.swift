@@ -13,11 +13,17 @@ final class FriendsStore {
     var incoming: [ProfileLite] { entries.filter { $0.status == .pending && $0.incoming }.map(\.other) }
     var outgoing: [ProfileLite] { entries.filter { $0.status == .pending && !$0.incoming }.map(\.other) }
 
+    /// Koho jsem zablokoval.
+    private(set) var blocked: [ProfileLite] = []
+
     func entry(_ id: UUID) -> FriendshipEntry? { entries.first { $0.id == id } }
+    func isBlocked(_ id: UUID) -> Bool { blocked.contains { $0.id == id } }
 
     func load(me: UUID) async {
         do {
+            async let blockedReq = API.blockedUsers()
             entries = try await API.friendships(me: me)
+            blocked = (try? await blockedReq) ?? blocked
             error = nil
         } catch {
             log.error("friends load failed: \(String(describing: error))")
@@ -38,6 +44,23 @@ final class FriendsStore {
 
     func remove(_ user: UUID, me: UUID) async throws {
         try await API.removeFriend(user)
+        await load(me: me)
+    }
+
+    /// Blok zruší i přátelství (server) → znovu načíst.
+    func block(_ user: UUID, me: UUID) async throws {
+        try await API.blockUser(user)
+        await load(me: me)
+    }
+
+    func unblock(_ user: UUID, me: UUID) async throws {
+        try await API.unblockUser(user)
+        await load(me: me)
+    }
+
+    /// Po hlášení s blokem (blok udělal server v report_content).
+    func markBlocked(_ user: ProfileLite, me: UUID) async {
+        if !isBlocked(user.id) { blocked.insert(user, at: 0) }
         await load(me: me)
     }
 }

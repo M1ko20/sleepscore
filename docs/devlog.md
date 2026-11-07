@@ -15,7 +15,20 @@ Co je hotové a jak. Nejnovější nahoře. Detaily backendu v `backend.md`, vzh
 9. ~~Zpřísnění skóre (v2)~~ hotovo.
 10. ~~Sleep Wrapped~~ hotovo.
 11. ~~GDPR (export, smazání účtu, Soukromí)~~ hotovo.
-12. Další: privacy policy + landing page (Adam), push notifikace (Developer Program), test na iPhonu s Garminem. (konec roku), smazání účtu (GDPR), push notifikace (až s Developer Programem – pak i pondělní push na recap).
+12. ~~Nahlášení obsahu a blokování (App Store 1.2)~~ hotovo, čeká na nasazení migrace a nastavení webhooku.
+13. Další: privacy policy + landing page (Adam), push notifikace (Developer Program), test na iPhonu s Garminem. (konec roku), smazání účtu (GDPR), push notifikace (až s Developer Programem – pak i pondělní push na recap).
+
+## 2026-11-07 – Nahlášení obsahu a blokování (App Store 1.2, issue #6)
+- Migrace `20261107010215_moderation.sql` (**nenasazeno** – `supabase db push` udělá Adam):
+  - `blocks` + `block_user` / `unblock_user`: blok zruší přátelství i žádost, čekající souboj, vyřadí z čekající skupinové výzvy jednoho z nich. RLS: komentáře a reakce mezi blokovanými se nezobrazují a nejdou přidat, žádost o přátelství nejde (blokovaný dostane jen „Tohle nejde.“, o bloku se nedozví).
+  - `reports` + `report_content(...)`: snapshot obsahu, 1 hlášení na obsah, max. 20/den, volitelně rovnou blok. Nahlášená karta/komentář se hlásícímu hned skryje.
+  - Upozornění pro nás: trigger → `pg_net` webhook (Discord/Slack/ntfy, URL v `private.app_config`, mimo repo), pg_cron `report-reminder` připomene hlášení starší 12 h. Bez Edge Function.
+  - Vyřízení z SQL editoru: `private.resolve_report(id, dismiss|remove|ban)`, ban = `banned_at` + `auth.users.banned_until` + úklid (detail v backend.md → Moderace).
+- Appka: `ReportSheet` (důvod, poznámka, „Zablokovat @x“, „do 24 hodin“). Detail karty: ⋯ → Nahlásit kartu / Zablokovat; komentář: dlouhý stisk → Nahlásit / Zablokovat; profil: ⋯ → Nahlásit profil / Zablokovat / Zrušit blokování + stav „Zablokováno“; výzva se sázkou: ⋯ → Nahlásit sázku. Přátelé: sekce Zablokovaní (Zrušit blok), ve výsledcích hledání „zablokováno“. Hledání skrývá zabanované.
+- `site/terms.html`: hlášení v aplikaci, blokování, 24 h.
+- Lokální SQL testy mají skript: `supabase/tests/local/run.sh` (stub Supabase + všechny migrace + `*_test.sql`). `moderation_test.sql` 68/68.
+- Build OK (Xcode 16.3, iPhone 16 / iOS 18.4). UI neproklikané (neumím klepat a migrace ještě není na serveru).
+- Otevřené pro Adama: běžící výzvy po bloku doběhnou; ban účet nemaže; který kanál pro webhook; export dat zatím bez bloků a hlášení.
 
 ## 2026-11-07 – Sign in with Apple: zneplatnění tokenu při smazání účtu (issue #7)
 - Apple vyžaduje při smazání účtu volat `/auth/revoke` (5.1.1(v)). Migrace `20261107100000_apple_tokens.sql`: tabulka `apple_tokens` (jen service role).

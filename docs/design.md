@@ -160,6 +160,11 @@ DEEP       ████            ███
 - Mřížka 4 sloupce. Duše = avatar poraženého v kroužku, desaturovaný, s datem pod ním.
 - Víc duší od stejného člověka → jedna dlaždice s počtem `×4`.
 
+### Nahlášení a blokování
+- Vstup vždy přes `⋯` vpravo nahoře (karta, profil, výzva) nebo dlouhý stisk komentáře. Žádné vlajky ani ikony přímo na kartě.
+- Sheet „Nahlásit …“: 5 důvodů (řádky s kolečkem, vybraný `accent`), poznámka, přepínač „Zablokovat @x“, věta „Hlášení čteme my, ne autor. Ozveme se do 24 hodin…“, primární Odeslat. Po odeslání „Díky. Mrkneme na to.“ a obsah zmizí.
+- Blokování: systémový confirmationDialog, tlačítko `destructive`. Profil zablokovaného: jedna věta „Zablokováno…“ + sekundární „Zrušit blokování“. Blokovaný se nic nedozví.
+
 ### Tlačítka
 - Primární: plné `accent`, text `accentInk`, výška 50 pt, rádius 10. Na obrazovce max. jedno.
 - Sekundární: `surfaceRaised`, text `textPrimary`.

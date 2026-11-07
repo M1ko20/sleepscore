@@ -119,6 +119,17 @@ final class FeedStore {
         posts[i].night.tags = tags
     }
 
+    /// Nahlášená karta zmizí hned (server ji volajícímu už nevrátí).
+    func removePost(_ id: UUID) {
+        posts.removeAll { $0.id == id }
+    }
+
+    /// Po zablokování: karty i reakce blokovaného pryč bez dalšího callu.
+    func removeAuthor(_ userID: UUID) {
+        posts.removeAll { $0.author.id == userID }
+        for i in posts.indices { posts[i].reactions.removeAll { $0.userID == userID } }
+    }
+
     func setCommentCount(postID: UUID, _ count: Int) {
         guard let i = posts.firstIndex(where: { $0.id == postID }) else { return }
         posts[i].commentCount = count

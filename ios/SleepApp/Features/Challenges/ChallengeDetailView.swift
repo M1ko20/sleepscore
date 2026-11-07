@@ -9,6 +9,7 @@ struct ChallengeDetailView: View {
     @State private var error: String?
     @State private var busy = false
     @State private var rematch: ProfileLite?
+    @State private var reporting: ReportRequest?
 
     private var me: UUID? { session.profile?.id }
 
@@ -23,6 +24,22 @@ struct ChallengeDetailView: View {
         .background(Color.app.bg)
         .navigationBarTitleDisplayMode(.inline)
         .sheet(item: $rematch) { NewChallengeFlow(prefill: $0) }
+        .sheet(item: $reporting) { ReportSheet(request: $0) }
+        .toolbar {
+            if let c = store.challenge(challengeID), let stake = c.stake, !stake.isEmpty, c.creatorID != me {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Menu {
+                        Button("Nahlásit sázku") {
+                            reporting = ReportRequest(kind: .challenge, targetID: c.id, author: c.creator?.profile)
+                        }
+                    } label: {
+                        Image(systemName: "ellipsis")
+                    }
+                    .tint(Color.app.textPrimary)
+                    .accessibilityLabel("Další možnosti")
+                }
+            }
+        }
     }
 
     private func content(_ c: Challenge) -> some View {
