@@ -227,3 +227,7 @@ Co je hotové a jak. Nejnovější nahoře. Detaily backendu v `backend.md`, vzh
 - Promo video (~80 s, 1080×1920): feed, detail noci, výzvy, souboj, výsledek, profil, týdenní recap, Sleep Wrapped, notifikace. Postup a skripty v `tools/promo/`. Video mimo git (`~/Movies/Sleepscore/sleepscore-promo.mp4`).
 - Zjištění: pod XCUITestem se celoobrazovkový výsledek výzvy a sheet nastavení po čistém spuštění nevykreslí (appka zůstane na pozadí); přes `simctl launch` fungují.
 - #1: na webu zůstává osobní Gmail (rozhodnutí Adama).
+
+## 2026-11-07 – Automatický název karty (#15 bod 5)
+- `Core/NightTitle.swift` + `FeedPost.displayTitle`: karta bez názvu ukáže automatický název podle noci (feed, detail, placeholder v editaci). Bez migrace.
+- Ověřeno v simulátoru: „Bez dramatu“ u karty bez názvu, vlastní názvy beze změny.

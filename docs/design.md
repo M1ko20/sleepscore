@@ -316,3 +316,6 @@ Stejný, ale místo nastavení: **vzájemná bilance** nahoře („Ty vs Jakub 7
 ## Otevřené
 - Název appky a ikona appky.
 - Vlastní glyfy reakcí a odznaků – nakreslit (zatím SF Symbols: `moon.zzz`, `hand.raised`, `mug`, `cup.and.saucer`, `crown`).
+
+### Automatický název karty (#15)
+Karta se publikuje vždycky. Bez vlastního názvu ukáže automatický podle noci (`Core/NightTitle.swift`): výborné skóre → „Dokonalá noc“, krátká → „Na půl plynu“, dlouhá → „Peřina vyhrála“, pozdní usnutí, hodně probuzení, hodně deepu, slabé skóre, jinak „Solidní noc“ / „Bez dramatu“. Varianta podle id karty (stabilní), texty bez rodu. Jen zobrazení, do DB se neukládá; v editaci je jako placeholder.

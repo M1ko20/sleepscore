@@ -22,9 +22,7 @@ struct NightCard: View {
         VStack(alignment: .leading, spacing: 14) {
             header
 
-            if let title = post.title, !title.isEmpty {
-                Text(title).font(Font.app.title).foregroundStyle(Color.app.textPrimary)
-            }
+            Text(post.displayTitle).font(Font.app.title).foregroundStyle(Color.app.textPrimary)
             if let body = post.body, !body.isEmpty {
                 Text(body).font(Font.app.body).foregroundStyle(Color.app.textPrimary).lineLimit(3)
             }

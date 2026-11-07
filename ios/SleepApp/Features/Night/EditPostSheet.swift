@@ -33,7 +33,7 @@ struct EditPostSheet: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
                     field("Název") {
-                        TextField("", text: $title, prompt: Text("Spal jsem jak dřevo").foregroundStyle(Color.app.textTertiary))
+                        TextField("", text: $title, prompt: Text(NightTitle.template(for: post.night, postID: post.id, timezone: post.author.timezone)).foregroundStyle(Color.app.textTertiary))
                             .textFieldStyle(AppTextFieldStyle())
                             .onChange(of: title) { _, v in if v.count > 80 { title = String(v.prefix(80)) } }
                     }
