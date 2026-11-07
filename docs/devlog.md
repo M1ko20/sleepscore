@@ -214,3 +214,10 @@ Co je hotové a jak. Nejnovější nahoře. Detaily backendu v `backend.md`, vzh
 - Appka: Nastavení → Notifikace (7 přepínačů + noční klid, ukládá se hned). Když iOS notifikace zakázal → odkaz do Nastavení iOS; když se ještě neptal → „Povolit notifikace“. DEBUG `-debugNotificationSettings`.
 - Ověřeno: lokální SQL testy (`notification_prefs_test.sql` 43 kontrol + celá sada), xcodebuild OK. Nenasazeno.
 - Otevřené: appka neukládá časové pásmo do `profiles.timezone` (všichni jsou `Europe/Prague`).
+
+## 2026-11-07 – Nasazení #11, Pages, E2E proti produkci
+- #11 sloučené a migrace `20261107140000_notification_prefs.sql` nasazená.
+- GitHub Pages přepnuté z legacy (kořen repa) na GitHub Actions → https://m1ko20.github.io/sleepscore/ (CZ + EN).
+- `supabase/tests/e2e.py` rozšířený o notifikace, nastavení notifikací, nahlášení (idempotentní), blokování a export; datum startu výzvy se počítá dynamicky. Proti produkci 40/40, testovací hlášení se uklízí.
+- Simulátor (přihlášený účet, produkce): zvoneček ve feedu, výpis Upozornění (prázdný stav) a Nastavení → Notifikace se načtou správně. Klepací části (#13) zbývají ručně.
+- Nové issues: #12 webhook, #13 ruční test, #14 Sign in with Apple, #15 nápady.
