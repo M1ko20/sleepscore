@@ -90,9 +90,9 @@ struct NotificationPrefs: Decodable, Equatable, Sendable {
     /// Přepínače kategorií v pořadí na obrazovce.
     static let categories: [(key: String, title: String, detail: String)] = [
         ("reactions", "Reakce", "Kdo reaguje na tvoji noc."),
-        ("comments", "Komentáře", "Komentáře u tvých karet."),
+        ("comments", "Komentáře", "U tvých karet a tam, kde píšeš."),
         ("friends", "Přátelé", "Žádosti a nově přijatí."),
-        ("challenges", "Výzvy", "Pozvánky, start, konec, výsledky, splacené sázky."),
+        ("challenges", "Výzvy", "Pozvánky, start, předbíhání, konec, výsledky, sázky."),
         ("achievements", "Odznaky", "Nový odznak."),
         ("morning", "Ranní karta", "Noc je tady. Doplň komentář."),
         ("recap", "Týdenní recap", "Pondělí ráno, minulý týden v číslech."),

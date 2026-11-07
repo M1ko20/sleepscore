@@ -29,7 +29,7 @@ pg_cron každou hodinu v :07 ─▶ private.notification_jobs()  (zítra konec 2
 pg_cron denně 3:20 UTC ─▶ private.cleanup_notifications()  (starší 30 dní)
 night_tags INSERT ─trigger─▶ Navzdory / Pivo vyhrálo
 reactions, comments, friendships, challenge_participants, challenges,
-debts, user_achievements, posts ─trigger─▶ notifications
+debts, user_achievements, posts, challenge_day_scores ─trigger─▶ notifications
 ```
 
 ## Soubory
@@ -44,8 +44,10 @@ debts, user_achievements, posts ─trigger─▶ notifications
 | `20261107100000_apple_tokens.sql` | `apple_tokens` (Apple refresh token kvůli revokaci) |
 | `20261107010215_moderation.sql` | blokování, nahlášení, ban, upozornění (viz Moderace) |
 | `…20261107010500_notifications.sql` | notifikace: tabulka, triggery, text, cron (viz Notifikace) |
+| `…20261107150000_notifications_overtake_threads.sql` | „předbíhá“ ve výzvě, komentáře pro celé vlákno (#15) |
 | `supabase/tests/local/run.sh` + `stub.sql` | lokální test SQL: čistá DB, stub Supabase a pg_cron, všechny migrace, pak zadané testy |
-| `supabase/tests/notifications_test.sql` | test notifikací (62 kontrol) |
+| `supabase/tests/notifications_test.sql` | test notifikací (63 kontrol) |
+| `supabase/tests/local/notifications_overtake_threads_test.sql` | „předbíhá“ a komentáře ve vlákně (41 kontrol) |
 | `supabase/functions/ingest-sleep/index.ts` | Edge Function pro příjem spánku |
 | `supabase/functions/_shared/sleep.ts` | čistá logika: hlavní spánek, metriky, skóre |
 | `supabase/functions/_shared/sleep_test.ts` | unit testy skóre (15) |
@@ -252,12 +254,14 @@ Tabulka `notifications`: `user_id` (příjemce), `kind`, `category` (generovaný
 | kind | Kdy (trigger / cron) | Komu | Proklik | Text (příklad) |
 |---|---|---|---|---|
 | `reaction` | INSERT/DELETE `reactions` | autor karty | karta | „Cyril a 2 další reagují na tvoji noc.“ |
-| `comment` | INSERT `comments` | autor karty | karta | „Bára: a já měla 88“ |
+| `comment` | INSERT `comments` | autor karty | karta | „Bára komentuje tvoji noc: a já měla 88“ |
+| `comment` (`payload.thread`) | INSERT `comments` | kdo už pod kartu psal (viz pravidla) | karta | „Cyril taky komentuje noc, kterou má Adam: jak dřevo“ / autor karty píše: „Adam odpovídá pod svojí nocí: díky“ |
 | `friend_request` | INSERT `friendships` (pending) | adresát | profil | „Cyril ti posílá žádost o přátelství.“ |
 | `friend_accepted` | pending → accepted; INSERT accepted (pozvánka) | kdo žádal / zval | profil | „Adam přijímá žádost o přátelství.“ / „Bára je tu přes tvoji pozvánku.“ |
 | `challenge_invite` | INSERT `challenge_participants` (invited) | pozvaný | výzva | „Adam tě vyzývá: 7 dní, pivo.“ |
 | `challenge_response` | invited → accepted/declined (výzva pending; ne přijatý duel) | zakladatel | výzva | „Bára jde do toho.“ / „Bára výzvu odmítá.“ |
 | `challenge_started` | `challenges` pending → active | přijatí kromě toho, kdo start spustil | výzva | „Bára výzvu přijímá. Start 8. 11., 7 dní.“ / „Výzva startuje 8. 11. 14 dní.“ |
+| `challenge_overtaken` | INSERT/UPDATE `challenge_day_scores` (běžící duel / všichni proti všem) | soupeř, kterého zápis přeskočil v průběžném průměru | výzva | „Bára tě předbíhá v souboji. 77,5 : 75,0.“ / „… ve výzvě. …“ |
 | `challenge_ending` | cron, 20:00 místního času den před koncem | hráči | výzva | „Zítra konec. Prohráváš o 8,3 bodu.“ |
 | `challenge_result` | `challenges` active → finished | hráči | výzva | „Vyhráno 80,0 : 70,0. Bára přichází o duši.“ |
 | `debt_settled` | `debts.settled_at` null → čas | věřitel | výzva | „Bára hlásí splaceno: pivo.“ |
@@ -267,6 +271,11 @@ Tabulka `notifications`: `user_id` (příjemce), `kind`, `category` (generovaný
 
 Pravidla:
 - **Reakce**: jeden řádek na kartu (unikátní index). Nová reakce přepočítá počet a posledního reagujícího, posune `created_at` a nastaví nepřečtené. Smazaná reakce jen přepočítá (bez posunu); poslední smazaná řádek smaže. Změna druhu reakce nic nedělá. Vlastní reakce se nepočítají.
+- **Komentáře ve vlákně** (#15): stejný kind `comment` (kategorie `comments`), `payload.thread = true`, `payload.by_owner` = píše autor karty. Dostane každý, kdo už pod kartu psal (1 notifikace na komentář, i když psal víckrát), kromě autora komentáře a autora karty (ten má svoji). Jen kdo kartu pořád vidí: přítel autora karty, kartu nenahlásil, není zabanovaný, nemá blok s autorem komentáře. Když kartu později přestane vidět, text je bez jména („Cyril taky komentuje: …“).
+- **Předbíhá** (#15): trigger `challenge_day_scores_notify` → `private.on_day_score_notify()`. Průběžný průměr (`private.challenge_running_avg`) jako v appce: uplynulé dny (do včerejška v pásmu zakladatele) vždy, chybějící = 0; dnešek jen když je nahraný. Porovná průměr zapisujícího před a po zápisu; notifikace jde soupeřům, kteří byli předtím ostře před ním a teď jsou ostře za ním. Text: skóre soupeře (aktéra) : moje; když se na 1 desetinné místo rovnají, 2 místa.
+  - Nespamuje: max. 1 na výzvu, příjemce a den (unikátní index přes `payload.day` = datum v pásmu zakladatele, `on conflict do nothing` – další předběhnutí téhož dne se zahodí). Opakovaný sync se stejným skóre nic. Zápisy bez `night_id` (nuly a doplnění při uzavírání) nic. Po 14:00 posledního dne nic, i když výzva ještě čeká na uzavření. Společný cíl nic. Mezi zablokovanými nic.
+  - Zpětné nahrání / přepočet skóre posílá taky (pořadí se opravdu změnilo).
+  - Nehlásí se předběhnutí bez zápisu (o půlnoci se soupeři počítá chybějící včerejšek jako 0) – na to by byl potřeba cron.
 - Smazaný komentář smaže notifikaci (FK cascade). Stažená / odmítnutá žádost o přátelství zmizí.
 - Přijatý duel: zakladatel dostane jen `challenge_started` (ne navíc `challenge_response`). Automatické „declined“ při startu skupiny se nehlásí.
 - „Zítra konec“: průběžný průměr = součet skóre dní od startu do předposledního dne / počet těch dní (chybějící noc = 0). Duel / všichni proti všem: rozdíl proti nejlepšímu soupeři; společný cíl: průměr skupiny vs. cíl.
