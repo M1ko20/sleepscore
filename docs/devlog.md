@@ -17,6 +17,13 @@ Co je hotové a jak. Nejnovější nahoře. Detaily backendu v `backend.md`, vzh
 11. ~~GDPR (export, smazání účtu, Soukromí)~~ hotovo.
 12. Další: privacy policy + landing page (Adam), push notifikace (Developer Program), test na iPhonu s Garminem. (konec roku), smazání účtu (GDPR), push notifikace (až s Developer Programem – pak i pondělní push na recap).
 
+## 2026-11-07 – Sign in with Apple: zneplatnění tokenu při smazání účtu (issue #7)
+- Apple vyžaduje při smazání účtu volat `/auth/revoke` (5.1.1(v)). Migrace `20261107100000_apple_tokens.sql`: tabulka `apple_tokens` (jen service role).
+- Edge Functions `apple-token` (po přihlášení: authorization code → refresh token, kontrola `sub` proti Apple identitě účtu, uložení) a `delete-account` (revokace, pak `delete_my_account` jménem uživatele). Sdílená logika `_shared/apple.ts` (client_secret ES256 přes WebCrypto, výměna, revokace), 8 unit testů s fake fetch a vygenerovaným P-256 klíčem.
+- Appka: `Session.signInWithApple(idToken:nonce:authorizationCode:)` (připravené, zatím ho nic nevolá – přihlašovací obrazovka přijde s Developer Programem), `API.deleteMyAccount` volá u Apple účtů `delete-account`, jinak dál RPC.
+- Bez Apple secrets se výměna i revokace přeskočí, mazání funguje dál. Revokace je best effort – selhání Apple nezablokuje smazání dat.
+- Ověřeno: `deno test _shared/` 23/23, `deno check` obou funkcí, migrace na lokálním Postgres 16 (service role čte/zapisuje, anon/authenticated odmítnuti, kaskáda s `auth.users`), xcodebuild OK. Nenasazeno – migrace i funkce čekají na deploy (viz backend.md → nasazování). Proti skutečnému Apple API netestováno (chybí účet).
+
 ## 2026-11-06 – GDPR: export a smazání účtu
 - Migrace `…210000_gdpr.sql`: `challenges.timezone` (doplní trigger ze zakladatele; start a uzavírání ve 14:00 už nečtou profil zakladatele), `creator_id` nullable + `on delete set null` (dřív by smazání zakladatele smazalo výzvu i ostatním hráčům, včetně jejich výher a duší). RPC `delete_my_account()` a `export_my_data()`, detaily v `backend.md` → GDPR.
 - Appka: Nastavení → Soukromí a moje data (co ukládáme, jak vypnout Zdraví, Stáhnout moje data → JSON soubor ke sdílení, Smazat účet s potvrzením přezdívkou → smaže soubory ve Storage, pak účet, odhlásí). Odhlášení teď maže cache obrázků a lokální klíče.

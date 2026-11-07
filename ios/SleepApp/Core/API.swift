@@ -291,7 +291,31 @@ enum API {
                 if files.count < 100 { break }
             }
         }
-        try await db.rpc("delete_my_account").execute()
+        // Účet přes Apple: Edge Function nejdřív zneplatní Apple token (App Review 5.1.1(v)),
+        // pak zavolá delete_my_account. Ostatní účty (e-mail v dev buildu) rovnou RPC – o call míň.
+        if isAppleAccount {
+            try await db.functions.invoke("delete-account", options: FunctionInvokeOptions(method: .post))
+        } else {
+            try await db.rpc("delete_my_account").execute()
+        }
+    }
+
+    /// Přihlášen přes Sign in with Apple (z lokální session, bez callu).
+    nonisolated static var isAppleAccount: Bool {
+        guard let user = db.auth.currentUser else { return false }
+        if user.identities?.contains(where: { $0.provider == "apple" }) == true { return true }
+        return user.appMetadata["provider"]?.stringValue == "apple"
+    }
+
+    /// Po přihlášení přes Apple: pošle jednorázový authorization code serveru, ten ho vymění
+    /// za refresh token a uloží (kvůli zneplatnění při smazání účtu). Chyba nevadí – nic nebrání.
+    nonisolated static func storeAppleAuthorizationCode(_ code: String) async {
+        do {
+            try await db.functions.invoke(
+                "apple-token", options: FunctionInvokeOptions(body: ["authorization_code": code]))
+        } catch {
+            log.error("apple-token failed: \(String(describing: error))")
+        }
     }
 
     // MARK: Fotky
