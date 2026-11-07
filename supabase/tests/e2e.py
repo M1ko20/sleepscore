@@ -1,4 +1,4 @@
-import json, secrets, sys, urllib.request, urllib.error
+import datetime, json, secrets, sys, urllib.request, urllib.error, zoneinfo
 # E2E test proti Supabase projektu. Vytvoří 2 testovací uživatele, projde
 # pozvánku, souboj, ingest, RLS a na konci uživatele smaže.
 # Spuštění:
@@ -93,7 +93,8 @@ try:
     st, _ = req("POST", "/rest/v1/rpc/respond_challenge", {"p_challenge": cid, "p_accept": True}, token=B["jwt"])
     check("B přijme", st in (200, 204), _)
     st, ch = req("GET", f"/rest/v1/challenges?id=eq.{cid}&select=status,start_date,end_date", token=A["jwt"])
-    check("souboj běží od zítřka", ch and ch[0]["status"] == "active" and ch[0]["start_date"] == "2026-11-07", ch)
+    tomorrow = (datetime.datetime.now(zoneinfo.ZoneInfo("Europe/Prague")).date() + datetime.timedelta(days=1)).isoformat()
+    check("souboj běží od zítřka", ch and ch[0]["status"] == "active" and ch[0]["start_date"] == tomorrow, ch)
     # posunout start do minulosti, ať jdou nahrát noci
     svc("PATCH", f"/rest/v1/challenges?id=eq.{cid}", {"start_date": "2026-11-04", "end_date": "2026-11-10"})
 
@@ -181,14 +182,63 @@ try:
     st, mma = req("GET", "/rest/v1/mma_records?select=*", token=A["jwt"])
     check("MMA zatím prázdná (výzva běží)", st == 200 and mma == [], mma)
 
+    # --- notifikace (#9, #11) --------------------------------------------
+    st, notes = req("GET", "/rest/v1/notifications?select=kind,read_at", token=A["jwt"])
+    kinds = {n["kind"] for n in notes or []}
+    check("A má notifikace o komentáři a reakci", st == 200 and {"comment", "reaction"} <= kinds, notes)
+    st, notes_b = req("GET", "/rest/v1/notifications?select=user_id", token=B["jwt"])
+    check("B nevidí notifikace A", st == 200 and all(n["user_id"] == B["id"] for n in notes_b), notes_b)
+    st, n_read = req("POST", "/rest/v1/rpc/mark_notifications_read", {}, token=A["jwt"])
+    st2, unread = req("GET", "/rest/v1/notifications?select=kind&read_at=is.null", token=A["jwt"])
+    check("A označí vše přečtené", st == 200 and unread == [], (n_read, unread))
+    st, prefs = req("POST", "/rest/v1/rpc/my_notification_prefs", {}, token=A["jwt"])
+    check("výchozí nastavení notifikací: vše zapnuto", st == 200 and all(prefs.values()), prefs)
+    st, prefs = req("POST", "/rest/v1/rpc/set_notification_prefs", {"p_prefs": {"reactions": False}}, token=A["jwt"])
+    check("A vypne reakce", st == 200 and prefs["reactions"] is False and prefs["comments"] is True, prefs)
+    st, _ = req("POST", "/rest/v1/rpc/set_notification_prefs", {"p_prefs": {"nesmysl": True}}, token=A["jwt"])
+    check("neznámý klíč nastavení neprojde", st >= 400, st)
+
+    # --- nahlášení a blokování (#6) ----------------------------------------
+    st, comments = req("GET", f"/rest/v1/comments?post_id=eq.{post_id}&select=id", token=A["jwt"])
+    comment_id = comments[0]["id"]
+    st, rid = req("POST", "/rest/v1/rpc/report_content",
+                  {"p_kind": "comment", "p_target": comment_id, "p_reason": "spam", "p_note": "e2e test"}, token=A["jwt"])
+    check("A nahlásí komentář B", st == 200, rid)
+    st, comments = req("GET", f"/rest/v1/comments?post_id=eq.{post_id}&select=id", token=A["jwt"])
+    check("nahlášený komentář A už nevidí", st == 200 and comments == [], comments)
+    st, _ = req("POST", "/rest/v1/rpc/report_content",
+                {"p_kind": "comment", "p_target": comment_id, "p_reason": "spam"}, token=A["jwt"])
+    check("podruhé nahlásit = stejné hlášení (idempotentní)", st == 200, (st, _))
+    st, _ = req("GET", "/rest/v1/reports?select=id", token=A["jwt"])
+    check("klient hlášení nečte", st in (401, 403) or _ == [], (st, _))
+    st, _ = req("POST", "/rest/v1/rpc/block_user", {"p_user": B["id"]}, token=A["jwt"])
+    check("A zablokuje B", st in (200, 204), _)
+    st, fr = req("GET", "/rest/v1/friendships?select=status", token=B["jwt"])
+    check("přátelství po bloku zrušené", fr == [], fr)
+    st, _ = req("POST", "/rest/v1/rpc/send_friend_request", {"p_user": A["id"]}, token=B["jwt"])
+    check("B nemůže poslat žádost", st >= 400, (st, _))
+    st, _ = req("POST", "/rest/v1/comments", {"post_id": post_id, "user_id": B["id"], "body": "jsem tu zas"},
+                token=B["jwt"])
+    check("B nemůže komentovat kartu A", st >= 400, (st, _))
+    st, exp = req("POST", "/rest/v1/rpc/export_my_data", {}, token=A["jwt"])
+    check("export: bloky, hlášení bez snapshotu, notifikace, nastavení",
+          st == 200 and len(exp["blocks"]) == 1 and len(exp["reports_filed"]) == 1
+          and "snapshot" not in exp["reports_filed"][0] and len(exp["notifications"]) >= 2
+          and exp["notification_prefs"]["reactions"] is False,
+          {k: exp.get(k) for k in ("blocks", "reports_filed", "notification_prefs")} if isinstance(exp, dict) else exp)
+
     print("\nA breakdown 11-06:", next(n for n in nights if n["user_id"] == A["id"] and n["night_date"] == "2026-11-06"))
     print("B breakdown 11-06:", next(n for n in nights if n["user_id"] == B["id"]))
 finally:
+    if "a" in users:  # hlášení přežije smazání hlásícího (reporter_id → null), tak ho uklidit
+        svc("DELETE", f"/rest/v1/reports?reporter_id=eq.{users['a']['id']}")
     for u in users.values():
         st, _ = svc("DELETE", f"/auth/v1/admin/users/{u['id']}")
         print("cleanup user", st)
     st, left = svc("GET", "/rest/v1/profiles?select=id")
     print("profiles left:", left)
+    st, left = svc("GET", "/rest/v1/reports?select=id&note=eq.e2e%20test")
+    print("e2e reports left:", left)
     st, left = svc("GET", "/rest/v1/challenges?select=id")
     print("challenges left:", left)
     print(f"\n{ok_count} ok, {fail_count} fail")
