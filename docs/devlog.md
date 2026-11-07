@@ -231,3 +231,10 @@ Co je hotové a jak. Nejnovější nahoře. Detaily backendu v `backend.md`, vzh
 ## 2026-11-07 – Automatický název karty (#15 bod 5)
 - `Core/NightTitle.swift` + `FeedPost.displayTitle`: karta bez názvu ukáže automatický název podle noci (feed, detail, placeholder v editaci). Bez migrace.
 - Ověřeno v simulátoru: „Bez dramatu“ u karty bez názvu, vlastní názvy beze změny.
+
+## 2026-11-07 – Notifikace: „předbíhá“ a komentáře ve vlákně (#15)
+- Migrace `20261107150000_notifications_overtake_threads.sql` (**nenasazeno**):
+  - `challenge_overtaken` (kategorie `challenges`): trigger na `challenge_day_scores` – když tě soupeř v běžícím duelu / všichni proti všem přeskočí v průběžném průměru („Bára tě předbíhá v souboji. 77,5 : 75,0.“). Max. 1 na výzvu a den, bez nul z uzavírání, bez opakovaného syncu, po 14:00 posledního dne nic. Průměr počítá stejně jako appka.
+  - Komentáře dostane i každý, kdo už pod kartu psal (kind `comment` + `payload.thread`), jen kdo kartu vidí, bez bloků, nahlášených karet a zabanovaných. Texty: autor karty „Bára komentuje tvoji noc: …“, ostatní „Cyril taky komentuje noc, kterou má Adam: …“, „Adam odpovídá pod svojí nocí: …“.
+- Appka: proklik funguje beze změny (karta / výzva), upravené popisy kategorií v Nastavení → Notifikace.
+- Ověřeno: celá lokální SQL sada (nový `notifications_overtake_threads_test.sql` 41 kontrol), xcodebuild OK.

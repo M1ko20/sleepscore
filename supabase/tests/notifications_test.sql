@@ -118,8 +118,9 @@ select pg_temp.ok('poslední smazaná reakce smaže notifikaci', pg_temp.cnt('a'
 insert into public.comments (id, post_id, user_id, body) values
   ('30000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000001', pg_temp.u('b'), 'a já měla 88'),
   ('30000000-0000-0000-0000-000000000002', '20000000-0000-0000-0000-000000000001', pg_temp.u('a'), 'gratuluju');
-select pg_temp.ok('komentář', pg_temp.texts('a') like 'Bára: a já měla 88%', true);
+select pg_temp.ok('komentář', pg_temp.texts('a') like 'Bára komentuje tvoji noc: a já měla 88%', true);
 select pg_temp.ok('vlastní komentář nic', pg_temp.cnt('a', 'comment'), 1);
+select pg_temp.ok('odpověď autora karty ve vlákně', pg_temp.text_of('b', 'comment'), 'Adam odpovídá pod svojí nocí: gratuluju');
 delete from public.comments where id = '30000000-0000-0000-0000-000000000001';
 select pg_temp.ok('smazaný komentář', pg_temp.cnt('a', 'comment'), 0);
 
@@ -248,7 +249,7 @@ delete from auth.users where id = pg_temp.u('c');
 select pg_temp.ok('aktér smazaný → „Někdo“', (select public.notification_text(n) from public.notifications n
   where n.user_id = pg_temp.u('a') and n.kind = 'friend_request'), 'Někdo ti posílá žádost o přátelství.');
 select pg_temp.ok('kategorie', (select string_agg(distinct category, ',' order by category) from public.notifications),
-  'achievements,challenges,friends,morning,recap');
+  'achievements,challenges,comments,friends,morning,recap');
 update public.notifications set created_at = now() - interval '31 days' where kind = 'weekly_recap';
 select pg_temp.ok('úklid 30 dní', private.cleanup_notifications(), 1);
 select pg_temp.ok('cron úlohy', (select count(*)::int from cron.job where jobname in ('notification-jobs', 'notifications-cleanup')), 2);
