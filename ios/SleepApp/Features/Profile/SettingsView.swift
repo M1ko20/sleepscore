@@ -1,7 +1,7 @@
 import PhotosUI
 import SwiftUI
 
-/// Nastavení: profilovka, jméno, Apple Health, odhlášení.
+/// Nastavení: profilovka, jméno, Apple Health, notifikace, soukromí, odhlášení.
 struct SettingsView: View {
     @Environment(Session.self) private var session
     @Environment(\.dismiss) private var dismiss
@@ -15,6 +15,14 @@ struct SettingsView: View {
     @State private var showPrivacy: Bool = {
         #if DEBUG
         return ProcessInfo.processInfo.arguments.contains("-debugPrivacy")
+        #else
+        return false
+        #endif
+    }()
+
+    @State private var showNotifications: Bool = {
+        #if DEBUG
+        return ProcessInfo.processInfo.arguments.contains("-debugNotificationSettings")
         #else
         return false
         #endif
@@ -49,12 +57,20 @@ struct SettingsView: View {
                         if let error { Text(error).captionStyle() }
                     }
                     HealthSection()
-                    NavigationLink {
-                        PrivacyView()
-                    } label: {
-                        ProfileRow(title: "Soukromí a moje data")
+                    VStack(spacing: 0) {
+                        NavigationLink {
+                            NotificationSettingsView()
+                        } label: {
+                            ProfileRow(title: "Notifikace")
+                        }
+                        .buttonStyle(.plain)
+                        NavigationLink {
+                            PrivacyView()
+                        } label: {
+                            ProfileRow(title: "Soukromí a moje data")
+                        }
+                        .buttonStyle(.plain)
                     }
-                    .buttonStyle(.plain)
                     Button("Odhlásit") {
                         dismiss()
                         Task { await session.signOut() }
@@ -73,6 +89,7 @@ struct SettingsView: View {
             }
             .onAppear { name = session.profile?.displayName ?? "" }
             .navigationDestination(isPresented: $showPrivacy) { PrivacyView() }
+            .navigationDestination(isPresented: $showNotifications) { NotificationSettingsView() }
         }
         .presentationBackground(Color.app.bg)
     }

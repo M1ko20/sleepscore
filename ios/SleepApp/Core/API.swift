@@ -325,6 +325,17 @@ enum API {
         _ = try await db.rpc("mark_notifications_read").execute().data
     }
 
+    /// Nastavení pushů (úplné, s výchozími hodnotami).
+    nonisolated static func notificationPrefs() async throws -> NotificationPrefs {
+        try await decode(db.rpc("my_notification_prefs").execute().data)
+    }
+
+    /// Uloží změněné klíče (`{"reactions": false}`), vrací úplné nastavení.
+    nonisolated static func setNotificationPrefs(_ changes: [String: Bool]) async throws -> NotificationPrefs {
+        struct Params: Encodable { let p_prefs: [String: Bool] }
+        return try await decode(db.rpc("set_notification_prefs", params: Params(p_prefs: changes)).execute().data)
+    }
+
     // MARK: GDPR
 
     /// Všechna moje data jako JSON (export_my_data).

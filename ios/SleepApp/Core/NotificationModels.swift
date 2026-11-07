@@ -67,3 +67,34 @@ struct AppNotification: Decodable, Identifiable, Sendable {
 struct ChallengeLink: Hashable {
     let id: UUID
 }
+
+/// Nastavení pushů (#11): přepínače po kategoriích (= `notifications.category`) a noční klid.
+/// Zvoneček ukazuje vše bez ohledu na nastavení.
+struct NotificationPrefs: Decodable, Equatable, Sendable {
+    /// Klíče v DB; neznámé nebo chybějící = zapnuto.
+    var values: [String: Bool]
+
+    init(values: [String: Bool] = [:]) { self.values = values }
+
+    init(from decoder: Decoder) throws {
+        values = try decoder.singleValueContainer().decode([String: Bool].self)
+    }
+
+    subscript(key: String) -> Bool {
+        get { values[key] ?? true }
+        set { values[key] = newValue }
+    }
+
+    static let quietHours = "quiet_hours"
+
+    /// Přepínače kategorií v pořadí na obrazovce.
+    static let categories: [(key: String, title: String, detail: String)] = [
+        ("reactions", "Reakce", "Kdo reaguje na tvoji noc."),
+        ("comments", "Komentáře", "Komentáře u tvých karet."),
+        ("friends", "Přátelé", "Žádosti a nově přijatí."),
+        ("challenges", "Výzvy", "Pozvánky, start, konec, výsledky, splacené sázky."),
+        ("achievements", "Odznaky", "Nový odznak."),
+        ("morning", "Ranní karta", "Noc je tady. Doplň komentář."),
+        ("recap", "Týdenní recap", "Pondělí ráno, minulý týden v číslech."),
+    ]
+}

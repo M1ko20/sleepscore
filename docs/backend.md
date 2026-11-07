@@ -78,6 +78,7 @@ debts, user_achievements, posts ─trigger─▶ notifications
 - `profiles.banned_at` – zabanovaný účet (`private.is_member()` pak vrací false)
 - `private.app_config` – klíč/hodnota pro nastavení mimo repo (URL webhooku)
 - `notifications` – zvoneček (viz Notifikace)
+- `notification_prefs` – nastavení pushů (přepínače kategorií, noční klid); 1 řádek na uživatele, chybí = výchozí. Čte jen majitel, zápis jen přes RPC.
 
 Pohledy (security_invoker): `mma_records` (všechny typy výzev), `souls` (bez team_goal), `head_to_head` (bez team_goal).
 
@@ -117,6 +118,8 @@ Storage: buckety `avatars` (max 150 kB), `night-photos` (max 400 kB) – privát
 | `unblock_user(user)` | zruší blok (přátelství se neobnoví) |
 | `report_content(kind, target, reason, note?, block?)` | nahlášení (jen viditelný obsah, ne vlastní, 1× na obsah, max. 20/den); `block = true` rovnou zablokuje autora |
 | `mark_notifications_read()` | otevření zvonečku: vše přečtené, vrací počet |
+| `my_notification_prefs()` | moje nastavení pushů (úplné, s výchozími hodnotami) |
+| `set_notification_prefs(prefs)` | uloží změněné klíče (`{"reactions": false}`), vrací úplné nastavení; neznámý klíč / ne-boolean → `invalid notification prefs` |
 
 Přímé zápisy: `profiles` (display_name, avatar_path, timezone), `posts` (title, body, photo_path – jen vlastní noční karta), `night_tags`, `comments`, `reactions`, `push_tokens`.
 
@@ -138,7 +141,7 @@ Pravidla:
 
 ## GDPR
 - Data: Supabase eu-central-1 (Frankfurt). Spánek = zdravotní data (čl. 9) → jen přátelé (RLS), HealthKit data nikdy do reklamy ani třetím stranám.
-- **Export** (`export_my_data`, security invoker): profil, statistiky, noci + `night_raw` + tagy, karty, moje komentáře a reakce, přátelství, účasti ve výzvách, denní skóre, dluhy, odznaky, pozvánky. Appka uloží `sleepscore-<přezdívka>-<datum>.json` (ochrana souboru `complete`) a nabídne sdílení.
+- **Export** (`export_my_data`, security definer, vše filtrované `auth.uid()`): profil, statistiky, noci + `night_raw` + tagy, karty, moje komentáře a reakce, přátelství, účasti ve výzvách, denní skóre, dluhy, odznaky, pozvánky, bloky, podaná hlášení, notifikace, nastavení notifikací (`notification_prefs`, úplné + `updated_at`). Appka uloží `sleepscore-<přezdívka>-<datum>.json` (ochrana souboru `complete`) a nabídne sdílení.
 - **Smazání** (Nastavení → Soukromí → Smazat účet, potvrzení napsáním přezdívky): appka smaže moje soubory v `avatars/` a `night-photos/` (`<uid>/…`; přímý DELETE ze `storage.objects` Supabase blokuje), pak `delete_my_account()`: neuzavřené souboje se mnou → `cancelled`, moje čekající výzvy → `cancelled`, `delete from auth.users` → kaskáda na `profiles` a vše navázané. Výzvy mají vlastní `timezone` a `creator_id … on delete set null` → ostatním zůstanou výsledky, MMA i duše proti jiným hráčům; skupinové výzvy běží dál beze mě.
 - Po odhlášení / smazání appka vyčistí cache obrázků a lokální klíče (`seenChallengeResults`, `dismissedRecapWeek`).
 - Ověřeno: export přes REST (Karolína 92 kB), anon 401, smazání v transakci s `rollback` (účet, profil, noci, přátelství, dluhy pryč; její výzvy zůstaly s `creator_id null`, výsledky ostatních zůstaly).
@@ -274,5 +277,21 @@ Pravidla:
 
 Navázání:
 - **#10 push**: fronta = `pushed_at is null or pushed_at < created_at` (částečný index `notifications_push_queue_idx`). Reakce posílat znovu nejdřív hodinu po `pushed_at`. Po prvním zapnutí posílat jen čerstvé (např. `created_at > now() - 1 day`), ať nepřijde dávka starých. Odesílač nastaví `pushed_at = now()`.
-- **#11 nastavení**: `category` ∈ `reactions, comments, friends, challenges, achievements, morning, recap` = přepínače. Zvoneček ukazuje vše, filtr podle `profiles.notification_prefs` a noční klid řeší jen odesílač pushů.
+- **#11 nastavení**: hotovo, viz níže.
+
+## Nastavení notifikací (#11)
+Migrace `20261107140000_notification_prefs.sql`. Platí jen pro pushe – zvoneček ukazuje vše.
+
+- **Kde**: tabulka `notification_prefs (user_id, prefs jsonb, updated_at)`, ne sloupec v `profiles` – profily čte každý člen, nastavení má vidět jen majitel. Chybějící řádek = výchozí stav. `on delete cascade` s profilem.
+- **Klíče** (`private.notification_prefs_default()`): `reactions, comments, friends, challenges, achievements, morning, recap` (= `notifications.category`) + `quiet_hours`. Výchozí vše `true`.
+- **Validace v DB**: `private.notification_prefs_valid(jsonb)` – objekt jen se známými klíči a boolean hodnotami. Check na tabulce navíc vyžaduje všechny klíče (ukládá se vždy úplné). Platí i pro service role.
+- **Přístup**: RLS select jen svoje; insert/update/delete klient nemá. `set_notification_prefs` (security definer, jen člen, ne zabanovaný) sloučí výchozí || uložené || změnu.
+- **Noční klid** 22:00–8:00 v `profiles.timezone` (výchozí `Europe/Prague`; appka ho zatím nenastavuje). Neplatné pásmo → Praha.
+- **Pro odesílač (#10)**: `private.push_decision(user, category, p_now default now())` nebo `private.push_decision(notifications_row, p_now)` vrací:
+  - `send` – pushnout teď,
+  - `hold` – noční klid, nechat ve frontě (v 8:00 místního času vyjde `send`),
+  - `skip` – kategorie vypnutá (nebo profil neexistuje) → nepushovat, odesílač nastaví `pushed_at = now()`, ať zmizí z fronty (po zapnutí kategorie se staré nedoženou).
+  - Neznámá kategorie = zapnutá. Funkce jen pro server (execute odebrané `public, anon, authenticated`).
+  - Pozor u #10: ráno v 8:00 vyjde naráz všechno podržené z noci → slučovat do jednoho pushe na uživatele (nebo poslat jen poslední + badge).
+- Test: `supabase/tests/local/notification_prefs_test.sql`.
 

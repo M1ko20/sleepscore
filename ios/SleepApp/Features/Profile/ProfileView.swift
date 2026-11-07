@@ -61,7 +61,7 @@ struct ProfileView: View {
                 #if DEBUG
                 // Screenshoty: `-debugProfile friends` / `-debugProfile <přezdívka>` otevře přátele / profil přítele.
                 let args = ProcessInfo.processInfo.arguments
-                if args.contains("-debugPrivacy") { showSettings = true }
+                if args.contains("-debugPrivacy") || args.contains("-debugNotificationSettings") { showSettings = true }
                 if let i = args.firstIndex(of: "-debugProfile"), i + 1 < args.count, path.isEmpty {
                     if args[i + 1] == "friends" { path.append(Route.friends) }
                     else if let p = friends.entries.first(where: { $0.other.username == args[i + 1] })?.other { path.append(p) }

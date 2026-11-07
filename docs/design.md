@@ -204,6 +204,29 @@ DEEP       ████            ███
 - Klepnutí: karta, výzva, profil nebo recap. Prázdný stav: „Ticho. Až někdo zareaguje, uvidíš to tady.“
 - Texty skládá server, sloveso v přítomném čase (nemusíme znát rod): „Bára jde do toho.“, „Adam přijímá žádost o přátelství.“
 
+### 2c. Nastavení → Notifikace
+Z Nastavení (ozubené kolo na profilu) řádek `NOTIFIKACE ›` nad `SOUKROMÍ A MOJE DATA`.
+```
+Notifikace má iPhone pro appku vypnuté.      jen když iOS zakázal
+[ Otevřít Nastavení ]                         (nepovolené: „Povolit notifikace“)
+
+POSÍLAT
+Reakce                                 (●)
+Kdo reaguje na tvoji noc.
+─────────────────────────────────────────
+Komentáře · Přátelé · Výzvy · Odznaky · Ranní karta · Týdenní recap
+
+NOČNÍ KLID
+22:00–8:00                              (●)
+Pushe počkají do rána. Podle časového pásma v profilu.
+
+Platí pro pushe. Ve zvonečku uvidíš všechno.
+```
+- Přepínač = systémový `Toggle`, zapnutý `accent`. Řádek: název `body`, pod ním jedna věta `caption`, oddělení tenkou linkou.
+- Změna se ukládá hned (bez tlačítka Uložit), při chybě se přepínač vrátí a pod seznamem je „Neuložilo se. Zkus to znovu.“
+- Stav v iOS se kontroluje při otevření a po návratu do appky. `denied` → odkaz do Nastavení iOS (`openNotificationSettingsURLString`), `notDetermined` → systémový dotaz.
+- DEBUG: `-debugNotificationSettings` otevře rovnou tuhle obrazovku.
+
 ### 3. Detail noci
 Shora: autor a datum → `scoreXL` + 3 statistiky (délka, usnutí, vstávání) → hypnogram → délky fází (4 vodorovné pruhy s minutami) → **rozpad skóre** (5 řádků: název složky, tenký pruh, číslo; vynechaná složka šedě „bez dat“) → tagy → fotka → komentáře.
 

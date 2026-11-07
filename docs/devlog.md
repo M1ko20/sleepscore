@@ -207,3 +207,10 @@ Co je hotové a jak. Nejnovější nahoře. Detaily backendu v `backend.md`, vzh
 - `site/en/terms.html` doplněné o hlášení a blokování (jako česká verze z #6).
 - Oprava: `Challenge.creatorID` je volitelné (po smazání zakladatele je v DB null, výzva se jinak nenačetla).
 - Ověřeno: lokální SQL testy (moderace + notifikace + export), `deno test _shared/` 23/23, xcodebuild OK.
+
+## 2026-11-07 – Nastavení notifikací (issue #11)
+- Migrace `20261107140000_notification_prefs.sql`: tabulka `notification_prefs` (ne sloupec v `profiles`, ty čte každý člen), RPC `my_notification_prefs()` / `set_notification_prefs(prefs)`, validace klíčů checkem v DB, `export_my_data` doplněný o nastavení.
+- Pro push (#10): `private.push_decision(…)` → `send / hold / skip` podle kategorie a nočního klidu 22:00–8:00 v `profiles.timezone`. Zvoneček beze změny (ukazuje vše).
+- Appka: Nastavení → Notifikace (7 přepínačů + noční klid, ukládá se hned). Když iOS notifikace zakázal → odkaz do Nastavení iOS; když se ještě neptal → „Povolit notifikace“. DEBUG `-debugNotificationSettings`.
+- Ověřeno: lokální SQL testy (`notification_prefs_test.sql` 43 kontrol + celá sada), xcodebuild OK. Nenasazeno.
+- Otevřené: appka neukládá časové pásmo do `profiles.timezone` (všichni jsou `Europe/Prague`).
