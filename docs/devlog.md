@@ -164,3 +164,8 @@ Co je hotové a jak. Nejnovější nahoře. Detaily backendu v `backend.md`, vzh
 
 ## 2026-11-07 – Web: anglické zásady a podmínky (issue #3)
 - `site/en/privacy.html`, `site/en/terms.html` – věrný překlad, s poznámkou, že rozhoduje česká verze. Přepínač CZ/EN v hlavičce (`nav a.lang`), `hreflang` odkazy. Anglická landing page zatím ne (EN odkaz z úvodu vede na en/privacy.html).
+
+## 2026-11-07 – HealthKit: Release nežádá o zápis (issue #8)
+- `NSHealthUpdateUsageDescription` už není v `info:` v `ios/project.yml`; přidává se jen v Debug přes `INFOPLIST_KEY_NSHealthUpdateUsageDescription` (+ `GENERATE_INFOPLIST_FILE` jen pro Debug, Xcode klíč přimíchá do Info.plist).
+- `toShare` v `HealthSync.requestAuthorization()` byl už dřív jen v `#if DEBUG`, `DebugHealthSeeder` celý v `#if DEBUG`.
+- Ověřeno: Debug i Release build pro simulátor; v Release Info.plist klíč chybí.

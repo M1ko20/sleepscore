@@ -33,6 +33,11 @@ targets:
         CURRENT_PROJECT_VERSION: "1"
         TARGETED_DEVICE_FAMILY: "1"
         SWIFT_VERSION: "5.10"
+      configs:
+        # Zápis do Zdraví jen v Debug (DebugHealthSeeder). Release o zápis nežádá (issue #8).
+        Debug:
+          GENERATE_INFOPLIST_FILE: YES
+          INFOPLIST_KEY_NSHealthUpdateUsageDescription: Jen testovací build zapisuje do Apple Health vzorová data.
     info:
       path: SleepApp/Info.plist
       properties:
@@ -41,6 +46,5 @@ targets:
         UIUserInterfaceStyle: Dark
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
         NSHealthShareUsageDescription: Čteme jen spánek a tep z hodinek nebo prstenu. Nic dalšího a nic do reklamy.
-        NSHealthUpdateUsageDescription: Do Apple Health nic nezapisujeme. (Jen testovací build zapisuje vzorová data.)
         SupabaseURL: $(SUPABASE_URL)
         SupabaseKey: $(SUPABASE_KEY)
