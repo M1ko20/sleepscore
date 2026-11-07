@@ -55,6 +55,7 @@ debts, user_achievements, posts, challenge_day_scores ─trigger─▶ notificat
 | `supabase/functions/delete-account/index.ts` | smazání Apple účtu: revokace tokenu + `delete_my_account` |
 | `supabase/functions/_shared/apple.ts` (+ `apple_test.ts`, 8 testů) | Apple REST API: client_secret (ES256), `/auth/token`, `/auth/revoke` |
 | `supabase/tests/e2e.py` | E2E test proti živému projektu (25 kontrol, uklidí po sobě) |
+| `supabase/tests/ui_seed.py` | Dočasná data pro XCUITest (#13): 4 uživatelé `ui-…@example.test`, noci, komentáře, reakce, výzvy; `--cleanup` vše smaže |
 | `supabase/tests/local/run.sh` | lokální SQL testy: dočasný Postgres 16 + `stub.sql` (auth, storage, cron, net) + všechny migrace + `*_test.sql` |
 | `supabase/tests/local/moderation_test.sql` | moderace (68 kontrol) |
 | `supabase/tests/local/auto_hide_test.sql` | automatické skrytí po hlášeních (44 kontrol) |
@@ -232,7 +233,14 @@ cd supabase/functions && deno test _shared/               # unit testy
 # E2E (vytvoří 2 testovací uživatele a smaže je):
 supabase projects api-keys --project-ref tlespfcbqzddddhjsieu -o json > /tmp/keys.json
 python3 -I supabase/tests/e2e.py /tmp/keys.json && rm /tmp/keys.json
+# UI testy (#13): data → xcodebuild test → úklid (VŽDY, i když testy spadnou)
+python3 -I supabase/tests/ui_seed.py /tmp/keys.json /tmp/ui_state.json            # přihlášení jen do ui_state.json
+TEST_RUNNER_UITEST_LOGIN=a@…:heslo TEST_RUNNER_UITEST_LOGIN_B=b@…:heslo TEST_RUNNER_UITEST_TAG=<tag> \
+  xcodebuild test -project ios/SleepApp.xcodeproj -scheme SleepApp -destination 'id=<vlastní simulátor>' \
+  -only-testing:SleepAppUITests/Issue13Tests
+python3 -I supabase/tests/ui_seed.py /tmp/keys.json /tmp/ui_state.json --cleanup && rm /tmp/keys.json /tmp/ui_state.json
 ```
+`ui_seed.py`: A „UI Anna“ (přihlášená) pozve B, C, D. B komentuje a reaguje na kartu A a vyzve A na souboj se sázkou, C reaguje (sloučená notifikace), A komentuje a reaguje u C (test blokovaného B), D založí skupinovou výzvu, spustí ji a smaže si účet (creator_id = null). Hlášení z testů pošlou upozornění na ntfy. `--cleanup` maže hlášení (reporter = testovací účet), výzvy, uživatele a pro jistotu všechny `ui-*@example.test`.
 SQL logiku lze testovat lokálně: Postgres 16 (`/opt/homebrew/opt/postgresql@16/bin`) + stub schémat `auth`/`storage`/`cron`/`net` (role anon/authenticated/service_role, `auth.uid()` z `request.jwt.claim.sub`, výchozí granty jako Supabase). Docker není, `supabase start` nejde. Postgres potřebuje `LC_ALL=C`. Skript si pouští vlastní dočasný cluster (port `PGTEST_PORT`, default 55432).
 ```bash
 supabase/tests/local/run.sh                      # všechny migrace + všechny *_test.sql (tests/local i tests/)

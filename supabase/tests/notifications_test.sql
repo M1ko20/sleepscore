@@ -174,7 +174,7 @@ select pg_temp.as_user('a'); set role authenticated; select public.start_challen
 select pg_temp.ok('start skupiny hráčům', pg_temp.cnt('b', 'challenge_started') + pg_temp.cnt('c', 'challenge_started'), 2);
 select pg_temp.ok('start skupiny ne zakladateli', pg_temp.cnt('a', 'challenge_started'), 1);   -- jen ten z duelu
 select pg_temp.ok('start text', pg_temp.text_of('c', 'challenge_started'),
-  'Výzva startuje ' || to_char((now() at time zone 'Europe/Prague')::date + 1, 'FMDD. FMMM.') || '. 14 dní.');
+  'Výzva startuje ' || to_char((now() at time zone 'Europe/Prague')::date + 1, 'FMDD. FMMM.') || ', 14 dní.');
 
 -- odmítnutí skupinové pozvánky
 select pg_temp.as_user('a');

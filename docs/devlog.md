@@ -28,6 +28,12 @@ Co je hotové a jak. Nejnovější nahoře. Detaily backendu v `backend.md`, vzh
 - `site/terms.html` + `site/en/terms.html`: věta o automatickém skrytí.
 - Testy: `supabase/tests/local/auto_hide_test.sql` (44 kontrol), celá sada `run.sh` prošla.
 
+## 2026-11-07 – Ruční test #13 přes XCUITest
+- `ios/SleepAppUITests/Issue13Tests.swift` (5 testů, jdou po sobě a navazují) + `ReleaseHealthTests` (jen v `-configuration Release`). Data: `supabase/tests/ui_seed.py` v produkci, po testu `--cleanup` (viz backend.md → nasazování). Vlastní simulátor „UITest iPhone 16“, po testu smazaný.
+- Prošlo (screenshoty z .xcresult): zvoneček „Upozornění, 3 nových“ → výpis, sloučené reakce („UI Cyril a 1 další reagují“), proklik na kartu / pozvánku do souboje (A přijme) / profil, po otevření zvoneček bez počtu; B vidí „UI Anna výzvu přijímá“; skupinová výzva po smazaném zakladateli se načte; nahlášení komentáře (dlouhý stisk), karty (⋯) a profilu se „Zablokovat“ v jednom kroku – obsah zmizí, profil „Zablokováno“, sekce Zablokovaní, Zrušit blok; blok a odblok z profilu; zablokovaný B nevidí komentář ani reakci A u společného kamaráda, žádost A → „Tohle nejde.“; Release build: HealthKit dialog má jen „Allow … to read“ (Debug navíc sekci zápisu).
+- Opravy: dvojitá tečka v notifikaci „Výzva startuje 8. 11.. 7 dní“ → migrace `20261107170000_notification_text_dot_fix.sql` (přenesená na aktuální `notification_text`); notifikace o přátelství od smazaného účtu měla ikonu výzvy → `person`.
+- Pozn. k testům: SwiftUI `Menu` v toolbaru (⋯) XCUITest neumí „scroll to visible“ → klepnutí na souřadnici (`tapMore`). Na čistém simulátoru vyskočí HealthKit dialog → test ho zavře („Don’t Allow“ + OK).
+
 ## 2026-11-07 – Nahlášení obsahu a blokování (App Store 1.2, issue #6)
 - Migrace `20261107010215_moderation.sql` (**nenasazeno** – `supabase db push` udělá Adam):
   - `blocks` + `block_user` / `unblock_user`: blok zruší přátelství i žádost, čekající souboj, vyřadí z čekající skupinové výzvy jednoho z nich. RLS: komentáře a reakce mezi blokovanými se nezobrazují a nejdou přidat, žádost o přátelství nejde (blokovaný dostane jen „Tohle nejde.“, o bloku se nedozví).
