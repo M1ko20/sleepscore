@@ -161,3 +161,8 @@ Co je hotové a jak. Nejnovější nahoře. Detaily backendu v `backend.md`, vzh
 ## 2026-11-06 – Zmenšování starých nocí
 - Migrace `…220000_compact_night_raw.sql`: noci starší 120 dní denně zmenší pg_cron (slití úseků, tep do 5min průměrů). Na dev datech −56 % místa, nic se neztratilo z toho, co appka zobrazuje. Detail v backend.md.
 - Notifikace: návrh (zvoneček v appce + pushe přes frontu a pg_cron, mazání po 30 dnech) čeká na Adamovo OK.
+
+## 2026-11-07 – HealthKit: Release nežádá o zápis (issue #8)
+- `NSHealthUpdateUsageDescription` už není v `info:` v `ios/project.yml`; přidává se jen v Debug přes `INFOPLIST_KEY_NSHealthUpdateUsageDescription` (+ `GENERATE_INFOPLIST_FILE` jen pro Debug, Xcode klíč přimíchá do Info.plist).
+- `toShare` v `HealthSync.requestAuthorization()` byl už dřív jen v `#if DEBUG`, `DebugHealthSeeder` celý v `#if DEBUG`.
+- Ověřeno: Debug i Release build pro simulátor; v Release Info.plist klíč chybí.
