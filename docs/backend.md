@@ -1,6 +1,6 @@
 # Backend – jak to funguje
 
-Stav k 2026-11-06. Supabase projekt **Sleepscore** (`tlespfcbqzddddhjsieu`, eu-central-1, Free).
+Stav k 2026-11-07. Supabase projekt **Sleepscore** (`tlespfcbqzddddhjsieu`, eu-central-1, Free).
 Tenhle soubor je zkratka, aby se nemuselo číst SQL. Při změně backendu ho aktualizuj.
 
 ## Princip
@@ -35,9 +35,13 @@ night_tags INSERT ─trigger─▶ Navzdory / Pivo vyhrálo
 | `…140000_streaks_achievements_challenges.sql` | série, achievementy, uzavírání výzev |
 | `…140100_cron.sql` | pg_cron úlohy |
 | `…220000_compact_night_raw.sql` | zmenšení starých surových dat (viz níže) |
+| `20261107100000_apple_tokens.sql` | `apple_tokens` (Apple refresh token kvůli revokaci) |
 | `supabase/functions/ingest-sleep/index.ts` | Edge Function pro příjem spánku |
 | `supabase/functions/_shared/sleep.ts` | čistá logika: hlavní spánek, metriky, skóre |
 | `supabase/functions/_shared/sleep_test.ts` | unit testy skóre (15) |
+| `supabase/functions/apple-token/index.ts` | po Apple přihlášení: authorization code → refresh token |
+| `supabase/functions/delete-account/index.ts` | smazání Apple účtu: revokace tokenu + `delete_my_account` |
+| `supabase/functions/_shared/apple.ts` (+ `apple_test.ts`, 8 testů) | Apple REST API: client_secret (ES256), `/auth/token`, `/auth/revoke` |
 | `supabase/tests/e2e.py` | E2E test proti živému projektu (25 kontrol, uklidí po sobě) |
 
 ## Tabulky (public)
@@ -56,6 +60,7 @@ night_tags INSERT ─trigger─▶ Navzdory / Pivo vyhrálo
 - `achievements` (katalog) / `user_achievements` (opakovatelné; unikátní per noc / výzva)
 - `user_stats` – aktuální a nejlepší série, poslední týden s freeze
 - `push_tokens`
+- `apple_tokens` – Apple refresh token (Sign in with Apple), jen service role (RLS bez politik, práva anon/authenticated odebraná), kaskáda s `auth.users`
 
 Pohledy (security_invoker): `mma_records` (všechny typy výzev), `souls` (bez team_goal), `head_to_head` (bez team_goal).
 
@@ -114,6 +119,12 @@ Pravidla:
 - **Smazání** (Nastavení → Soukromí → Smazat účet, potvrzení napsáním přezdívky): appka smaže moje soubory v `avatars/` a `night-photos/` (`<uid>/…`; přímý DELETE ze `storage.objects` Supabase blokuje), pak `delete_my_account()`: neuzavřené souboje se mnou → `cancelled`, moje čekající výzvy → `cancelled`, `delete from auth.users` → kaskáda na `profiles` a vše navázané. Výzvy mají vlastní `timezone` a `creator_id … on delete set null` → ostatním zůstanou výsledky, MMA i duše proti jiným hráčům; skupinové výzvy běží dál beze mě.
 - Po odhlášení / smazání appka vyčistí cache obrázků a lokální klíče (`seenChallengeResults`, `dismissedRecapWeek`).
 - Ověřeno: export přes REST (Karolína 92 kB), anon 401, smazání v transakci s `rollback` (účet, profil, noci, přátelství, dluhy pryč; její výzvy zůstaly s `creator_id null`, výsledky ostatních zůstaly).
+- **Sign in with Apple – zneplatnění tokenu** (App Review 5.1.1(v)):
+  - Po přihlášení (`Session.signInWithApple`) appka pošle jednorázový `authorizationCode` na `apple-token` → server ho vymění na `https://appleid.apple.com/auth/token` za refresh token, ověří, že `sub` z `id_token` = Apple identita přihlášeného účtu, a uloží do `apple_tokens`. Chyba přihlášení neblokuje (jen log). 1 call na přihlášení přes Apple.
+  - Smazání Apple účtu: appka smaže Storage a místo RPC zavolá `delete-account` → `/auth/revoke` s refresh tokenem, pak `delete_my_account()` jménem uživatele (jeho JWT). Revokace je best effort: chybí-li konfigurace, token nebo Apple vrátí chybu, jen se zaloguje a účet se smaže stejně. Odpověď `{ deleted, revoked }`.
+  - E-mailové účty (dev build) dál volají rovnou `delete_my_account()` → fungují i bez nasazené funkce.
+  - `client_secret` = JWT ES256 podepsaný `.p8` klíčem (platnost 5 min), generuje se při každém volání.
+  - Secrets: `APPLE_TEAM_ID`, `APPLE_KEY_ID`, `APPLE_CLIENT_ID` (= bundle `cz.mikolas.sleepscore`), `APPLE_PRIVATE_KEY` (obsah `.p8`). Bez nich se výměna i revokace přeskočí (`apple-token` vrátí `{ stored: false }`).
 - Chybí: zásady ochrany osobních údajů (privacy policy) a jejich odkaz v onboardingu – přijde s landing page (nutné i pro App Store a Garmin).
 
 ## Sleep score v2 (`_shared/sleep.ts`, `score_version = 2`)
@@ -151,6 +162,11 @@ Přepočet starých nocí: zatím jen dev data → znovu nahrát (`seed_dev.py -
 ```bash
 supabase db push --remote --yes                          # migrace
 supabase functions deploy ingest-sleep --use-api --yes    # funkce (bez Dockeru)
+supabase functions deploy apple-token --use-api --yes
+supabase functions deploy delete-account --use-api --yes
+# Apple secrets (až bude Developer Program; .p8 nikdy do gitu):
+supabase secrets set APPLE_TEAM_ID=… APPLE_KEY_ID=… APPLE_CLIENT_ID=cz.mikolas.sleepscore
+supabase secrets set APPLE_PRIVATE_KEY="$(cat AuthKey_XXXX.p8)"
 cd supabase/functions && deno test _shared/               # unit testy
 # E2E (vytvoří 2 testovací uživatele a smaže je):
 supabase projects api-keys --project-ref tlespfcbqzddddhjsieu -o json > /tmp/keys.json
@@ -160,10 +176,9 @@ SQL logiku lze testovat lokálně: Postgres 16 (`/opt/homebrew/opt/postgresql@16
 
 ## Chybí / TODO
 - Push notifikace (APNs) – až bude Apple Developer Program.
-- Sign in with Apple – totéž; do té doby testovací přihlášení e-mailem v dev buildu.
+- Sign in with Apple – totéž; do té doby testovací přihlášení e-mailem v dev buildu. Backend pro revokaci tokenu je hotový (viz GDPR), chybí přihlašovací obrazovka (`ASAuthorizationAppleIDProvider` → `Session.signInWithApple`).
 - První uživatel (Adam) nemá pozvánku → profil založit ručně (service role insert do `profiles` + `user_stats`).
 - Insighty z tagů, týdenní recap, Sleep Wrapped.
-- Mazání účtu z appky (GDPR) – smazání `auth.users` vše kaskádově smaže, chybí jen endpoint.
 
 ## Zmenšování starých surových dat (`night_raw`)
 Plná data se drží 120 dní (výzvy, insighty 90 dní, přepočet skóre). Pak je denně pg_cron

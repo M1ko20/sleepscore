@@ -78,6 +78,18 @@ final class Session {
         try await Backend.client.auth.signIn(email: email, password: password)
     }
 
+    /// Sign in with Apple (až bude Apple Developer Program – zatím ho žádná obrazovka nevolá).
+    /// Z `ASAuthorizationAppleIDCredential`: `identityToken`, `authorizationCode` a nonce,
+    /// jehož SHA-256 šel do požadavku. Authorization code jde na server kvůli zneplatnění
+    /// tokenu při smazání účtu (viz `API.deleteMyAccount`).
+    func signInWithApple(idToken: String, nonce: String, authorizationCode: String?) async throws {
+        try await Backend.client.auth.signInWithIdToken(
+            credentials: OpenIDConnectCredentials(provider: .apple, idToken: idToken, nonce: nonce))
+        if let authorizationCode {
+            await API.storeAppleAuthorizationCode(authorizationCode)
+        }
+    }
+
     func signOut() async {
         HealthSync.shared.stopObserving()
         HealthSync.shared.resetAnchor()
