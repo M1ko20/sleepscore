@@ -55,6 +55,10 @@ struct NightDetailView: View {
                 .buttonStyle(.plain)
                 .disabled(isMine)
 
+                if isMine, post.hiddenAt != nil {
+                    HiddenByReportsNotice()
+                }
+
                 if let title = post.title, !title.isEmpty {
                     Text(title).font(Font.app.title).foregroundStyle(Color.app.textPrimary)
                 }
@@ -225,6 +229,9 @@ struct NightDetailView: View {
                             Text(Fmt.postStamp(c.createdAt)).font(Font.app.caption).foregroundStyle(Color.app.textTertiary)
                         }
                         Text(c.body).font(Font.app.body).foregroundStyle(Color.app.textPrimary)
+                        if c.author.id == me, c.hiddenAt != nil {
+                            HiddenByReportsNotice(compact: true)
+                        }
                     }
                     Spacer(minLength: 0)
                 }

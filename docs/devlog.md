@@ -19,6 +19,15 @@ Co je hotové a jak. Nejnovější nahoře. Detaily backendu v `backend.md`, vzh
 13. ~~Notifikace ve zvonečku~~ hotovo (#9). ~~Zneplatnění Apple tokenu~~ (#7), ~~Release bez zápisu do Health~~ (#8), ~~anglické zásady~~ (#3) hotovo.
 14. Další: push přes APNs (#10, Developer Program, pak i pondělní push na recap), nastavení notifikací (#11), test na iPhonu s Garminem.
 
+## 2026-11-07 – Automatické skrytí po 3 hlášeních (issue #15)
+- Migrace `20261107123528_auto_hide_reported.sql` (**nenasazeno**): trigger na `reports` – jakmile obsah má 3 otevřená hlášení od různých nezabanovaných členů, skryje se všem kromě autora a přijde upozornění „Obsah automaticky skrytý po 3 hlášeních“ (jen druh a id). Práh jde změnit v `private.app_config` (`auto_hide_threshold`).
+  - Karta (`posts.hidden_at`) a komentář (`comments.hidden_at`): RLS je ukáže jen autorovi; skrytá karta = nejdou k ní komentáře ani reakce. Ze zvonečku majitele karty zmizí text skrytého komentáře.
+  - Profil: jen jméno (= přezdívka) a profilovka, účet a noci dál; do kontroly je nejde změnit. Sázka: jen text (`stake = null`), výzva běží. Originál v `private.hidden_content`.
+  - `resolve_report`: `dismiss` vrátí obsah (u sázky doplní dluhy, pokud výzva mezitím skončila), `remove`/`ban` jako dosud a zruší skrytí (karta bez textu a fotky je zase vidět).
+- Appka: autor vidí u své karty / komentáře „Skryto ostatním po nahlášení“; změna jména/fotky při skrytém profilu hlásí srozumitelnou chybu. **Nasadit migraci před appkou** (appka čte sloupec `hidden_at`).
+- `site/terms.html` + `site/en/terms.html`: věta o automatickém skrytí.
+- Testy: `supabase/tests/local/auto_hide_test.sql` (44 kontrol), celá sada `run.sh` prošla.
+
 ## 2026-11-07 – Nahlášení obsahu a blokování (App Store 1.2, issue #6)
 - Migrace `20261107010215_moderation.sql` (**nenasazeno** – `supabase db push` udělá Adam):
   - `blocks` + `block_user` / `unblock_user`: blok zruší přátelství i žádost, čekající souboj, vyřadí z čekající skupinové výzvy jednoho z nich. RLS: komentáře a reakce mezi blokovanými se nezobrazují a nejdou přidat, žádost o přátelství nejde (blokovaný dostane jen „Tohle nejde.“, o bloku se nedozví).

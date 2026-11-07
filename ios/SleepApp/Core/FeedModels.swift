@@ -163,9 +163,11 @@ struct FeedPost: Decodable, Identifiable, Hashable, Sendable {
     var night: Night
     var reactions: [Reaction]
     var commentCount: Int
+    /// Skryto ostatním po hlášeních (do kontroly). Vidí jen autor.
+    let hiddenAt: Date?
 
     static let select = """
-    id,title,body,photo_path,created_at,\
+    id,title,body,photo_path,created_at,hidden_at,\
     author:profiles!posts_user_id_fkey(id,username,display_name,avatar_path,timezone),\
     night:nights(id,night_date,sleep_start,sleep_end,total_sleep_min,awake_min,core_min,deep_min,rem_min,\
     wake_count,hr_avg,score,score_breakdown,night_tags(tag),night_raw(segments),user_achievements(code)),\
@@ -176,6 +178,7 @@ struct FeedPost: Decodable, Identifiable, Hashable, Sendable {
         case id, title, body, author, night, reactions, comments
         case photoPath = "photo_path"
         case createdAt = "created_at"
+        case hiddenAt = "hidden_at"
     }
 
     private struct Count: Decodable { let count: Int }
@@ -191,6 +194,7 @@ struct FeedPost: Decodable, Identifiable, Hashable, Sendable {
         night = try c.decode(Night.self, forKey: .night)
         reactions = try c.decodeIfPresent([Reaction].self, forKey: .reactions) ?? []
         commentCount = (try c.decodeIfPresent([Count].self, forKey: .comments))?.first?.count ?? 0
+        hiddenAt = try c.decodeIfPresent(Date.self, forKey: .hiddenAt)
     }
 
     /// Karta bez názvu i tagů = ještě nedoplněná.
@@ -202,12 +206,15 @@ struct Comment: Decodable, Identifiable, Hashable, Sendable {
     let body: String
     let createdAt: Date
     let author: ProfileLite
+    /// Skryto ostatním po hlášeních (do kontroly). Vidí jen autor.
+    var hiddenAt: Date? = nil
 
-    static let select = "id,body,created_at,author:profiles(id,username,display_name,avatar_path,timezone)"
+    static let select = "id,body,created_at,hidden_at,author:profiles(id,username,display_name,avatar_path,timezone)"
 
     enum CodingKeys: String, CodingKey {
         case id, body, author
         case createdAt = "created_at"
+        case hiddenAt = "hidden_at"
     }
 }
 

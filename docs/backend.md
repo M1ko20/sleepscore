@@ -55,6 +55,7 @@ debts, user_achievements, posts ─trigger─▶ notifications
 | `supabase/tests/e2e.py` | E2E test proti živému projektu (25 kontrol, uklidí po sobě) |
 | `supabase/tests/local/run.sh` | lokální SQL testy: dočasný Postgres 16 + `stub.sql` (auth, storage, cron, net) + všechny migrace + `*_test.sql` |
 | `supabase/tests/local/moderation_test.sql` | moderace (68 kontrol) |
+| `supabase/tests/local/auto_hide_test.sql` | automatické skrytí po hlášeních (44 kontrol) |
 
 ## Tabulky (public)
 - `profiles` – přezdívka (`^[a-z0-9_.]{3,20}$`), jméno, avatar, timezone, `invites_available` (start 3), `invited_by`
@@ -76,6 +77,7 @@ debts, user_achievements, posts ─trigger─▶ notifications
 - `blocks` – kdo koho zablokoval (`blocker_id`, `blocked_id`); řádek vidí jen blokující
 - `reports` – hlášení: co (`post | comment | profile | challenge` + id), kdo, na koho, důvod (`harassment | hate | sexual | spam | other`), poznámka, `snapshot` obsahu, `open/resolved/dismissed`. Klient nemá k tabulce žádný přístup.
 - `profiles.banned_at` – zabanovaný účet (`private.is_member()` pak vrací false)
+- `posts.hidden_at`, `comments.hidden_at` – skryto všem kromě autora po hlášeních (viz Moderace); `private.hidden_content` – co je automaticky skryté + originál jména/profilovky/sázky
 - `private.app_config` – klíč/hodnota pro nastavení mimo repo (URL webhooku)
 - `notifications` – zvoneček (viz Notifikace)
 - `notification_prefs` – nastavení pushů (přepínače kategorií, noční klid); 1 řádek na uživatele, chybí = výchozí. Čte jen majitel, zápis jen přes RPC.
@@ -162,16 +164,23 @@ Slib v podmínkách: hlášení vyřídíme do 24 h, nulová tolerance.
                                         ('report_webhook_format', 'discord');   -- discord | slack | ntfy
   -- ntfy: URL https://ntfy.sh/<tajné-téma>, formát 'ntfy'
   ```
+- **Automatické skrytí** (`20261107123528_auto_hide_reported.sql`, #15): trigger `reports_auto_hide` – jakmile má obsah **3 otevřená hlášení od různých nezabanovaných členů**, skryje se všem kromě autora (práh: `private.app_config` `auto_hide_threshold`, výchozí 3). Pošle upozornění „Obsah automaticky skrytý po N hlášeních“ (druh + id, bez obsahu a jmen). Záznam v `private.hidden_content` (podle něj se pozná, že už je skryto → upozornění jen jednou).
+  - karta → `posts.hidden_at`, `private.can_view_post` ji pustí jen autorovi (tím zmizí i její komentáře a reakce a nejde k ní nic přidat); autor ji vidí s `hidden_at` a appka ukáže „Skryto ostatním po nahlášení“.
+  - komentář → `comments.hidden_at`, vidí jen jeho autor (ani majitel karty); z notifikace majitele karty se smaže `payload.text`.
+  - profil → jen jméno (= přezdívka) a profilovka (null), účet, karty a výzvy běží dál. Trigger `profiles_guard_hidden` klientovi do kontroly nedovolí jméno/profilovku změnit (`profile hidden pending review`).
+  - sázka → `challenges.stake = null`, výzva běží dál.
+  - Ochrana proti zneužití: počítá se 1 hlášení na člověka (unikátní), jen otevřená, ne od zabanovaných; hlásit jde jen obsah, který člověk vidí (`report_content`), ne vlastní; max. 20 hlášení/den; invite-only. Profil může nahlásit kterýkoli člen (profily vidí všichni), takže tam stačí 3 libovolní členové – skryje se ale jen jméno a fotka. Po `dismiss` titíž lidé stejný obsah znovu nahlásit nejdou. Zabanování hlásícího už skrytý obsah zpětně nepřepočítá.
+  - Známé mezery: skrytá karta zůstává v cache appky u přátel do dalšího načtení; dluhy z dřív skončené výzvy (`debts.stake`) se při skrytí sázky nemění.
 - **Vyřízení** (SQL editor v dashboardu, jako postgres):
   ```sql
   select id, target_kind, reason, note, snapshot, reported_user_id, created_at
   from public.reports where status = 'open' order by created_at;
-  select private.resolve_report('<id>', 'dismiss', 'poznámka');  -- nic se nemaže
+  select private.resolve_report('<id>', 'dismiss', 'poznámka');  -- nic se nemaže; automaticky skrytý obsah se vrátí (sázka i s dluhy, pokud výzva mezitím skončila)
   select private.resolve_report('<id>', 'remove');  -- komentář smazat / karta: název+komentář+fotka null / profil: jméno = přezdívka, bez fotky / sázka null
   select private.resolve_report('<id>', 'ban');     -- remove + ban autora
   select private.unban_user('<user>');
   ```
-  Vyřídí všechna otevřená hlášení stejného obsahu. Soubory ve Storage SQL smazat nejde → `notice` řekne cestu, smazat ručně v dashboardu.
+  Vyřídí všechna otevřená hlášení stejného obsahu. `remove`/`ban` zároveň zruší automatické skrytí (karta bez textu a fotky je zase vidět). Soubory ve Storage SQL smazat nejde → `notice` řekne cestu, smazat ručně v dashboardu.
 - **Ban** (`private.ban_user`): `profiles.banned_at`, `auth.users.banned_until = infinity` (nepřihlásí se; platný JWT dožije max. 1 h, ale `is_member()` už vrací false), přátelství, komentáře, reakce, nepoužité pozvánky a push tokeny pryč, texty a fotky karet null, čekající výzvy zrušené. Běžící souboje doběhnou (zabanovaný nic nenahraje → nuly). Účet a noci zůstávají (důkaz, případné odvolání); úplné smazání = `delete from auth.users`.
 - **Blok** běžící výzvy neruší (jinak by šlo blokem utéct před prohrou). Skupinovou výzvu od někoho třetího můžou hrát i dva lidé s blokem mezi sebou (vidí jen skóre).
 - Smazání účtu: moje bloky zmizí, moje hlášení zůstanou bez `reporter_id`.
