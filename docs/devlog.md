@@ -221,3 +221,9 @@ Co je hotové a jak. Nejnovější nahoře. Detaily backendu v `backend.md`, vzh
 - `supabase/tests/e2e.py` rozšířený o notifikace, nastavení notifikací, nahlášení (idempotentní), blokování a export; datum startu výzvy se počítá dynamicky. Proti produkci 40/40, testovací hlášení se uklízí.
 - Simulátor (přihlášený účet, produkce): zvoneček ve feedu, výpis Upozornění (prázdný stav) a Nastavení → Notifikace se načtou správně. Klepací části (#13) zbývají ručně.
 - Nové issues: #12 webhook, #13 ruční test, #14 Sign in with Apple, #15 nápady.
+
+## 2026-11-07 – UI testy a promo video
+- Nový target `SleepAppUITests` (XCUITest): `Support.swift`, `PromoTourTests` (průchod appkou jen pro čtení).
+- Promo video (~80 s, 1080×1920): feed, detail noci, výzvy, souboj, výsledek, profil, týdenní recap, Sleep Wrapped, notifikace. Postup a skripty v `tools/promo/`. Video mimo git (`~/Movies/Sleepscore/sleepscore-promo.mp4`).
+- Zjištění: pod XCUITestem se celoobrazovkový výsledek výzvy a sheet nastavení po čistém spuštění nevykreslí (appka zůstane na pozadí); přes `simctl launch` fungují.
+- #1: na webu zůstává osobní Gmail (rozhodnutí Adama).
