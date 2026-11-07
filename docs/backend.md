@@ -23,7 +23,11 @@ pg_cron každou hodinu v :05 ─▶ private.hourly_jobs()
                                 ├─ díry v sériích (1× denně po 14:00, jen rozjeté série)
                                 └─ Dvojí život (pondělí 10:00)
 pg_cron denně 3:45 UTC ─▶ private.compact_old_night_raw()  (noci starší 120 dní)
+pg_cron každou hodinu v :07 ─▶ private.notification_jobs()  (zítra konec 20:00, recap po 9:00)
+pg_cron denně 3:20 UTC ─▶ private.cleanup_notifications()  (starší 30 dní)
 night_tags INSERT ─trigger─▶ Navzdory / Pivo vyhrálo
+reactions, comments, friendships, challenge_participants, challenges,
+debts, user_achievements, posts ─trigger─▶ notifications
 ```
 
 ## Soubory
@@ -35,6 +39,9 @@ night_tags INSERT ─trigger─▶ Navzdory / Pivo vyhrálo
 | `…140000_streaks_achievements_challenges.sql` | série, achievementy, uzavírání výzev |
 | `…140100_cron.sql` | pg_cron úlohy |
 | `…220000_compact_night_raw.sql` | zmenšení starých surových dat (viz níže) |
+| `…20261107010500_notifications.sql` | notifikace: tabulka, triggery, text, cron (viz Notifikace) |
+| `supabase/tests/local/run.sh` + `stub.sql` | lokální test SQL: čistá DB, stub Supabase a pg_cron, všechny migrace, pak zadané testy |
+| `supabase/tests/notifications_test.sql` | test notifikací (62 kontrol) |
 | `supabase/functions/ingest-sleep/index.ts` | Edge Function pro příjem spánku |
 | `supabase/functions/_shared/sleep.ts` | čistá logika: hlavní spánek, metriky, skóre |
 | `supabase/functions/_shared/sleep_test.ts` | unit testy skóre (15) |
@@ -56,6 +63,7 @@ night_tags INSERT ─trigger─▶ Navzdory / Pivo vyhrálo
 - `achievements` (katalog) / `user_achievements` (opakovatelné; unikátní per noc / výzva)
 - `user_stats` – aktuální a nejlepší série, poslední týden s freeze
 - `push_tokens`
+- `notifications` – zvoneček (viz Notifikace)
 
 Pohledy (security_invoker): `mma_records` (všechny typy výzev), `souls` (bez team_goal), `head_to_head` (bez team_goal).
 
@@ -89,6 +97,7 @@ Storage: buckety `avatars` (max 150 kB), `night-photos` (max 400 kB) – privát
 | `start_challenge(challenge)` | skupinu spouští zakladatel, min. 3 přijatí |
 | `cancel_challenge(challenge)` | zakladatel, jen pending |
 | `settle_debt(debt)` | dlužník označí splacení |
+| `mark_notifications_read()` | otevření zvonečku: vše přečtené, vrací počet |
 
 Přímé zápisy: `profiles` (display_name, avatar_path, timezone), `posts` (title, body, photo_path – jen vlastní noční karta), `night_tags`, `comments`, `reactions`, `push_tokens`.
 
@@ -156,10 +165,14 @@ cd supabase/functions && deno test _shared/               # unit testy
 supabase projects api-keys --project-ref tlespfcbqzddddhjsieu -o json > /tmp/keys.json
 python3 -I supabase/tests/e2e.py /tmp/keys.json && rm /tmp/keys.json
 ```
-SQL logiku lze testovat lokálně: Postgres 16 (`/opt/homebrew/opt/postgresql@16/bin`) + stub schémat `auth`/`storage` (role anon/authenticated/service_role, `auth.uid()` z `request.jwt.claim.sub`). Docker není, `supabase start` nejde. Postgres potřebuje `LC_ALL=C`.
+SQL logiku lze testovat lokálně: Postgres 16 (`/opt/homebrew/opt/postgresql@16/bin`) + stub schémat `auth`/`storage`/`cron` (role anon/authenticated/service_role, `auth.uid()` z `request.jwt.claim.sub`). Docker není, `supabase start` nejde. Postgres potřebuje `LC_ALL=C`.
+```bash
+# běžící Postgres 16 (PGHOST/PGPORT/PGUSER, default 127.0.0.1:5432 postgres)
+supabase/tests/local/run.sh supabase/tests/notifications_test.sql   # vypíše „ok …“ a na konci ALL OK
+```
 
 ## Chybí / TODO
-- Push notifikace (APNs) – až bude Apple Developer Program.
+- Push notifikace (APNs) – až bude Apple Developer Program (#10). Notifikace ve zvonečku hotové.
 - Sign in with Apple – totéž; do té doby testovací přihlášení e-mailem v dev buildu.
 - První uživatel (Adam) nemá pozvánku → profil založit ručně (service role insert do `profiles` + `user_stats`).
 - Insighty z tagů, týdenní recap, Sleep Wrapped.
@@ -173,3 +186,39 @@ Plná data se drží 120 dní (výzvy, insighty 90 dní, přepočet skóre). Pak
 Formát zůstává, appka, Wrapped i export fungují beze změn. Test na dev datech (rollback):
 146 kB → 64 kB uloženo (−56 %), deep sedí na sekundu, průměr tepu ±0,1. Odhad pro 100 lidí trvale ~250 MB.
 Ruční spuštění: `select private.compact_old_night_raw(p_keep_days => 120);`
+
+## Notifikace (zvoneček, #9)
+Vznikají jen v DB (triggery + pg_cron), žádná Edge Function. Appka: počet nepřečtených = `HEAD` dotaz s `count=exact` při načtení feedu (žádný polling), výpis = 1 dotaz, otevření = `mark_notifications_read()`.
+
+Tabulka `notifications`: `user_id` (příjemce), `kind`, `category` (generovaný sloupec pro #11), `actor_id` (`on delete set null` → text „Někdo …“), `post_id` / `challenge_id` / `comment_id` (`on delete cascade`), `payload` (fakta, bez jmen), `count`, `read_at`, `pushed_at`, `created_at` (= čas poslední události). RLS: select jen svoje; klient nic nezapisuje. Check: nikdy `actor_id = user_id`.
+
+| kind | Kdy (trigger / cron) | Komu | Proklik | Text (příklad) |
+|---|---|---|---|---|
+| `reaction` | INSERT/DELETE `reactions` | autor karty | karta | „Cyril a 2 další reagují na tvoji noc.“ |
+| `comment` | INSERT `comments` | autor karty | karta | „Bára: a já měla 88“ |
+| `friend_request` | INSERT `friendships` (pending) | adresát | profil | „Cyril ti posílá žádost o přátelství.“ |
+| `friend_accepted` | pending → accepted; INSERT accepted (pozvánka) | kdo žádal / zval | profil | „Adam přijímá žádost o přátelství.“ / „Bára je tu přes tvoji pozvánku.“ |
+| `challenge_invite` | INSERT `challenge_participants` (invited) | pozvaný | výzva | „Adam tě vyzývá: 7 dní, pivo.“ |
+| `challenge_response` | invited → accepted/declined (výzva pending; ne přijatý duel) | zakladatel | výzva | „Bára jde do toho.“ / „Bára výzvu odmítá.“ |
+| `challenge_started` | `challenges` pending → active | přijatí kromě toho, kdo start spustil | výzva | „Bára výzvu přijímá. Start 8. 11., 7 dní.“ / „Výzva startuje 8. 11. 14 dní.“ |
+| `challenge_ending` | cron, 20:00 místního času den před koncem | hráči | výzva | „Zítra konec. Prohráváš o 8,3 bodu.“ |
+| `challenge_result` | `challenges` active → finished | hráči | výzva | „Vyhráno 80,0 : 70,0. Bára přichází o duši.“ |
+| `debt_settled` | `debts.settled_at` null → čas | věřitel | výzva | „Bára hlásí splaceno: pivo.“ |
+| `achievement` | INSERT `user_achievements` | držitel | karta noci / výzva | „Nový odznak: Hlubinář.“ / „Hlubinář. Zase.“ |
+| `night_ready` | INSERT `posts` (night, noc dnes/včera) | autor | karta | „Tvoje noc: 78. Doplň komentář.“ |
+| `weekly_recap` | cron, pondělí 9:00 místního času, ≥ 1 noc | uživatel | recap | „Minulý týden v číslech: průměr 75, 2 noci.“ |
+
+Pravidla:
+- **Reakce**: jeden řádek na kartu (unikátní index). Nová reakce přepočítá počet a posledního reagujícího, posune `created_at` a nastaví nepřečtené. Smazaná reakce jen přepočítá (bez posunu); poslední smazaná řádek smaže. Změna druhu reakce nic nedělá. Vlastní reakce se nepočítají.
+- Smazaný komentář smaže notifikaci (FK cascade). Stažená / odmítnutá žádost o přátelství zmizí.
+- Přijatý duel: zakladatel dostane jen `challenge_started` (ne navíc `challenge_response`). Automatické „declined“ při startu skupiny se nehlásí.
+- „Zítra konec“: průběžný průměr = součet skóre dní od startu do předposledního dne / počet těch dní (chybějící noc = 0). Duel / všichni proti všem: rozdíl proti nejlepšímu soupeři; společný cíl: průměr skupiny vs. cíl.
+- Ranní karta jen pro noc dnes / včera (místní čas) – zpětné nahrání starších nocí nespamuje.
+- **Text** skládá `public.notification_text(notifications)` při čtení (PostgREST computed column `text:notification_text`) – jména a skóre jsou vždy aktuální. Slovesa v přítomném čase, ať nemusíme znát rod. Push (#10) použije stejnou funkci.
+- Plánované: samostatná pg_cron úloha `notification-jobs` (:07), ne uvnitř `hourly_jobs` (ať ji nepřepíše jiná migrace). Funkce berou `p_now` kvůli testům.
+- **Úklid**: `notifications-cleanup` denně maže starší 30 dní (reakce se s každou novou posouvají).
+
+Navázání:
+- **#10 push**: fronta = `pushed_at is null or pushed_at < created_at` (částečný index `notifications_push_queue_idx`). Reakce posílat znovu nejdřív hodinu po `pushed_at`. Po prvním zapnutí posílat jen čerstvé (např. `created_at > now() - 1 day`), ať nepřijde dávka starých. Odesílač nastaví `pushed_at = now()`.
+- **#11 nastavení**: `category` ∈ `reactions, comments, friends, challenges, achievements, morning, recap` = přepínače. Zvoneček ukazuje vše, filtr podle `profiles.notification_prefs` a noční klid řeší jen odesílač pushů.
+

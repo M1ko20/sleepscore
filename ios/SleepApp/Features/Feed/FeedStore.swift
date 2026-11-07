@@ -16,14 +16,20 @@ final class FeedStore {
     private(set) var streaks: [UUID: Int] = [:]
     /// Recap minulého týdne – jen po–st a dokud ho neskryju (1 call týdně navíc).
     private(set) var recap: WeeklyRecap?
+    /// Nepřečtené notifikace (zvoneček). Načítá se s feedem, žádný polling.
+    var unreadNotifications = 0
+    /// Starší karty otevřené ze zvonečku (nejsou v načteném feedu).
+    private var extraPosts: [FeedPost] = []
 
     func load() async {
         do {
             async let postsReq = API.feed()
             async let resultsReq = API.challengeResultPosts()
+            async let unreadReq = API.unreadNotificationCount()
             try await loadCatalogs()
             posts = try await postsReq
             results = (try? await resultsReq) ?? results
+            unreadNotifications = (try? await unreadReq) ?? unreadNotifications
             let authors = Array(Set(posts.map(\.author.id)))
             let stats = try await API.stats(userIDs: authors)
             streaks = Dictionary(uniqueKeysWithValues: stats.map { ($0.userID, $0.currentStreak) })
@@ -77,7 +83,19 @@ final class FeedStore {
         recap = nil
     }
 
-    func post(_ id: UUID) -> FeedPost? { posts.first { $0.id == id } }
+    func post(_ id: UUID) -> FeedPost? { posts.first { $0.id == id } ?? extraPosts.first { $0.id == id } }
+
+    /// Karta mimo načtený feed (proklik ze zvonečku) – dotáhne ji jedním dotazem.
+    func ensurePost(_ id: UUID) async {
+        guard post(id) == nil, let p = try? await API.post(id: id) else { return }
+        extraPosts.append(p)
+    }
+
+    /// Úprava karty ve feedu i mezi staršími kartami.
+    private func mutate(_ id: UUID, _ change: (inout FeedPost) -> Void) {
+        if let i = posts.firstIndex(where: { $0.id == id }) { change(&posts[i]) }
+        if let i = extraPosts.firstIndex(where: { $0.id == id }) { change(&extraPosts[i]) }
+    }
 
     /// Moje dnešní karta nahoru, pak karty nocí a výsledky výzev od nejnovější.
     func items(me: UUID?) -> [FeedItem] {
@@ -100,28 +118,29 @@ final class FeedStore {
     }
 
     func react(_ postID: UUID, me: UUID, kind: ReactionKind?) async {
-        guard let i = posts.firstIndex(where: { $0.id == postID }) else { return }
-        let before = posts[i].reactions
-        posts[i].reactions.removeAll { $0.userID == me }
-        if let kind { posts[i].reactions.append(Reaction(userID: me, kind: kind)) }
+        guard let before = post(postID)?.reactions else { return }
+        mutate(postID) { p in
+            p.reactions.removeAll { $0.userID == me }
+            if let kind { p.reactions.append(Reaction(userID: me, kind: kind)) }
+        }
         do {
             try await API.setReaction(postID: postID, userID: me, kind: kind)
         } catch {
-            if let j = posts.firstIndex(where: { $0.id == postID }) { posts[j].reactions = before }
+            mutate(postID) { $0.reactions = before }
         }
     }
 
     func applyEdit(postID: UUID, title: String?, body: String?, tags: [String], photoPath: String?) {
-        guard let i = posts.firstIndex(where: { $0.id == postID }) else { return }
-        posts[i].photoPath = photoPath
-        posts[i].title = title
-        posts[i].body = body
-        posts[i].night.tags = tags
+        mutate(postID) { p in
+            p.photoPath = photoPath
+            p.title = title
+            p.body = body
+            p.night.tags = tags
+        }
     }
 
     func setCommentCount(postID: UUID, _ count: Int) {
-        guard let i = posts.firstIndex(where: { $0.id == postID }) else { return }
-        posts[i].commentCount = count
+        mutate(postID) { $0.commentCount = count }
     }
 
     func tagLine(_ tags: [String]) -> String {

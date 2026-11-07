@@ -15,7 +15,15 @@ Co je hotové a jak. Nejnovější nahoře. Detaily backendu v `backend.md`, vzh
 9. ~~Zpřísnění skóre (v2)~~ hotovo.
 10. ~~Sleep Wrapped~~ hotovo.
 11. ~~GDPR (export, smazání účtu, Soukromí)~~ hotovo.
-12. Další: privacy policy + landing page (Adam), push notifikace (Developer Program), test na iPhonu s Garminem. (konec roku), smazání účtu (GDPR), push notifikace (až s Developer Programem – pak i pondělní push na recap).
+12. ~~Notifikace ve zvonečku~~ hotovo (#9). Další: push přes APNs (#10, Developer Program), nastavení notifikací (#11), privacy policy + landing page (Adam), test na iPhonu s Garminem. (konec roku), smazání účtu (GDPR), push notifikace (až s Developer Programem – pak i pondělní push na recap).
+
+## 2026-11-07 – Notifikace: zvoneček (issue #9)
+- Migrace `…20261107010500_notifications.sql`: tabulka `notifications`, vznik jen v DB (triggery + pg_cron), text skládá SQL funkce `notification_text` (stejná pro zvoneček i budoucí push). Detail v `backend.md` → Notifikace.
+- Události: reakce (1 řádek na kartu, slučuje se), komentář, žádost / přijetí přátelství (i „je tu přes tvoji pozvánku“), pozvánka do výzvy, odpověď zakladateli, start, „zítra konec“ (20:00 místního času), výsledek, splacený dluh, odznak (opakovaný = „Zase.“), ranní karta, pondělní recap (9:00). Vynecháno: „kamarád tě předběhl“ (ke zvážení v issue).
+- Appka: zvoneček vpravo nahoře ve feedu s počtem nepřečtených (počet se načte jedním `HEAD` dotazem s feedem, žádný polling). Výpis „Upozornění“: avatar nebo glyf, text, čas, žlutá tečka u nových; otevření = `mark_notifications_read()` (1 call). Proklik: karta (i starší, než je ve feedu – dotáhne se), výzva, profil, recap.
+- Lokální SQL testy jsou nově v repu: `supabase/tests/local/run.sh` (stub Supabase + pg_cron, všechny migrace) a `notifications_test.sql` (62 kontrol). Starý test sérií/výzev s triggery prošel beze změny výsledků.
+- **Nenasazeno** – Adam: `supabase db push --remote --yes`. Do nasazení appka funguje dál, jen zvoneček ukáže „Upozornění se nenačetla.“
+- DEBUG: `-debugNotifications` otevře výpis.
 
 ## 2026-11-06 – GDPR: export a smazání účtu
 - Migrace `…210000_gdpr.sql`: `challenges.timezone` (doplní trigger ze zakladatele; start a uzavírání ve 14:00 už nečtou profil zakladatele), `creator_id` nullable + `on delete set null` (dřív by smazání zakladatele smazalo výzvu i ostatním hráčům, včetně jejich výher a duší). RPC `delete_my_account()` a `export_my_data()`, detaily v `backend.md` → GDPR.
