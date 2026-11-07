@@ -51,7 +51,7 @@ select pg_temp.ok('payload autora bez thread', (select payload ? 'thread' from p
 
 select pg_temp.comment('c', 'jak dřevo');
 select pg_temp.ok('autor karty 2', pg_temp.cnt('a', 'comment'), 2);
-select pg_temp.ok('vlákno – předchozí komentující', pg_temp.text_of('b', 'comment'), 'Cyril taky komentuje noc, kterou má Adam: jak dřevo');
+select pg_temp.ok('vlákno – předchozí komentující', pg_temp.text_of('b', 'comment'), 'Cyril taky komentuje noc, pod kterou píšeš: jak dřevo');
 select pg_temp.ok('vlákno – autor komentáře nic', pg_temp.cnt('c', 'comment'), 0);
 select pg_temp.ok('vlákno – kategorie', (select category from public.notifications where user_id = pg_temp.u('b') and kind = 'comment'), 'comments');
 
@@ -87,15 +87,15 @@ select pg_temp.ok('ostatní dostanou (A, B)', (select string_agg(p.username, ','
   from public.notifications n join public.profiles p on p.id = n.user_id), 'adam,bara');
 select pg_temp.comment('c', 'od Cyrila');
 select pg_temp.ok('blok – D od C nic', pg_temp.cnt('d', 'comment'), 0);
-select pg_temp.ok('B dostane od C', pg_temp.text_of('b', 'comment'), 'Cyril taky komentuje noc, kterou má Adam: od Cyrila');
+select pg_temp.ok('B dostane od C', pg_temp.text_of('b', 'comment'), 'Cyril taky komentuje noc, pod kterou píšeš: od Cyrila');
 
--- kartu už nevidím (text čte jako příjemce) → bez jména
+-- kartu už nevidím (text čte jako příjemce) → text beze změny (jméno autora karty v něm není)
 select set_config('request.jwt.claim.sub', pg_temp.u('b')::text, false);
 delete from public.friendships where user_a = least(pg_temp.u('a'), pg_temp.u('b')) and user_b = greatest(pg_temp.u('a'), pg_temp.u('b'));
 set role authenticated;
-select pg_temp.ok('karta už neviditelná → bez jména',
+select pg_temp.ok('karta už neviditelná → stejný text',
   (select public.notification_text(n) from public.notifications n where n.kind = 'comment' order by created_at desc limit 1),
-  'Cyril taky komentuje: od Cyrila');
+  'Cyril taky komentuje noc, pod kterou píšeš: od Cyrila');
 reset role;
 select pg_temp.friends('a', 'b');
 delete from public.notifications;

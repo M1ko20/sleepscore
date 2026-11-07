@@ -453,6 +453,8 @@ func serverMessage(_ error: Error) -> String {
     case let t where t.contains("you blocked this user"): return "Nejdřív zruš blokování."
     case let t where t.contains("too many reports"): return "Na dnešek stačí. Zkus to zítra."
     case let t where t.contains("content not found"): return "Tohle už neexistuje."
+    case let t where t.contains("profile hidden pending review"):
+        return "Jméno a fotku po nahlášení zatím měnit nejde. Projdeme to do 24 h."
     case let t where t.contains("not allowed"): return "Tohle nejde."
     default: return "Nepovedlo se. \(text)"
     }

@@ -193,14 +193,8 @@ begin
     if coalesce((p ->> 'by_owner')::boolean, false) then
       return v_actor || ' odpovídá pod svojí nocí: ' || coalesce(p ->> 'text', '');
     end if;
-    -- jméno autora karty (živě; kartu už nevidím → bez jména)
-    select pr.display_name into v_name
-    from public.posts po join public.profiles pr on pr.id = po.user_id
-    where po.id = n.post_id;
-    if v_name is null then
-      return v_actor || ' taky komentuje: ' || coalesce(p ->> 'text', '');
-    end if;
-    return v_actor || ' taky komentuje noc, kterou má ' || v_name || ': ' || coalesce(p ->> 'text', '');
+    -- bez jména autora karty (skloňování); příjemce kartu zná, sám pod ní psal
+    return v_actor || ' taky komentuje noc, pod kterou píšeš: ' || coalesce(p ->> 'text', '');
 
   when 'friend_request' then
     return v_actor || ' ti posílá žádost o přátelství.';

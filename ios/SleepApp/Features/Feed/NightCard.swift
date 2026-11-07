@@ -22,6 +22,10 @@ struct NightCard: View {
         VStack(alignment: .leading, spacing: 14) {
             header
 
+            if isMine, post.hiddenAt != nil {
+                HiddenByReportsNotice()
+            }
+
             Text(post.displayTitle).font(Font.app.title).foregroundStyle(Color.app.textPrimary)
             if let body = post.body, !body.isEmpty {
                 Text(body).font(Font.app.body).foregroundStyle(Color.app.textPrimary).lineLimit(3)
@@ -137,5 +141,21 @@ struct NightCard: View {
             .accessibilityLabel("Komentáře \(post.commentCount)")
         }
         .frame(minHeight: 44)
+    }
+}
+
+/// Vlastní obsah skrytý ostatním po hlášeních (backend.md → Moderace). Vidí jen autor.
+struct HiddenByReportsNotice: View {
+    var compact = false
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 6) {
+            Image(systemName: "eye.slash").font(.system(size: 12, weight: .semibold))
+            Text(compact ? "Skryto ostatním po nahlášení"
+                         : "Skryto ostatním po nahlášení. Projdeme to do 24 h.")
+        }
+        .font(Font.app.caption)
+        .foregroundStyle(Color.app.destructive)
+        .accessibilityElement(children: .combine)
     }
 }
