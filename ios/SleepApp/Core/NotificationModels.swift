@@ -58,6 +58,7 @@ struct AppNotification: Decodable, Identifiable, Sendable {
         case "night_ready": "moon.zzz"
         case "achievement": "hexagon"
         case "weekly_recap": "chart.bar"
+        case "friend_request", "friend_accepted": "person"   // smazaný účet (actor = null)
         default: "flag.2.crossed"
         }
     }
