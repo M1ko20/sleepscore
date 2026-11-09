@@ -21,6 +21,16 @@ enum API {
         ]).execute().data)
     }
 
+    /// Souhlas s aktuální verzí podmínek (#20). Nutný před `redeemInvite`.
+    @discardableResult
+    nonisolated static func acceptTerms() async throws -> TermsStatus {
+        try await decode(db.rpc("accept_terms").execute().data)
+    }
+
+    nonisolated static func termsStatus() async throws -> TermsStatus {
+        try await decode(db.rpc("my_terms_status").execute().data)
+    }
+
     nonisolated static func createInvite() async throws -> String {
         try await decode(db.rpc("create_invite").execute().data)
     }
@@ -444,6 +454,7 @@ func serverMessage(_ error: Error) -> String {
     case let t where t.contains("invalid or used invite"): return "Kód neplatí nebo už ho někdo použil."
     case let t where t.contains("profiles_username_key"): return "Přezdívka je zabraná."
     case let t where t.contains("profile already exists"): return "Profil už máš."
+    case let t where t.contains("terms not accepted"): return "Bez souhlasu s podmínkami to nepůjde."
     case let t where t.contains("no invites available"): return "Došly ti pozvánky."
     case let t where t.contains("need at least 3 accepted"): return "Potřebuješ aspoň 3 přijaté (včetně tebe)."
     case let t where t.contains("is not a friend"): return "Vyzvat jde jen kamarády."

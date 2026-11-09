@@ -38,6 +38,7 @@ delete from public.profiles where id = pg_temp.u('b');
 insert into public.invites (code, inviter_id) values ('TESTCODE', pg_temp.u('a'));
 select pg_temp.as_user('b');
 set role authenticated;
+select public.accept_terms();
 select (public.redeem_invite('TESTCODE', 'bara', 'Bára')).username;
 reset role;
 select pg_temp.ok('invite → zvoucímu', pg_temp.text_of('a', 'friend_accepted'), 'Bára je tu přes tvoji pozvánku.');

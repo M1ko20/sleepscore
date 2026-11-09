@@ -24,6 +24,11 @@ struct PrivacyView: View {
                         .captionStyle()
                 }
 
+                section("Dokumenty") {
+                    Link(destination: Legal.privacyURL) { linkRow("Zásady ochrany soukromí") }
+                    Link(destination: Legal.termsURL) { linkRow("Podmínky použití") }
+                }
+
                 section("Tvoje data") {
                     Text("Všechno, co o tobě máme, v jednom souboru (JSON).").captionStyle()
                     if let exportURL {
@@ -59,6 +64,16 @@ struct PrivacyView: View {
             Text(title).statLabel()
             content()
         }
+    }
+
+    private func linkRow(_ title: String) -> some View {
+        HStack {
+            Text(title).font(Font.app.body).foregroundStyle(Color.app.textPrimary)
+            Spacer()
+            Image(systemName: "arrow.up.right").font(.footnote).foregroundStyle(Color.app.textTertiary)
+        }
+        .frame(minHeight: 44)
+        .contentShape(Rectangle())
     }
 
     private func bullet(_ text: String) -> some View {

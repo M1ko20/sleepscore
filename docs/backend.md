@@ -106,6 +106,7 @@ Storage: buckety `avatars` (max 150 kB), `night-photos` (max 400 kB) – privát
 | `create_invite()` | vrátí nový kód, ubere 1 pozvánku |
 | `check_invite(code)` | platí kód? (onboarding, nevrací zvoucího) |
 | `username_available(username)` | volná a platná přezdívka? |
+| `accept_terms()` / `my_terms_status()` | souhlas s aktuální verzí podmínek / `{version, accepted}` (#20); bez souhlasu `redeem_invite` hlásí `terms not accepted` |
 | `send_friend_request(user)` | žádost; když protistrana už žádala, rovnou přijme |
 | `respond_friend_request(user, accept)` / `remove_friend(user)` | |
 | `tag_insights(user)` | tagy: noci s tagem vs. bez (90 dní, min. 3+3) – skóre, deep, usínání, délka |
@@ -321,3 +322,9 @@ Migrace `20261107140000_notification_prefs.sql`. Platí jen pro pushe – zvone�
   - Pozor u #10: ráno v 8:00 vyjde naráz všechno podržené z noci → slučovat do jednoho pushe na uživatele (nebo poslat jen poslední + badge).
 - Test: `supabase/tests/local/notification_prefs_test.sql`.
 
+
+## Souhlas s podmínkami (#20)
+- `public.terms_acceptances (user_id → auth.users, version, accepted_at)` – RLS: čtu jen svoje, zápis jen přes `accept_terms()`. FK na `auth.users`, protože souhlas vzniká před profilem.
+- Aktuální verze = `private.terms_version()` = datum účinnosti podmínek na webu (`2026-11-06`). **Změna podmínek:** upravit `site/terms.html` + `site/en/terms.html` a novou migrací přepsat `private.terms_version()` → appka po spuštění ukáže všem „Nové podmínky“.
+- Appka: souhlas se dává při zakládání profilu (text s odkazy nad „Pokračovat“, `accept_terms` → `redeem_invite`). Člen bez souhlasu s aktuální verzí dostane po spuštění `TermsUpdateView` (`Session.State.needsTerms`). Když `my_terms_status` selže, appka pustí dál (nové účty hlídá server).
+- Export obsahuje `terms_acceptances`.

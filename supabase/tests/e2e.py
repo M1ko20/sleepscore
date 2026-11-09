@@ -73,8 +73,12 @@ try:
     # pozvánka
     st, code = req("POST", "/rest/v1/rpc/create_invite", {}, token=A["jwt"])
     check("A vytvoří pozvánku", st == 200 and isinstance(code, str), code)
-    st, prof = req("POST", "/rest/v1/rpc/redeem_invite",
-                   {"p_code": code, "p_username": f"e2e_b_{tag}", "p_display_name": "E2E B"}, token=B["jwt"])
+    redeem = {"p_code": code, "p_username": f"e2e_b_{tag}", "p_display_name": "E2E B"}
+    st, err = req("POST", "/rest/v1/rpc/redeem_invite", redeem, token=B["jwt"])
+    check("B bez souhlasu s podmínkami profil nezaloží", st >= 400 and "terms not accepted" in str(err), err)
+    st, terms = req("POST", "/rest/v1/rpc/accept_terms", {}, token=B["jwt"])
+    check("B souhlasí s podmínkami", st == 200 and terms.get("accepted") is True, terms)
+    st, prof = req("POST", "/rest/v1/rpc/redeem_invite", redeem, token=B["jwt"])
     check("B uplatní pozvánku", st == 200, prof)
     st, fr = req("GET", "/rest/v1/friendships?select=status", token=B["jwt"])
     check("A a B jsou přátelé", fr == [{"status": "accepted"}], fr)
