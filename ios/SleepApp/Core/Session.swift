@@ -3,7 +3,7 @@ import Observation
 import Supabase
 import os
 
-let log = Logger(subsystem: "cz.mikolas.sleepscore", category: "app")
+let log = Logger(subsystem: "cz.mikolas.bedrival", category: "app")
 
 /// Stav přihlášení a vlastního profilu.
 @MainActor

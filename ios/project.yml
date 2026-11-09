@@ -30,7 +30,7 @@ targets:
         com.apple.developer.applesignin: [Default]
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: cz.mikolas.sleepscore
+        PRODUCT_BUNDLE_IDENTIFIER: cz.mikolas.bedrival
         PRODUCT_NAME: SleepApp
         MARKETING_VERSION: "0.1.0"
         CURRENT_PROJECT_VERSION: "1"
@@ -46,7 +46,7 @@ targets:
     info:
       path: SleepApp/Info.plist
       properties:
-        CFBundleDisplayName: Sleepscore
+        CFBundleDisplayName: Bedrival
         # Launch screen v barvě pozadí appky (bg #0B0D12), ať při startu nebliká bílá (#16).
         UILaunchScreen:
           UIColorName: LaunchBackground
@@ -66,7 +66,7 @@ targets:
       - target: SleepApp
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: cz.mikolas.sleepscore.uitests
+        PRODUCT_BUNDLE_IDENTIFIER: cz.mikolas.bedrival.uitests
         GENERATE_INFOPLIST_FILE: YES
         SWIFT_VERSION: "5.10"
         TEST_TARGET_NAME: SleepApp

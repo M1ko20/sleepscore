@@ -1,6 +1,6 @@
 # Backend – jak to funguje
 
-Stav k 2026-11-07. Supabase projekt **Sleepscore** (`tlespfcbqzddddhjsieu`, eu-central-1, Free).
+Stav k 2026-11-07. Supabase projekt **Sleepscore** (název projektu zůstal, appka je Bedrival) (`tlespfcbqzddddhjsieu`, eu-central-1, Free).
 Tenhle soubor je zkratka, aby se nemuselo číst SQL. Při změně backendu ho aktualizuj.
 
 ## Princip
@@ -156,7 +156,7 @@ Pravidla:
   - Smazání Apple účtu: appka smaže Storage a místo RPC zavolá `delete-account` → `/auth/revoke` s refresh tokenem, pak `delete_my_account()` jménem uživatele (jeho JWT). Revokace je best effort: chybí-li konfigurace, token nebo Apple vrátí chybu, jen se zaloguje a účet se smaže stejně. Odpověď `{ deleted, revoked }`.
   - E-mailové účty (dev build) dál volají rovnou `delete_my_account()` → fungují i bez nasazené funkce.
   - `client_secret` = JWT ES256 podepsaný `.p8` klíčem (platnost 5 min), generuje se při každém volání.
-  - Secrets: `APPLE_TEAM_ID`, `APPLE_KEY_ID`, `APPLE_CLIENT_ID` (= bundle `cz.mikolas.sleepscore`), `APPLE_PRIVATE_KEY` (obsah `.p8`). Bez nich se výměna i revokace přeskočí (`apple-token` vrátí `{ stored: false }`).
+  - Secrets: `APPLE_TEAM_ID`, `APPLE_KEY_ID`, `APPLE_CLIENT_ID` (= bundle `cz.mikolas.bedrival`), `APPLE_PRIVATE_KEY` (obsah `.p8`). Bez nich se výměna i revokace přeskočí (`apple-token` vrátí `{ stored: false }`).
 - Chybí: zásady ochrany osobních údajů (privacy policy) a jejich odkaz v onboardingu – přijde s landing page (nutné i pro App Store a Garmin).
 
 ## Moderace (App Store 1.2)
@@ -228,7 +228,7 @@ supabase functions deploy ingest-sleep --use-api --yes    # funkce (bez Dockeru)
 supabase functions deploy apple-token --use-api --yes
 supabase functions deploy delete-account --use-api --yes
 # Apple secrets (až bude Developer Program; .p8 nikdy do gitu):
-supabase secrets set APPLE_TEAM_ID=… APPLE_KEY_ID=… APPLE_CLIENT_ID=cz.mikolas.sleepscore
+supabase secrets set APPLE_TEAM_ID=… APPLE_KEY_ID=… APPLE_CLIENT_ID=cz.mikolas.bedrival
 supabase secrets set APPLE_PRIVATE_KEY="$(cat AuthKey_XXXX.p8)"
 cd supabase/functions && deno test _shared/               # unit testy
 # E2E (vytvoří 2 testovací uživatele a smaže je):

@@ -280,3 +280,13 @@ Co je hotové a jak. Nejnovější nahoře. Detaily backendu v `backend.md`, vzh
 - Audit: HealthKit data nejsou v UserDefaults (jen anchor dotazu), `os.Logger` interpoluje bez `.public` → v logu skryté. Žádná léčebná tvrzení v appce ani na webu; z titulku webu pryč „Strava pro spánek“ (#25).
 - Ověřeno: Debug i Release build, `.app` obsahuje `cs.lproj` a `en.lproj`. Kartu „Nevidíme tvůj spánek“ jsem v simulátoru neviděl (chce přihlášený účet bez nocí).
 - Zbývá z #22: zmínit Apple Health v popisu appky v App Store (#25).
+
+## 2026-11-09 – Nasazení souhlasu s podmínkami, přejmenování na Bedrival (#30)
+- Migrace `20261109100000_terms_acceptance.sql` **nasazená**. `e2e.py` proti produkci 42/42. Test měl natvrdo data nocí a výzvy (5.–10. 11.) a po pár dnech zestárl, teď počítá relativně k dnešku (`d(0)` = včerejšek).
+- Přejmenování **Sleepscore → Bedrival**:
+  - bundle ID `cz.mikolas.bedrival` (UI testy `.uitests`), `CFBundleDisplayName`, Logger subsystem
+  - texty v appce (recap, Wrapped, Soukromí, karta Zdraví, název exportu `bedrival-…json`), web (CZ + EN), promo grafika, `CLAUDE.md`, `backend.md`
+  - Apple client ID v komentářích a testech
+- Beze změny: repo a URL webu (`m1ko20.github.io/sleepscore`), název Supabase projektu, testovací účty `@sleepscore.test`, historie v devlogu. Edge Functions není potřeba znovu nasadit (v `apple.ts` se měnil jen komentář).
+- Simulátor: nové bundle ID = nová appka (staré `cz.mikolas.sleepscore` jde smazat, Zdraví se zeptá znovu).
+- Zbývá z #30: ochranné známky, doména, rezervace jména v App Store Connect, ikona (#16).

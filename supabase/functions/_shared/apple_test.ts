@@ -13,7 +13,7 @@ const keyPair = await crypto.subtle.generateKey({ name: "ECDSA", namedCurve: "P-
 const pem = `-----BEGIN PRIVATE KEY-----\n${
   b64(await crypto.subtle.exportKey("pkcs8", keyPair.privateKey)).match(/.{1,64}/g)!.join("\n")
 }\n-----END PRIVATE KEY-----`;
-const cfg: AppleConfig = { teamId: "TEAM123456", keyId: "KEY1234567", clientId: "cz.mikolas.sleepscore", privateKey: pem };
+const cfg: AppleConfig = { teamId: "TEAM123456", keyId: "KEY1234567", clientId: "cz.mikolas.bedrival", privateKey: pem };
 
 const env = (vars: Record<string, string>) => ({ get: (k: string) => vars[k] });
 
@@ -27,7 +27,7 @@ Deno.test("apple: konfigurace z env, doslovné \\n v klíči", () => {
   const c = appleConfig(env({
     APPLE_TEAM_ID: "TEAM123456",
     APPLE_KEY_ID: "KEY1234567",
-    APPLE_CLIENT_ID: "cz.mikolas.sleepscore",
+    APPLE_CLIENT_ID: "cz.mikolas.bedrival",
     APPLE_PRIVATE_KEY: pem.replace(/\n/g, "\\n"),
   }));
   assertEquals(c, cfg);
@@ -43,7 +43,7 @@ Deno.test("apple: client_secret je platný ES256 JWT se správnými claimy", asy
     iat: now / 1000,
     exp: now / 1000 + 300,
     aud: "https://appleid.apple.com",
-    sub: "cz.mikolas.sleepscore",
+    sub: "cz.mikolas.bedrival",
   });
   const sig = b64urlDecode(s);
   assertEquals(sig.length, 64);
@@ -80,7 +80,7 @@ Deno.test("apple: výměna kódu za refresh token", async () => {
   assertEquals(calls[0].url, "https://appleid.apple.com/auth/token");
   assertEquals(calls[0].form.get("grant_type"), "authorization_code");
   assertEquals(calls[0].form.get("code"), "code-1");
-  assertEquals(calls[0].form.get("client_id"), "cz.mikolas.sleepscore");
+  assertEquals(calls[0].form.get("client_id"), "cz.mikolas.bedrival");
   assertEquals(calls[0].form.get("client_secret")!.split(".").length, 3);
 });
 
@@ -95,7 +95,7 @@ Deno.test("apple: revoke posílá refresh token", async () => {
   assertEquals(calls[0].url, "https://appleid.apple.com/auth/revoke");
   assertEquals(calls[0].form.get("token"), "r.123");
   assertEquals(calls[0].form.get("token_type_hint"), "refresh_token");
-  assertEquals(calls[0].form.get("client_id"), "cz.mikolas.sleepscore");
+  assertEquals(calls[0].form.get("client_id"), "cz.mikolas.bedrival");
 });
 
 Deno.test("apple: revoke chyba → výjimka", async () => {

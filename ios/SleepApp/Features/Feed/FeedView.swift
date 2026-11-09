@@ -141,7 +141,7 @@ struct HealthMissingCard: View {
             Text("Nevidíme tvůj spánek")
                 .font(Font.app.body.weight(.semibold))
                 .foregroundStyle(Color.app.textPrimary)
-            Text("Z Apple Health nám za poslední dva týdny nepřišla žádná noc. Povol přístup ke Spánku a Tepu v Nastavení → Zdraví → Přístup k datům a zařízení → Sleepscore. Spánek musí zapisovat hodinky nebo prsten.")
+            Text("Z Apple Health nám za poslední dva týdny nepřišla žádná noc. Povol přístup ke Spánku a Tepu v Nastavení → Zdraví → Přístup k datům a zařízení → Bedrival. Spánek musí zapisovat hodinky nebo prsten.")
                 .captionStyle()
                 .fixedSize(horizontal: false, vertical: true)
             Button("Otevřít Nastavení") {

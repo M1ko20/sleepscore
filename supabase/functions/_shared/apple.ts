@@ -7,7 +7,7 @@
 // Secrets (`supabase secrets set …`):
 //   APPLE_TEAM_ID      – Team ID (10 znaků)
 //   APPLE_KEY_ID       – Key ID klíče se zapnutým Sign in with Apple
-//   APPLE_CLIENT_ID    – bundle ID appky (cz.mikolas.sleepscore)
+//   APPLE_CLIENT_ID    – bundle ID appky (cz.mikolas.bedrival)
 //   APPLE_PRIVATE_KEY  – obsah .p8 souboru (PEM i s řádky BEGIN/END)
 
 const APPLE = "https://appleid.apple.com";
