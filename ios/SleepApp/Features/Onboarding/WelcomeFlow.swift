@@ -22,7 +22,7 @@ struct WelcomeFlow: View {
             )
             .background(Color.app.bg)
             .navigationDestination(isPresented: $showLogin) {
-                DevLoginView().background(Color.app.bg)
+                LoginView().background(Color.app.bg)
             }
         }
         .onAppear { code = session.pendingInviteCode ?? "" }
