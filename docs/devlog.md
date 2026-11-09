@@ -19,6 +19,9 @@ Co je hotové a jak. Nejnovější nahoře. Detaily backendu v `backend.md`, vzh
 13. ~~Notifikace ve zvonečku~~ hotovo (#9). ~~Zneplatnění Apple tokenu~~ (#7), ~~Release bez zápisu do Health~~ (#8), ~~anglické zásady~~ (#3) hotovo.
 14. Další: push přes APNs (#10, Developer Program, pak i pondělní push na recap), nastavení notifikací (#11), test na iPhonu s Garminem.
 
+## 2026-11-09 – Demo účty na Adamův Gmail
+- `review@bedrival.app` a `demo-*@bedrival.app` → `adam.mikolas64+bedrival-{review,bara,cyril,dana}@gmail.com` (doména bedrival.app nám nepatří – kdo by ji koupil, mohl by si poslat reset hesla). Změněno přímo v `auth.users` + `auth.identities` (hesla beze změny), `~/.bedrival/review_state.json`, `review_seed.py`, `ReviewAccountTests`, docs. Přihlášení všech čtyř ověřené.
+
 ## 2026-11-09 – Notifikace v kontextu, výslovný souhlas, nové podmínky (#23, #21, #28 část)
 - Push (#10) commitnutý na větvi `push-apns`, migrace `20261109120000_push.sql` **nasazená** (bez URL funkce jen uklízí frontu). #16 zavřené.
 - Notifikace: appka se už neptá hned po přihlášení. `Push.start()` jen zjistí stav a registruje token; ve feedu (až je v něm aspoň jedna karta) je karta „Ať ti nic neuteče“ → „Zapnout“ ukáže systémový dialog, „Teď ne“ kartu schová natrvalo (povolit jde v Nastavení → Notifikace). Stav se obnoví při návratu do popředí.

@@ -13,8 +13,8 @@
 State (hesla všech čtyř účtů) patří MIMO git – repo je veřejné. Heslo recenzenta jde do
 App Store Connect → App Review Information. Když se state ztratí: --reset-passwords.
 
-Uživatelé (@bedrival.app – doména se nepoužívá k posílání, účty zakládá admin API):
-  R „Alex“  review@bedrival.app – přihlásí se recenzent
+Uživatelé (Gmail aliasy Adama „+bedrival-…“ – pošta jde k němu, účty zakládá admin API):
+  R „Alex“  adam.mikolas64+bedrival-review@gmail.com – přihlásí se recenzent
   B „Bára“  pozve R, C, D (je „kořen“, profil zakládá service role)
   C „Cyril“, D „Dana“
 Data: 30 nocí s tagy (zjištění), názvy, komentáře a reakce; souboje B×R (skončený, R prohrál
@@ -52,10 +52,10 @@ TZ = ZoneInfo("Europe/Prague")
 TODAY = dt.datetime.now(TZ).date()
 
 USERS = {
-    "r": {"email": "review@bedrival.app", "username": "alex_r", "name": "Alex"},
-    "b": {"email": "demo-bara@bedrival.app", "username": "bara_n", "name": "Bára"},
-    "c": {"email": "demo-cyril@bedrival.app", "username": "cyril_k", "name": "Cyril"},
-    "d": {"email": "demo-dana@bedrival.app", "username": "dana_v", "name": "Dana"},
+    "r": {"email": "adam.mikolas64+bedrival-review@gmail.com", "username": "alex_r", "name": "Alex"},
+    "b": {"email": "adam.mikolas64+bedrival-bara@gmail.com", "username": "bara_n", "name": "Bára"},
+    "c": {"email": "adam.mikolas64+bedrival-cyril@gmail.com", "username": "cyril_k", "name": "Cyril"},
+    "d": {"email": "adam.mikolas64+bedrival-dana@gmail.com", "username": "dana_v", "name": "Dana"},
 }
 HISTORY = {"r": 30, "b": 30, "c": 30, "d": 20}
 

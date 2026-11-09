@@ -1,11 +1,11 @@
 # App Review – přístup a poznámky (#18)
 
 ## Demo účet
-- E-mail: `review@bedrival.app`, heslo: `~/.bedrival/review_state.json` (mimo git, `users.r.password`). Vyplnit do App Store Connect → App Review Information → Sign-in required.
+- E-mail: `adam.mikolas64+bedrival-review@gmail.com`, heslo: `~/.bedrival/review_state.json` (mimo git, `users.r.password`). Vyplnit do App Store Connect → App Review Information → Sign-in required.
 - Kód pozvánky pro nový účet přes Sign in with Apple: `review_invite_code` ve stejném souboru (nepoužitý kód od Alexe).
 - Data: `supabase/tests/review_seed.py` (popis v hlavičce). **Před každým odesláním** spustit `--refresh` – dohraje noci do dneška a založí nový souboj, pokud starý skončil.
-- Účty `@bedrival.app` nikdy nemazat (ui_seed/e2e mažou jen `@example.test` a vlastní testovací účty).
-- Screenshoty průchodu: `SleepAppUITests/ReviewAccountTests` (`TEST_RUNNER_UITEST_LOGIN=review@bedrival.app:<heslo>`).
+- Účty `adam.mikolas64+bedrival-*@gmail.com` nikdy nemazat (ui_seed/e2e mažou jen `@example.test` a vlastní testovací účty).
+- Screenshoty průchodu: `SleepAppUITests/ReviewAccountTests` (`TEST_RUNNER_UITEST_LOGIN=adam.mikolas64+bedrival-review@gmail.com:<heslo>`).
 
 ## Review notes (do App Store Connect, anglicky)
 ```

@@ -1,7 +1,7 @@
 import XCTest
 
 /// Průchod demo účtem pro App Review (#18): feed, výzvy, profil → screenshoty v xcresult.
-/// `TEST_RUNNER_UITEST_LOGIN=review@bedrival.app:<heslo z ~/.bedrival/review_state.json>`
+/// `TEST_RUNNER_UITEST_LOGIN=adam.mikolas64+bedrival-review@gmail.com:<heslo z ~/.bedrival/review_state.json>`
 final class ReviewAccountTests: XCTestCase {
     func testReviewAccountTour() throws {
         guard let login = ProcessInfo.processInfo.environment["UITEST_LOGIN"], !login.isEmpty, login.hasPrefix("review@") else {

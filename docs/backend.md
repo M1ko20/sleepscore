@@ -357,4 +357,4 @@ Migrace `20261107140000_notification_prefs.sql`. Platí jen pro pushe – zvone�
 - Export obsahuje `terms_acceptances`.
 
 ## Demo účet pro App Review (#18)
-`supabase/tests/review_seed.py` – trvalí uživatelé `review@bedrival.app` (Alex) + Bára, Cyril, Dana (`demo-*@bedrival.app`), 20–30 nocí s tagy, skončené souboje (výhra + prohra → dluhy, ovečky), běžící souboj a společný cíl, čekající výzva, nepoužitý kód pozvánky. Hesla v `~/.bedrival/review_state.json` (mimo git). Postup a review notes: `docs/app-review.md`. Nemazat.
+`supabase/tests/review_seed.py` – trvalí uživatelé `adam.mikolas64+bedrival-review@gmail.com` (Alex) + Bára, Cyril, Dana (`adam.mikolas64+bedrival-*@gmail.com`), 20–30 nocí s tagy, skončené souboje (výhra + prohra → dluhy, ovečky), běžící souboj a společný cíl, čekající výzva, nepoužitý kód pozvánky. Hesla v `~/.bedrival/review_state.json` (mimo git). Postup a review notes: `docs/app-review.md`. Nemazat.
