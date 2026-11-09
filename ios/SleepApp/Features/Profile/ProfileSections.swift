@@ -15,7 +15,7 @@ struct ProfileHeader: View {
     }
 }
 
-/// Bilance, série, průměr, vitrína duší, odznaky. Sdílené mým profilem i profilem přítele.
+/// Bilance, série, průměr, stádo, odznaky. Sdílené mým profilem i profilem přítele.
 struct ProfileStatsSections: View {
     let summary: ProfileSummary
     let catalog: [AchievementInfo]
@@ -132,7 +132,7 @@ struct InsightsSection: View {
     }
 }
 
-/// Vitrína duší: 4 sloupce, desaturovaný avatar poraženého, datum, ×N.
+/// Stádo: 4 sloupce, desaturovaný avatar poraženého, datum, ×N.
 struct SoulShowcase: View {
     let souls: [ProfileSummary.Soul]
     let total: Int
@@ -141,9 +141,9 @@ struct SoulShowcase: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            SectionTitle(title: "Vitrína duší", value: "\(total)")
+            SectionTitle(title: "Stádo", value: "\(total)")
             if souls.isEmpty {
-                Text("Prázdno. Vyhraj výzvu a první duše je tvoje.").captionStyle()
+                Text("Zatím ani jedna ovečka. Vyhraj výzvu a první je tvoje.").captionStyle()
             } else {
                 LazyVGrid(columns: columns, alignment: .leading, spacing: 16) {
                     ForEach(souls) { soul in
@@ -167,7 +167,7 @@ struct SoulShowcase: View {
                         }
                         .frame(maxWidth: .infinity)
                         .accessibilityElement(children: .ignore)
-                        .accessibilityLabel("Duše: \(soul.loser.displayName), \(soul.count)×")
+                        .accessibilityLabel("Ovečka: \(soul.loser.displayName), \(soul.count)×")
                     }
                 }
             }

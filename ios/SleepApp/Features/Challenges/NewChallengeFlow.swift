@@ -101,9 +101,9 @@ struct NewChallengeFlow: View {
 
     private var typeStep: some View {
         VStack(spacing: 8) {
-            option(.duel, "1 na 1. Vyšší průměr bere duši.")
-            option(.freeForAll, "Vítěz bere vše: duše i sázky všech. Aspoň 3 hráči.")
-            option(.teamGoal, "Skupina proti cíli. Bez duší, do bilance se počítá.")
+            option(.duel, "1 na 1. Vyšší průměr bere ovečku.")
+            option(.freeForAll, "Vítěz bere vše: ovečky i sázky všech. Aspoň 3 hráči.")
+            option(.teamGoal, "Skupina proti cíli. Bez oveček, do bilance se počítá.")
         }
     }
 

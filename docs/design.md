@@ -119,7 +119,7 @@ Nahoře ve feedu, stejná karta, ale s obrysem `accent` 1 pt a jedním řádkem 
 │ 81,4     :      76,2              │  vítěz textPrimary, poražený textSecondary
 │ 5 dní           2 dny             │
 │                                   │
-│ Adam bere duši. Jakub platí pivo. │  jedna suchá věta
+│ Adam bere ovečku. Jakub platí pivo.│  jedna suchá věta
 └───────────────────────────────────┘
 ```
 
@@ -156,9 +156,9 @@ DEEP       ████            ███
 - Získaný: obrys `accent`, glyf `textPrimary`; opakovaný má vpravo dole `×3`.
 - Nezískaný: obrys `hairline`, glyf `textTertiary`, podmínka v detailu (ať je co honit).
 
-### Duše (vitrína)
-- Mřížka 4 sloupce. Duše = avatar poraženého v kroužku, desaturovaný, s datem pod ním.
-- Víc duší od stejného člověka → jedna dlaždice s počtem `×4`.
+### Stádo (ovečky poražených)
+- Mřížka 4 sloupce. Ovečka = avatar poraženého v kroužku, desaturovaný, s datem pod ním.
+- Víc oveček od stejného člověka → jedna dlaždice s počtem `×4`.
 
 ### Nahlášení a blokování
 - Vstup vždy přes `⋯` vpravo nahoře (karta, profil, výzva) nebo dlouhý stisk komentáře. Žádné vlajky ani ikony přímo na kartě.
@@ -262,7 +262,7 @@ HOTOVÉ
 Typ (duel / všichni proti všem / společný cíl) → soupeři (jen přátelé) → délka (7 / 14 / 30 / vlastní, min. 7) → sázka (volný text, nápověda „prohraný platí pivo“) + u společného cíle cílové skóre → Odeslat.
 
 ### 8. Výsledek výzvy (jednorázová obrazovka)
-Otevře se po uzavření výzvy. Vítěz: velké „VÝHRA“, duše poraženého „letí“ do vitríny (jediná animace s konfetami v celé appce). Poražený: „PROHRA“, bez animace, jedna suchá věta („Příště dřív do postele.“). Tlačítko Odplata → nová výzva se stejným soupeřem.
+Otevře se po uzavření výzvy. Vítěz: velké „VÝHRA“, ovečka poraženého „běží“ do stáda (jediná animace s konfetami v celé appce). Poražený: „PROHRA“, bez animace, jedna suchá věta („Příště dřív do postele.“). Tlačítko Odplata → nová výzva se stejným soupeřem.
 
 ### 9. Profil (můj)
 ```
@@ -274,7 +274,7 @@ VÝHRY-PROHRY-REMÍZY       nejlepší 31
 
 PRŮMĚR 30 DNÍ   81   ·   7 h 18
 ─────────────────────────────────
-VITRÍNA DUŠÍ                    9
+STÁDO                          9
 (○)(○)(○)(○)
 ─────────────────────────────────
 ODZNAKY                     14/22
@@ -299,7 +299,7 @@ Stejný, ale místo nastavení: **vzájemná bilance** nahoře („Ty vs Jakub 7
 | Ranní notifikace | „Noc je tady. 87.“ | „Dobré ráno! Tvoje spánková data jsou připravena ✨“ |
 | Špatná noc | „4 h 12. Zombie mód.“ | „Nevadí, zítra to bude lepší!“ |
 | Výzva | „Jakub tě vyzval. 7 dní, prohraný platí pivo.“ | „Nová výzva čeká na tvou odpověď!“ |
-| Prohra | „Jakub bere tvoji duši.“ | „Bohužel jsi tentokrát prohrál.“ |
+| Prohra | „Jakub bere tvoji ovečku.“ | „Bohužel jsi tentokrát prohrál.“ |
 | Chybějící noc ve výzvě | „Včera nic. Zatím 0, dá se dohrát.“ | „Zapomněl jsi synchronizovat zařízení.“ |
 | Konec výzvy | „Zítra konec. Prohráváš o 3,2 bodu.“ | „Výzva se blíží ke konci, nevzdávej to!“ |
 | Opakovaný odznak | „Hlubinář. Zase.“ | „Gratulujeme, opět jsi získal odznak!“ |

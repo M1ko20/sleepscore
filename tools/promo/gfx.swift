@@ -43,7 +43,7 @@ let scenes: [(String, String, String)] = [
     ("night", "Detail noci", "Fáze, tep, rozpad skóre"),
     ("challenges", "Výzvy", "Vyzvi kámoše. Sázku si napíšete sami."),
     ("challenge", "Souboj", "Rozhoduje jen sleep score"),
-    ("result", "Konec výzvy", "Prohraješ? Přijdeš o duši."),
+    ("result", "Konec výzvy", "Prohraješ? Přijdeš o ovečku."),
     ("profile", "Profil", "Bilance, odznaky, co ti kazí spánek"),
     ("recap", "Pondělí", "Týden v číslech"),
     ("wrapped", "Konec roku", "Sleep Wrapped"),

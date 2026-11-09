@@ -19,6 +19,13 @@ Co je hotové a jak. Nejnovější nahoře. Detaily backendu v `backend.md`, vzh
 13. ~~Notifikace ve zvonečku~~ hotovo (#9). ~~Zneplatnění Apple tokenu~~ (#7), ~~Release bez zápisu do Health~~ (#8), ~~anglické zásady~~ (#3) hotovo.
 14. Další: push přes APNs (#10, Developer Program, pak i pondělní push na recap), nastavení notifikací (#11), test na iPhonu s Garminem.
 
+## 2026-11-09 – Duše → ovečky
+- Trofej za poraženého je teď **ovečka**, sbírka na profilu je **stádo** (dřív vitrína duší). Bez emoji.
+- Odznaky: *První duše* → **První ovečka**, *Sběratel* → **Pastýř** (10 oveček).
+- Migrace `…110000_sheep_rename.sql`: názvy odznaků + `notification_text` („Bára přichází o ovečku.“, „Bereš 3 ovečky.“).
+- Swift texty (výsledek výzvy, feed, založení výzvy, profil, Wrapped) se správným skloňováním (ovečku / 2–4 ovečky / 5+ oveček).
+- Interní názvy zůstaly (`souls` pohled i JSON klíč, kód `first_soul`, `ProfileSummary.Soul`) – uživatel je nevidí, přejmenování by stálo migraci pohledů a RPC. Starší záznamy v devlogu nechávám s „duší“.
+
 ## 2026-11-07 – Automatické skrytí po 3 hlášeních (issue #15)
 - Migrace `20261107160000_auto_hide_reported.sql` (**nenasazeno**): trigger na `reports` – jakmile obsah má 3 otevřená hlášení od různých nezabanovaných členů, skryje se všem kromě autora a přijde upozornění „Obsah automaticky skrytý po 3 hlášeních“ (jen druh a id). Práh jde změnit v `private.app_config` (`auto_hide_threshold`).
   - Karta (`posts.hidden_at`) a komentář (`comments.hidden_at`): RLS je ukáže jen autorovi; skrytá karta = nejdou k ní komentáře ani reakce. Ze zvonečku majitele karty zmizí text skrytého komentáře.

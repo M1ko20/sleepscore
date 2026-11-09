@@ -18,7 +18,7 @@ Uživatelé (@bedrival.app – doména se nepoužívá k posílání, účty zak
   B „Bára“  pozve R, C, D (je „kořen“, profil zakládá service role)
   C „Cyril“, D „Dana“
 Data: 30 nocí s tagy (zjištění), názvy, komentáře a reakce; souboje B×R (skončený, R prohrál
-→ R dluží), R×C (skončený, R vyhrál → duše, C dluží), R×B běžící, společný cíl C+R+D běžící,
+→ R dluží), R×C (skončený, R vyhrál → ovečka, C dluží), R×B běžící, společný cíl C+R+D běžící,
 čekající výzva od D, nepoužitý kód pozvánky od R (pro recenzenta se Sign in with Apple).
 
 --refresh: dohraje noci do dneška (ingest přepíše jen svoje noci), názvy u nových karet a

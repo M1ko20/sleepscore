@@ -114,7 +114,7 @@ Storage: buckety `avatars` (max 150 kB), `night-photos` (max 400 kB) – privát
 | `export_my_data()` | GDPR export: všechna moje data jako JSON (vč. surových dat nocí) |
 | `delete_my_account()` | GDPR smazání: zruší neuzavřené souboje se mnou a moje čekající výzvy, smaže `auth.users` → kaskáda |
 | `sleep_wrapped(year?)` | rok volajícího (Wrapped) jedním callem |
-| `profile_summary(user)` | celý profil jedním callem (bilance, série, průměr 30 dní, duše, odznaky, vzájemná bilance, stav přátelství); security invoker → RLS |
+| `profile_summary(user)` | celý profil jedním callem (bilance, série, průměr 30 dní, ovečky, odznaky, vzájemná bilance, stav přátelství); security invoker → RLS |
 | `create_challenge(type, opponents[], duration_days, stake?, target_score?)` | jen s přáteli; duel = 1 soupeř, skupina ≥ 2 pozvaní |
 | `respond_challenge(challenge, accept)` | duel po přijetí startuje zítra (tz zakladatele) |
 | `start_challenge(challenge)` | skupinu spouští zakladatel, min. 3 přijatí |
@@ -219,7 +219,7 @@ Přepočet starých nocí: zatím jen dev data → znovu nahrát (`seed_dev.py -
 2. Průměr (2 desetinná místa), vyhrané dny (jen jasně nejvyšší skóre dne).
 3. Výsledek: duel / všichni proti všem → nejvyšší průměr vyhrává, shoda nahoře = remíza mezi nimi, ostatní prohra. Společný cíl → průměr skupiny ≥ cíl = výhra všem, jinak prohra všem.
 4. Karta výsledku do feedu.
-5. Jen při jasném vítězi (ne team_goal): dluhy poražených vůči vítězi (když je sázka), +1 pozvánka, achievementy První duše, Sběratel (každých 10 duší), Neporazitelný (každých 5 výher v řadě), Odplata (porazil toho, kdo ho naposledy porazil), O chlup (< 1 bod).
+5. Jen při jasném vítězi (ne team_goal): dluhy poražených vůči vítězi (když je sázka), +1 pozvánka, achievementy První ovečka, Pastýř (každých 10 oveček), Neporazitelný (každých 5 výher v řadě), Odplata (porazil toho, kdo ho naposledy porazil), O chlup (< 1 bod).
 
 ## Jak nasazovat a testovat
 ```bash
@@ -281,7 +281,7 @@ Tabulka `notifications`: `user_id` (příjemce), `kind`, `category` (generovaný
 | `challenge_started` | `challenges` pending → active | přijatí kromě toho, kdo start spustil | výzva | „Bára výzvu přijímá. Start 8. 11., 7 dní.“ / „Výzva startuje 8. 11. 14 dní.“ |
 | `challenge_overtaken` | INSERT/UPDATE `challenge_day_scores` (běžící duel / všichni proti všem) | soupeř, kterého zápis přeskočil v průběžném průměru | výzva | „Bára tě předbíhá v souboji. 77,5 : 75,0.“ / „… ve výzvě. …“ |
 | `challenge_ending` | cron, 20:00 místního času den před koncem | hráči | výzva | „Zítra konec. Prohráváš o 8,3 bodu.“ |
-| `challenge_result` | `challenges` active → finished | hráči | výzva | „Vyhráno 80,0 : 70,0. Bára přichází o duši.“ |
+| `challenge_result` | `challenges` active → finished | hráči | výzva | „Vyhráno 80,0 : 70,0. Bára přichází o ovečku.“ |
 | `debt_settled` | `debts.settled_at` null → čas | věřitel | výzva | „Bára hlásí splaceno: pivo.“ |
 | `achievement` | INSERT `user_achievements` | držitel | karta noci / výzva | „Nový odznak: Hlubinář.“ / „Hlubinář. Zase.“ |
 | `night_ready` | INSERT `posts` (night, noc dnes/včera) | autor | karta | „Tvoje noc: 78. Doplň komentář.“ |
@@ -330,4 +330,4 @@ Migrace `20261107140000_notification_prefs.sql`. Platí jen pro pushe – zvone�
 - Export obsahuje `terms_acceptances`.
 
 ## Demo účet pro App Review (#18)
-`supabase/tests/review_seed.py` – trvalí uživatelé `review@bedrival.app` (Alex) + Bára, Cyril, Dana (`demo-*@bedrival.app`), 20–30 nocí s tagy, skončené souboje (výhra + prohra → dluhy, duše), běžící souboj a společný cíl, čekající výzva, nepoužitý kód pozvánky. Hesla v `~/.bedrival/review_state.json` (mimo git). Postup a review notes: `docs/app-review.md`. Nemazat.
+`supabase/tests/review_seed.py` – trvalí uživatelé `review@bedrival.app` (Alex) + Bára, Cyril, Dana (`demo-*@bedrival.app`), 20–30 nocí s tagy, skončené souboje (výhra + prohra → dluhy, ovečky), běžící souboj a společný cíl, čekající výzva, nepoužitý kód pozvánky. Hesla v `~/.bedrival/review_state.json` (mimo git). Postup a review notes: `docs/app-review.md`. Nemazat.

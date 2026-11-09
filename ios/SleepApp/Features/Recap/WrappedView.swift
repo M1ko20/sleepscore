@@ -130,7 +130,7 @@ struct WrappedSummary: View {
                 }
                 GridRow {
                     StatBlock(value: wrapped.record.fullText, label: "Výzvy")
-                    StatBlock(value: "\(wrapped.souls)", label: "Duší")
+                    StatBlock(value: "\(wrapped.souls)", label: "Oveček")
                 }
                 GridRow {
                     StatBlock(value: "\(wrapped.bestStreak ?? 0)", label: "Nejdelší série")
@@ -182,7 +182,7 @@ struct WrappedSlide {
         }
 
         if w.challenges > 0 {
-            var parts = ["\(w.challenges) \(w.challenges == 1 ? "výzva" : (2...4).contains(w.challenges) ? "výzvy" : "výzev"), \(w.souls) \(w.souls == 1 ? "duše" : (2...4).contains(w.souls) ? "duše" : "duší")."]
+            var parts = ["\(w.challenges) \(w.challenges == 1 ? "výzva" : (2...4).contains(w.challenges) ? "výzvy" : "výzev"), \(w.souls) \(w.souls == 1 ? "ovečka" : (2...4).contains(w.souls) ? "ovečky" : "oveček")."]
             if let v = w.victim { parts.append("Oblíbená oběť: \(v.profile.displayName) (\(v.count)×).") }
             if let n = w.nemesis { parts.append("Nemesis: \(n.profile.displayName) (\(n.count)×).") }
             out.append(.init(label: "Výzvy", value: w.record.fullText, line: parts.joined(separator: " ")))

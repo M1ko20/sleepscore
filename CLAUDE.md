@@ -31,10 +31,10 @@ Sociální appka pro spánek: každé ráno se noc objeví jako karta, kamarádi
 - **Feed** karet přátel, komentáře, spánkové reakce místo lajků (**jedna reakce od člověka na kartu**).
 - **Přátelé**: kdo tě pozval, je automaticky kamarád. Žádost o přátelství může poslat kdokoliv komukoliv.
 - Achievementy jdou získat **opakovaně**.
-- **Profil**: profilovka, MMA bilance z výzev (výhry-prohry-remízy, např. 12-3-1), vitrína „duší“ (trofej za každého poraženého), vzájemná bilance se soupeřem.
+- **Profil**: profilovka, MMA bilance z výzev (výhry-prohry-remízy, např. 12-3-1), stádo oveček (za každého poraženého jeho ovečka), vzájemná bilance se soupeřem.
 - **Série**: odměňuje pravidelnost (usnutí ±30 min od průměru 14 nocí + min. 6 h), streak freeze 1× týdně automaticky (první špatná/chybějící noc v týdnu nepřeruší, ale nepřičte se).
-- Opakované achievementy: Sběratel za každých 10 duší, Neporazitelný za každých 5 výher v řadě, Švýcarské hodinky za každý další 14denní úsek. Ukradená hodina = noc na poslední neděli v březnu, Dvojí život se vyhodnocuje v pondělí.
-- **Achievementy**: viz dokument (Kóma, Zombie, Noční směna, Ani se nehnul, Hlubinář, Dokonalá noc, Švýcarské hodinky, Dvojí život, Stovka, Navzdory, Pivo vyhrálo, První duše, Sběratel, Neporazitelný, Odplata, O chlup, Zapomněl hodinky, Ukradená hodina, Novoroční přeživší…).
+- Opakované achievementy: Pastýř za každých 10 oveček, Neporazitelný za každých 5 výher v řadě, Švýcarské hodinky za každý další 14denní úsek. Ukradená hodina = noc na poslední neděli v březnu, Dvojí život se vyhodnocuje v pondělí.
+- **Achievementy**: viz dokument (Kóma, Zombie, Noční směna, Ani se nehnul, Hlubinář, Dokonalá noc, Švýcarské hodinky, Dvojí život, Stovka, Navzdory, Pivo vyhrálo, První ovečka, Pastýř, Neporazitelný, Odplata, O chlup, Zapomněl hodinky, Ukradená hodina, Novoroční přeživší…).
 - **Tagy → insighty** („s alkoholem máš o 38 % méně deep“), **týdenní recap** v pondělí, **Sleep Wrapped** na konci roku.
 - Vyřazeno: tlačítko „Jdu spát“, týdenní ligy.
 
@@ -48,10 +48,10 @@ Sociální appka pro spánek: každé ráno se noc objeví jako karta, kamarádi
   - Remíza = stejný průměr.
 - Noc bez dat = sleep score **0** ve výzvě. Dokud výzva běží, jde nahrát zpětně a 0 se nahradí. Do feedu se chybějící noc nedostane.
 - Výzva se **uzavírá automaticky posledním dnem ve 14:00** (místní čas zakladatele) – poslední noc už nemůže přibýt; data nahraná po uzavření výsledek nemění.
-- Odměny: sázka, duše poraženého do vitríny, zápis do MMA bilance, pozvánka navíc.
-- **Všichni proti všem**: vítěz bere vše – každý ostatní mu dluží sázku, vítěz bere duše všech, v MMA má vítěz výhru, ostatní prohru. Shodný nejvyšší průměr = remíza.
-- **Společný cíl**: počítá se do MMA (splněno = výhra všem, nesplněno = prohra všem), nebere se duše, nepočítá se do vzájemné bilance. Sázka může být (bez účtu dluhů).
-- Shoda na 1. místě (všichni proti všem) = remíza mezi nimi, ostatní prohra, žádné dluhy ani duše. Den vyhrává jen jasně nejvyšší skóre (shoda = nikdo).
+- Odměny: sázka, ovečka poraženého do stáda, zápis do MMA bilance, pozvánka navíc.
+- **Všichni proti všem**: vítěz bere vše – každý ostatní mu dluží sázku, vítěz bere ovečky všech, v MMA má vítěz výhru, ostatní prohru. Shodný nejvyšší průměr = remíza.
+- **Společný cíl**: počítá se do MMA (splněno = výhra všem, nesplněno = prohra všem), nebere se ovečka, nepočítá se do vzájemné bilance. Sázka může být (bez účtu dluhů).
+- Shoda na 1. místě (všichni proti všem) = remíza mezi nimi, ostatní prohra, žádné dluhy ani ovečky. Den vyhrává jen jasně nejvyšší skóre (shoda = nikdo).
 - Pozvánka navíc: +1 za výhru v duelu / všichni proti všem, +1 za sérii 30 a 100 dní. Za společný cíl ne.
 - Výzvy jen mezi přáteli. Duel startuje den po přijetí; skupinovou spouští zakladatel (min. 3 přijatí).
 

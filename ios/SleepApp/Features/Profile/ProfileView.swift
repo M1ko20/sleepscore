@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Můj profil: bilance, série, průměr, vitrína duší, odznaky, přátelé, pozvánky. Nastavení pod ozubeným kolem.
+/// Můj profil: bilance, série, průměr, stádo, odznaky, přátelé, pozvánky. Nastavení pod ozubeným kolem.
 struct ProfileView: View {
     @Environment(Session.self) private var session
     @Environment(FeedStore.self) private var feed
