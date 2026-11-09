@@ -346,6 +346,17 @@ enum API {
         return try await decode(db.rpc("set_notification_prefs", params: Params(p_prefs: changes)).execute().data)
     }
 
+    /// Device token pro push (#10). Token se může přestěhovat z jiného účtu na stejném telefonu.
+    nonisolated static func registerPushToken(_ token: String, env: String) async throws {
+        struct Params: Encodable { let p_token: String; let p_env: String }
+        _ = try await db.rpc("register_push_token", params: Params(p_token: token, p_env: env)).execute().data
+    }
+
+    nonisolated static func unregisterPushToken(_ token: String) async throws {
+        struct Params: Encodable { let p_token: String }
+        _ = try await db.rpc("unregister_push_token", params: Params(p_token: token)).execute().data
+    }
+
     // MARK: GDPR
 
     /// Všechna moje data jako JSON (export_my_data).

@@ -1,11 +1,11 @@
 # App Review – přístup a poznámky (#18)
 
 ## Demo účet
-- E-mail: `review@bedrival.app`, heslo: `~/.bedrival/review_state.json` (mimo git, `users.r.password`). Vyplnit do App Store Connect → App Review Information → Sign-in required.
+- E-mail: `adam.mikolas64+bedrival-review@gmail.com`, heslo: `~/.bedrival/review_state.json` (mimo git, `users.r.password`). Vyplnit do App Store Connect → App Review Information → Sign-in required.
 - Kód pozvánky pro nový účet přes Sign in with Apple: `review_invite_code` ve stejném souboru (nepoužitý kód od Alexe).
 - Data: `supabase/tests/review_seed.py` (popis v hlavičce). **Před každým odesláním** spustit `--refresh` – dohraje noci do dneška a založí nový souboj, pokud starý skončil.
-- Účty `@bedrival.app` nikdy nemazat (ui_seed/e2e mažou jen `@example.test` a vlastní testovací účty).
-- Screenshoty průchodu: `SleepAppUITests/ReviewAccountTests` (`TEST_RUNNER_UITEST_LOGIN=review@bedrival.app:<heslo>`).
+- Účty `adam.mikolas64+bedrival-*@gmail.com` nikdy nemazat (ui_seed/e2e mažou jen `@example.test` a vlastní testovací účty).
+- Screenshoty průchodu: `SleepAppUITests/ReviewAccountTests` (`TEST_RUNNER_UITEST_LOGIN=adam.mikolas64+bedrival-review@gmail.com:<heslo>`).
 
 ## Review notes (do App Store Connect, anglicky)
 ```
@@ -29,13 +29,15 @@ declined.
 The sleep score and insights are for entertainment and comparison with friends only. The app
 is not a medical device and shows this in Settings → Privacy and under the insights.
 
-CHALLENGES AND STAKES
-Players can write a free-text stake (e.g. "loser buys a beer"). The app does not process,
-hold or transfer any money or items; it only displays the text and lets the debtor mark it
-as settled. There is no gambling or in-app purchase.
+CHALLENGES ("O co se hraje" = what's at stake)
+Players can optionally write a short free-text note about what the challenge is for
+(e.g. "loser buys a beer"). The app does not process, hold or transfer any money or items;
+it only displays the text and lets the loser mark it as settled. The Terms forbid playing
+for money or valuables. There is no gambling, no odds, no payments and no in-app purchase.
 
 USER-GENERATED CONTENT
-Users accept the Terms (zero tolerance for objectionable content) before creating a profile.
+Users tick two boxes before creating a profile: the Terms (zero tolerance for objectionable
+content) and explicit consent to processing sleep and heart rate data.
 Report: "…" menu on a card, comment or profile → Nahlásit (Report).
 Block: profile → "…" → Zablokovat (Block).
 Reports are delivered to the developer immediately and handled within 24 hours.

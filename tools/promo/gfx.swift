@@ -43,16 +43,20 @@ let scenes: [(String, String, String)] = [
     ("night", "Detail noci", "Fáze, tep, rozpad skóre"),
     ("challenges", "Výzvy", "Vyzvi kámoše. Sázku si napíšete sami."),
     ("challenge", "Souboj", "Rozhoduje jen sleep score"),
-    ("result", "Konec výzvy", "Prohraješ? Přijdeš o duši."),
+    ("result", "Konec výzvy", "Prohraješ? Přijdeš o ovečku."),
     ("profile", "Profil", "Bilance, odznaky, co ti kazí spánek"),
     ("recap", "Pondělí", "Týden v číslech"),
     ("wrapped", "Konec roku", "Sleep Wrapped"),
     ("settings", "Notifikace", "Ozveme se, jen když chceš"),
 ]
 for (n, l, t) in scenes { frame("frame_\(n)", label: l, title: t) }
+// Logo (měsíc s krátery) z launch screenu – generuje ios/scripts/render_logo.
+let logo = NSImage(contentsOfFile: "../../ios/SleepApp/Assets.xcassets/LaunchLogo.imageset/LaunchLogo@3x.png")!
 func card(_ name: String, kicker: String, big: String, sub: String) {
     png(name) {
         bg.setFill(); NSRect(x: 0, y: 0, width: W, height: H).fill()
+        let side: CGFloat = 240
+        logo.draw(in: NSRect(x: (W - side) / 2, y: H - 420 - side, width: side, height: side))
         draw(kicker.uppercased(), font(30, .semibold), accent, x: 80, yTop: 700, width: W - 160, kern: 4)
         draw(big, font(190, .black, condensed: true), text1, x: 40, yTop: 760, width: W - 80)
         draw(sub, font(46, .semibold), text2, x: 80, yTop: 1010, width: W - 160)

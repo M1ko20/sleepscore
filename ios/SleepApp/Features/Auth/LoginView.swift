@@ -19,6 +19,7 @@ struct LoginView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Spacer()
+            MoonLogo(size: 64).padding(.bottom, 12)
             Text("Přihlášení")
                 .font(Font.app.title)
                 .foregroundStyle(Color.app.textPrimary)

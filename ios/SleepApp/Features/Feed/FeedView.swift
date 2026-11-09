@@ -9,8 +9,25 @@ struct FeedView: View {
     @State private var path = NavigationPath()
     /// Žádná moje noc ve feedu ani spánek ve Zdraví → nejspíš zakázaný přístup (#22).
     @State private var healthMissing = false
+    /// Recap otevřený z pushe (konkrétní týden).
+    @State private var pushRecap: RecapItem?
 
     private var me: UUID? { session.profile?.id }
+
+    private func open(_ link: PushLink) {
+        Push.shared.pendingLink = nil
+        path = NavigationPath()
+        switch link {
+        case .post(let id): path.append(id)
+        case .challenge(let id): path.append(ChallengeLink(id: id))
+        case .profile(let p): path.append(p)
+        case .notifications: path.append(FeedRoute.notifications)
+        case .recap(let weekStart):
+            Task {
+                if let r = try? await API.weeklyRecap(weekStart: weekStart) { pushRecap = RecapItem(recap: r) }
+            }
+        }
+    }
 
     var body: some View {
         NavigationStack(path: $path) {
@@ -26,6 +43,10 @@ struct FeedView: View {
                     }
                     if healthMissing {
                         HealthMissingCard()
+                    }
+                    // Nabídka notifikací až ve chvíli, kdy je ve feedu co sledovat (ne hned po přihlášení).
+                    if Push.shared.shouldOfferPermission, !store.posts.isEmpty {
+                        PushAskCard()
                     }
                     if store.loaded && store.isEmpty {
                         emptyState
@@ -97,6 +118,11 @@ struct FeedView: View {
             .sheet(item: $editing) { post in
                 EditPostSheet(post: post)
             }
+            .sheet(item: $pushRecap) { RecapView(recap: $0.recap) }
+            // Klepnutí na push (i při studeném startu – proto initial).
+            .onChange(of: Push.shared.pendingLink, initial: true) { _, link in
+                if let link { open(link) }
+            }
         }
     }
 
@@ -153,6 +179,32 @@ struct HealthMissingCard: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color.app.surface, in: RoundedRectangle(cornerRadius: Metrics.cardRadius))
         .accessibilityIdentifier("healthMissingCard")
+    }
+}
+
+/// Vlastní nabídka před systémovým dialogem: vysvětlí, k čemu notifikace jsou, a nechá odmítnout bez dialogu.
+struct PushAskCard: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Ať ti nic neuteče")
+                .font(Font.app.body.weight(.semibold))
+                .foregroundStyle(Color.app.textPrimary)
+            Text("Dáme vědět, když ti někdo okomentuje noc, vyzve tě nebo tě v souboji předběhne. Co chodí, si nastavíš v Nastavení → Notifikace.")
+                .captionStyle()
+                .fixedSize(horizontal: false, vertical: true)
+            HStack(spacing: 12) {
+                Button("Zapnout") { Task { await Push.shared.requestPermission() } }
+                    .buttonStyle(.secondary)
+                    .accessibilityIdentifier("pushAskEnable")
+                Button("Teď ne") { Push.shared.askDismissed = true }
+                    .buttonStyle(.plainText)
+                    .accessibilityIdentifier("pushAskDismiss")
+            }
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.app.surface, in: RoundedRectangle(cornerRadius: Metrics.cardRadius))
+        .accessibilityIdentifier("pushAskCard")
     }
 }
 

@@ -55,7 +55,7 @@ final class PromoTourTests: XCTestCase {
             slowScroll(app, ups: 2)
             pause(1)
         }
-        // 6. Profil: MMA bilance, série, duše, odznaky
+        // 6. Profil: MMA bilance, série, stádo, odznaky
         scene("profile", args: ["-debugTab", "2"]) { app in
             pause(2.5)
             slowScroll(app, ups: 4)

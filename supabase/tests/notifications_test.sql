@@ -146,11 +146,11 @@ insert into public.challenge_day_scores (challenge_id, user_id, day, score, nigh
 select :'duel', u, d::date, case when u = pg_temp.u('a') then 80 else 70 end, null
 from unnest(array[pg_temp.u('a'), pg_temp.u('b')]) u, generate_series(current_date - 10, current_date - 4, '1 day') d;
 select private.finalize_challenge(:'duel');
-select pg_temp.ok('výhra', pg_temp.text_of('a', 'challenge_result'), 'Vyhráno 80,0 : 70,0. Bára přichází o duši.');
-select pg_temp.ok('prohra', pg_temp.text_of('b', 'challenge_result'), 'Prohra 70,0 : 80,0. Adam bere tvoji duši.');
+select pg_temp.ok('výhra', pg_temp.text_of('a', 'challenge_result'), 'Vyhráno 80,0 : 70,0. Bára přichází o ovečku.');
+select pg_temp.ok('prohra', pg_temp.text_of('b', 'challenge_result'), 'Prohra 70,0 : 80,0. Adam bere tvoji ovečku.');
 -- (day scores bez night_id = „chybějící noc“ → oba mají i Zapomněl hodinky)
 select pg_temp.ok('odznak za výhru', (select public.notification_text(n) from public.notifications n
-  where n.user_id = pg_temp.u('a') and n.kind = 'achievement' and n.payload ->> 'code' = 'first_soul'), 'Nový odznak: První duše.');
+  where n.user_id = pg_temp.u('a') and n.kind = 'achievement' and n.payload ->> 'code' = 'first_soul'), 'Nový odznak: První ovečka.');
 select pg_temp.ok('odznak → výzva', (select challenge_id from public.notifications where user_id = pg_temp.u('a')
   and kind = 'achievement' and payload ->> 'code' = 'first_soul'), :'duel'::uuid);
 

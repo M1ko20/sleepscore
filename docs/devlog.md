@@ -19,6 +19,33 @@ Co je hotové a jak. Nejnovější nahoře. Detaily backendu v `backend.md`, vzh
 13. ~~Notifikace ve zvonečku~~ hotovo (#9). ~~Zneplatnění Apple tokenu~~ (#7), ~~Release bez zápisu do Health~~ (#8), ~~anglické zásady~~ (#3) hotovo.
 14. Další: push přes APNs (#10, Developer Program, pak i pondělní push na recap), nastavení notifikací (#11), test na iPhonu s Garminem.
 
+## 2026-11-09 – Demo účty na Adamův Gmail
+- `review@bedrival.app` a `demo-*@bedrival.app` → `adam.mikolas64+bedrival-{review,bara,cyril,dana}@gmail.com` (doména bedrival.app nám nepatří – kdo by ji koupil, mohl by si poslat reset hesla). Změněno přímo v `auth.users` + `auth.identities` (hesla beze změny), `~/.bedrival/review_state.json`, `review_seed.py`, `ReviewAccountTests`, docs. Přihlášení všech čtyř ověřené.
+
+## 2026-11-09 – Notifikace v kontextu, výslovný souhlas, nové podmínky (#23, #21, #28 část)
+- Push (#10) commitnutý na větvi `push-apns`, migrace `20261109120000_push.sql` **nasazená** (bez URL funkce jen uklízí frontu). #16 zavřené.
+- Notifikace: appka se už neptá hned po přihlášení. `Push.start()` jen zjistí stav a registruje token; ve feedu (až je v něm aspoň jedna karta) je karta „Ať ti nic neuteče“ → „Zapnout“ ukáže systémový dialog, „Teď ne“ kartu schová natrvalo (povolit jde v Nastavení → Notifikace). Stav se obnoví při návratu do popředí.
+- Souhlas: dvě zaškrtávátka (`Features/Onboarding/ConsentChecks.swift`) při zakládání profilu i v `TermsUpdateView` – „Je mi 18 let a souhlasím s Podmínkami a Zásadami…“ a „Výslovně souhlasím, aby Bedrival zpracovával můj spánek a tep z Apple Health a ukazoval je mým přátelům…“. Dřív byl výslovný souhlas jen povolením Zdraví v iOS (slabé).
+- Migrace `20261109130000_terms_v2.sql` **nasazená**: verze podmínek `2026-11-09` → všichni členové jednou uvidí „Nové podmínky“. `review_seed.py --refresh` teď za demo účty souhlasí.
+- Sázky → **„O co se hraje“** v appce („Hraje se o“, „jen o čest“, „Nahlásit text výzvy“, nápověda „Pivo, snídaně, nádobí – ne peníze“). Mechanika i přehled dluhů beze změny; interní `stake` zůstává.
+- Podmínky (CZ + EN): zdraví má přednost (žádné prášky/alkohol kvůli skóre), „o co se hraje“ = text uživatele a kamarádská domluva, ne sázka ani smlouva s námi; přehled dluhů jen připomínka; zákaz hrát o peníze; obsah předem nekontrolujeme, autor odpovídá výhradně sám a odškodní nás; strop náhrady 1 000 Kč (kde to zákon dovolí); kontaktní místo podle DSA; povinná sekce o Apple (EULA minimum); bez souhlasu s novou verzí nejde appku používat.
+- Zásady (CZ + EN): právní základ zdravotních dat = zaškrtávátko + povolení Zdraví, řádek „Souhlasy“ (verze a čas), odvolání souhlasu rozepsané. Web: „o co se hraje“ na úvodu. Review notes upravené.
+- Ověřeno: celá lokální SQL sada, build, obrazovka „Nové podmínky“ v simulátoru. Kartu notifikací ve feedu a průchod zaškrtávátky jsem neklikal.
+- Neověřeno: prázdné stavy (#28) – chce dočasný testovací účet bez přátel (zakládá se service klíčem, na to jsem neměl povolení).
+
+## 2026-11-09 – Logo (měsíc s krátery)
+- Adam vybral variantu 3 z návrhů (https://claude.ai/artifact/TApjMPAtXzwcfKtCBTb3E3): osvětlený srpek s krátery, zbytek měsíce ve stínu. Popis v `design.md` → Logo.
+- `MoonLogoDrawing.swift` (CoreGraphics) kreslí logo v appce (`MoonLogo`, `BrandMark`) i ve skriptu `ios/scripts/render_logo/main.swift`, který generuje `AppIcon` (1024, bez alfy) a `LaunchLogo` (@1–3x).
+- Ikona zapnutá (`project.yml` už nenastavuje prázdný `ASSETCATALOG_COMPILER_APPICON_NAME`), launch screen má logo uprostřed.
+- Logo na pozvánce a přihlášení, podpis s logem v recapu a ve Wrapped, logo na úvodní a závěrečné kartě promo videa (`tools/promo/gfx.swift`). Ověřeno v simulátoru (plocha + úvodní obrazovka).
+
+## 2026-11-09 – Duše → ovečky
+- Trofej za poraženého je teď **ovečka**, sbírka na profilu je **stádo** (dřív vitrína duší). Bez emoji.
+- Odznaky: *První duše* → **První ovečka**, *Sběratel* → **Pastýř** (10 oveček).
+- Migrace `…110000_sheep_rename.sql`: názvy odznaků + `notification_text` („Bára přichází o ovečku.“, „Bereš 3 ovečky.“).
+- Swift texty (výsledek výzvy, feed, založení výzvy, profil, Wrapped) se správným skloňováním (ovečku / 2–4 ovečky / 5+ oveček).
+- Interní názvy zůstaly (`souls` pohled i JSON klíč, kód `first_soul`, `ProfileSummary.Soul`) – uživatel je nevidí, přejmenování by stálo migraci pohledů a RPC. Starší záznamy v devlogu nechávám s „duší“.
+
 ## 2026-11-07 – Automatické skrytí po 3 hlášeních (issue #15)
 - Migrace `20261107160000_auto_hide_reported.sql` (**nenasazeno**): trigger na `reports` – jakmile obsah má 3 otevřená hlášení od různých nezabanovaných členů, skryje se všem kromě autora a přijde upozornění „Obsah automaticky skrytý po 3 hlášeních“ (jen druh a id). Práh jde změnit v `private.app_config` (`auto_hide_threshold`).
   - Karta (`posts.hidden_at`) a komentář (`comments.hidden_at`): RLS je ukáže jen autorovi; skrytá karta = nejdou k ní komentáře ani reakce. Ze zvonečku majitele karty zmizí text skrytého komentáře.
@@ -297,3 +324,10 @@ Co je hotové a jak. Nejnovější nahoře. Detaily backendu v `backend.md`, vzh
 - Karty výsledků zpětně uzavřených výzev se posouvají na den konce (jinak jsou nahoře ve feedu).
 - `ReviewAccountTests` (XCUITest): průchod feed → výzvy → profil přihlášený jako recenzent, zavře dialog Zdraví. Ověřeno v simulátoru.
 - `docs/app-review.md`: přístup + anglické review notes pro App Store Connect.
+
+## 2026-11-09 – Push notifikace přes APNs (#10), zatím vypnuté
+- Migrace `20261109120000_push.sql` (**nenasazeno**): `push_tokens.env` (sandbox/production), registrace jen přes `register_push_token` / `unregister_push_token`, pg_cron `push-tick` každou minutu (úklid fronty; Edge Function zavolá jen s neprázdnou frontou a nastavenou `push_function_url`), `claim_push_batch` (1 push na uživatele, „+N další“, badge, proklik, collapse reakcí), `finish_push_batch` (mrtvé tokeny, cache JWT v `private.apns_jwt`).
+- Edge Function `send-push` + `_shared/apns.ts` (JWT ES256, HTTP/2 na APNs, max 10 souběžně). Ověření hlavičkou `x-push-secret`. Bez APNs klíče nic neposílá.
+- Appka: `Core/Push.swift` (povolení po vstupu do appky, registrace tokenu jen při změně, odregistrace při odhlášení, badge, proklik z pushe na kartu / výzvu / profil / recap / zvoneček), `AppDelegate`, entitlement `aps-environment`. UI testy mají `-debugNoPushPrompt`.
+- Ověřeno: celá lokální SQL sada (nový `push_test.sql`, 38 kontrol), `deno test _shared/`, Debug i Release build, v simulátoru se po přihlášení ukáže dialog „povolit notifikace“. **Neověřeno:** skutečné doručení z APNs a klepnutí na push (chce Developer Program, resp. ruční `simctl push` + klepnutí).
+- Zapnutí: `backend.md` → Push (APNs) → Zapnutí. Migraci jde nasadit klidně hned (bez URL jen uklízí frontu), funkci až s klíčem.

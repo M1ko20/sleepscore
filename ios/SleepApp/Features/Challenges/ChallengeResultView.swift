@@ -46,7 +46,7 @@ struct ChallengeResultView: View {
                     .scaleEffect(soulLanded ? 1 : 1.6)
                     .opacity(soulLanded ? 1 : 0)
                     .offset(y: soulLanded ? 0 : -60)
-                    Text(losers.count == 1 ? "Duše letí do vitríny." : "Duše letí do vitríny.").captionStyle()
+                    Text(losers.count == 1 ? "Ovečka běží do stáda." : "Ovečky běží do stáda.").captionStyle()
                 }
 
                 Spacer()
@@ -78,9 +78,9 @@ struct ChallengeResultView: View {
         case (.teamGoal, .win): return "Cíl splněn. Všichni berou výhru."
         case (.teamGoal, _): return "Cíl nesplněn. Prohra pro všechny."
         case (_, .win):
-            return losers.count == 1 ? "Bereš duši: \(losers[0].profile.displayName)." : "Bereš \(losers.count) duše."
+            return losers.count == 1 ? "Bereš ovečku: \(losers[0].profile.displayName)." : (2...4).contains(losers.count) ? "Bereš \(losers.count) ovečky." : "Bereš \(losers.count) oveček."
         case (_, .loss):
-            return "\(winner?.profile.displayName ?? "Soupeř") bere tvoji duši. Příště dřív do postele."
+            return "\(winner?.profile.displayName ?? "Soupeř") bere tvoji ovečku. Příště dřív do postele."
         case (_, .draw): return "Stejný průměr. Nikdo nic nebere."
         default: return ""
         }

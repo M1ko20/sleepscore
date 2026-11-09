@@ -93,6 +93,7 @@ final class Session {
     }
 
     func signOut() async {
+        await Push.shared.unregister()
         HealthSync.shared.stopObserving()
         HealthSync.shared.resetAnchor()
         await ImageStore.shared.clearAll()

@@ -30,6 +30,7 @@ final class FeedStore {
             posts = try await postsReq
             results = (try? await resultsReq) ?? results
             unreadNotifications = (try? await unreadReq) ?? unreadNotifications
+            Push.shared.setBadge(unreadNotifications)
             let authors = Array(Set(posts.map(\.author.id)))
             let stats = try await API.stats(userIDs: authors)
             streaks = Dictionary(uniqueKeysWithValues: stats.map { ($0.userID, $0.currentStreak) })

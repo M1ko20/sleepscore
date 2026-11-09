@@ -74,7 +74,7 @@ struct NewChallengeFlow: View {
         case .type: "Jaká výzva"
         case .opponents: type == .duel ? "Koho vyzveš" : "Koho pozveš"
         case .duration: prefill.map { "\(rematch ? "Odplata" : "Výzva"): \($0.displayName)" } ?? "Na jak dlouho"
-        case .stake: type == .teamGoal ? "Cíl a sázka" : "O co se hraje"
+        case .stake: type == .teamGoal ? "Cíl" : "O co se hraje"
         }
     }
 
@@ -101,9 +101,9 @@ struct NewChallengeFlow: View {
 
     private var typeStep: some View {
         VStack(spacing: 8) {
-            option(.duel, "1 na 1. Vyšší průměr bere duši.")
-            option(.freeForAll, "Vítěz bere vše: duše i sázky všech. Aspoň 3 hráči.")
-            option(.teamGoal, "Skupina proti cíli. Bez duší, do bilance se počítá.")
+            option(.duel, "1 na 1. Vyšší průměr bere ovečku.")
+            option(.freeForAll, "Vítěz bere vše: ovečky všech i to, o co se hraje. Aspoň 3 hráči.")
+            option(.teamGoal, "Skupina proti cíli. Bez oveček, do bilance se počítá.")
         }
     }
 
@@ -204,11 +204,11 @@ struct NewChallengeFlow: View {
                 }
             }
             VStack(alignment: .leading, spacing: 8) {
-                Text("Sázka").statLabel()
+                Text("O co se hraje").statLabel()
                 TextField("", text: $stake, prompt: Text("prohraný platí pivo").foregroundStyle(Color.app.textTertiary))
                     .textFieldStyle(AppTextFieldStyle())
-                Text(type == .teamGoal ? "Nepovinná. U společného cíle se dluhy nevedou."
-                                       : "Nepovinná. Appka povede, kdo komu dluží.")
+                Text(type == .teamGoal ? "Nepovinné. Jen mezi vámi, appka nic nepočítá."
+                                       : "Nepovinné. Pivo, snídaně, nádobí – ne peníze. Appka nic nevymáhá, jen si pamatuje, kdo komu co dluží.")
                     .captionStyle()
             }
         }

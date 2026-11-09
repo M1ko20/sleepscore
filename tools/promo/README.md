@@ -10,7 +10,7 @@ Vertikální video 1080×1920 z reálné appky v simulátoru (přihlášený ú�
 3. Výsledek výzvy a nastavení notifikací zvlášť (pod XCUITestem se nevykreslí):
    `simctl launch <sim> cz.mikolas.bedrival -debugTab 1` → `result.mp4`,
    `… -debugNoResult -debugTab 2 -debugNotificationSettings` → `settings.mp4`.
-4. `swift gfx.swift gfx/` vykreslí titulky a úvodní/závěrečnou kartu (SF Pro, barvy z docs/design.md).
+4. `swift gfx.swift gfx/` (spouštět z `tools/promo/`) vykreslí titulky a úvodní/závěrečnou kartu s logem (SF Pro, barvy z docs/design.md, logo z `LaunchLogo@3x.png`).
 5. `./build.sh` (ffmpeg) složí scény; časy střihu v něm upravit podle nové nahrávky.
 
 `simctl recordVideo` ukládá snímky jen při změně obrazu (proměnná snímková frekvence), proto `fps=30` před `trim`.

@@ -13,12 +13,12 @@
 State (hesla všech čtyř účtů) patří MIMO git – repo je veřejné. Heslo recenzenta jde do
 App Store Connect → App Review Information. Když se state ztratí: --reset-passwords.
 
-Uživatelé (@bedrival.app – doména se nepoužívá k posílání, účty zakládá admin API):
-  R „Alex“  review@bedrival.app – přihlásí se recenzent
+Uživatelé (Gmail aliasy Adama „+bedrival-…“ – pošta jde k němu, účty zakládá admin API):
+  R „Alex“  adam.mikolas64+bedrival-review@gmail.com – přihlásí se recenzent
   B „Bára“  pozve R, C, D (je „kořen“, profil zakládá service role)
   C „Cyril“, D „Dana“
 Data: 30 nocí s tagy (zjištění), názvy, komentáře a reakce; souboje B×R (skončený, R prohrál
-→ R dluží), R×C (skončený, R vyhrál → duše, C dluží), R×B běžící, společný cíl C+R+D běžící,
+→ R dluží), R×C (skončený, R vyhrál → ovečka, C dluží), R×B běžící, společný cíl C+R+D běžící,
 čekající výzva od D, nepoužitý kód pozvánky od R (pro recenzenta se Sign in with Apple).
 
 --refresh: dohraje noci do dneška (ingest přepíše jen svoje noci), názvy u nových karet a
@@ -52,10 +52,10 @@ TZ = ZoneInfo("Europe/Prague")
 TODAY = dt.datetime.now(TZ).date()
 
 USERS = {
-    "r": {"email": "review@bedrival.app", "username": "alex_r", "name": "Alex"},
-    "b": {"email": "demo-bara@bedrival.app", "username": "bara_n", "name": "Bára"},
-    "c": {"email": "demo-cyril@bedrival.app", "username": "cyril_k", "name": "Cyril"},
-    "d": {"email": "demo-dana@bedrival.app", "username": "dana_v", "name": "Dana"},
+    "r": {"email": "adam.mikolas64+bedrival-review@gmail.com", "username": "alex_r", "name": "Alex"},
+    "b": {"email": "adam.mikolas64+bedrival-bara@gmail.com", "username": "bara_n", "name": "Bára"},
+    "c": {"email": "adam.mikolas64+bedrival-cyril@gmail.com", "username": "cyril_k", "name": "Cyril"},
+    "d": {"email": "adam.mikolas64+bedrival-dana@gmail.com", "username": "dana_v", "name": "Dana"},
 }
 HISTORY = {"r": 30, "b": 30, "c": 30, "d": 20}
 
@@ -283,6 +283,8 @@ def refresh(state):
     users = state["users"]
     for u in users.values():
         login(u)
+        # Nová verze podmínek: demo účty souhlasí za recenzenta (jinak by ho vítala obrazovka souhlasu).
+        ok(f"{u['name']} souhlas", *req("POST", "/rest/v1/rpc/accept_terms", {}, token=u["jwt"]))
     for k in "rbcd":
         plan = ingest(k, users[k], -9)
         decorate_posts(k, users[k], plan, only_new=True)

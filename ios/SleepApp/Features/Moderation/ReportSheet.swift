@@ -9,7 +9,7 @@ enum ReportTarget: String, Sendable {
         case .post: "Nahlásit kartu"
         case .comment: "Nahlásit komentář"
         case .profile: "Nahlásit profil"
-        case .challenge: "Nahlásit sázku"
+        case .challenge: "Nahlásit text výzvy"
         }
     }
 }

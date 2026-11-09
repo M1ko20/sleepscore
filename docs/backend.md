@@ -114,7 +114,7 @@ Storage: buckety `avatars` (max 150 kB), `night-photos` (max 400 kB) – privát
 | `export_my_data()` | GDPR export: všechna moje data jako JSON (vč. surových dat nocí) |
 | `delete_my_account()` | GDPR smazání: zruší neuzavřené souboje se mnou a moje čekající výzvy, smaže `auth.users` → kaskáda |
 | `sleep_wrapped(year?)` | rok volajícího (Wrapped) jedním callem |
-| `profile_summary(user)` | celý profil jedním callem (bilance, série, průměr 30 dní, duše, odznaky, vzájemná bilance, stav přátelství); security invoker → RLS |
+| `profile_summary(user)` | celý profil jedním callem (bilance, série, průměr 30 dní, ovečky, odznaky, vzájemná bilance, stav přátelství); security invoker → RLS |
 | `create_challenge(type, opponents[], duration_days, stake?, target_score?)` | jen s přáteli; duel = 1 soupeř, skupina ≥ 2 pozvaní |
 | `respond_challenge(challenge, accept)` | duel po přijetí startuje zítra (tz zakladatele) |
 | `start_challenge(challenge)` | skupinu spouští zakladatel, min. 3 přijatí |
@@ -219,7 +219,7 @@ Přepočet starých nocí: zatím jen dev data → znovu nahrát (`seed_dev.py -
 2. Průměr (2 desetinná místa), vyhrané dny (jen jasně nejvyšší skóre dne).
 3. Výsledek: duel / všichni proti všem → nejvyšší průměr vyhrává, shoda nahoře = remíza mezi nimi, ostatní prohra. Společný cíl → průměr skupiny ≥ cíl = výhra všem, jinak prohra všem.
 4. Karta výsledku do feedu.
-5. Jen při jasném vítězi (ne team_goal): dluhy poražených vůči vítězi (když je sázka), +1 pozvánka, achievementy První duše, Sběratel (každých 10 duší), Neporazitelný (každých 5 výher v řadě), Odplata (porazil toho, kdo ho naposledy porazil), O chlup (< 1 bod).
+5. Jen při jasném vítězi (ne team_goal): dluhy poražených vůči vítězi (když je sázka), +1 pozvánka, achievementy První ovečka, Pastýř (každých 10 oveček), Neporazitelný (každých 5 výher v řadě), Odplata (porazil toho, kdo ho naposledy porazil), O chlup (< 1 bod).
 
 ## Jak nasazovat a testovat
 ```bash
@@ -227,6 +227,7 @@ supabase db push --remote --yes                          # migrace
 supabase functions deploy ingest-sleep --use-api --yes    # funkce (bez Dockeru)
 supabase functions deploy apple-token --use-api --yes
 supabase functions deploy delete-account --use-api --yes
+supabase functions deploy send-push --use-api --no-verify-jwt --yes   # volá ho pg_cron s x-push-secret
 # Apple secrets (až bude Developer Program; .p8 nikdy do gitu):
 supabase secrets set APPLE_TEAM_ID=… APPLE_KEY_ID=… APPLE_CLIENT_ID=cz.mikolas.bedrival
 supabase secrets set APPLE_PRIVATE_KEY="$(cat AuthKey_XXXX.p8)"
@@ -250,7 +251,7 @@ supabase/tests/local/run.sh cesta/x_test.sql     # jen jeden test
 Testy: `select t_ok(podmínka, 'popis')`, `select t_err($$sql$$, 'část chyby', 'popis')`; role přes `set role authenticated` + `set_config('request.jwt.claim.sub', …)`.
 
 ## Chybí / TODO
-- Push notifikace (APNs) – až bude Apple Developer Program (#10). Notifikace ve zvonečku hotové.
+- Push notifikace (APNs): kód hotový (#10, viz Push), zapnout až s Apple Developer Programem.
 - Sign in with Apple – totéž; do té doby testovací přihlášení e-mailem v dev buildu. Backend pro revokaci tokenu je hotový (viz GDPR), chybí přihlašovací obrazovka (`ASAuthorizationAppleIDProvider` → `Session.signInWithApple`).
 - První uživatel (Adam) nemá pozvánku → profil založit ručně (service role insert do `profiles` + `user_stats`).
 - Insighty z tagů, týdenní recap, Sleep Wrapped.
@@ -281,7 +282,7 @@ Tabulka `notifications`: `user_id` (příjemce), `kind`, `category` (generovaný
 | `challenge_started` | `challenges` pending → active | přijatí kromě toho, kdo start spustil | výzva | „Bára výzvu přijímá. Start 8. 11., 7 dní.“ / „Výzva startuje 8. 11. 14 dní.“ |
 | `challenge_overtaken` | INSERT/UPDATE `challenge_day_scores` (běžící duel / všichni proti všem) | soupeř, kterého zápis přeskočil v průběžném průměru | výzva | „Bára tě předbíhá v souboji. 77,5 : 75,0.“ / „… ve výzvě. …“ |
 | `challenge_ending` | cron, 20:00 místního času den před koncem | hráči | výzva | „Zítra konec. Prohráváš o 8,3 bodu.“ |
-| `challenge_result` | `challenges` active → finished | hráči | výzva | „Vyhráno 80,0 : 70,0. Bára přichází o duši.“ |
+| `challenge_result` | `challenges` active → finished | hráči | výzva | „Vyhráno 80,0 : 70,0. Bára přichází o ovečku.“ |
 | `debt_settled` | `debts.settled_at` null → čas | věřitel | výzva | „Bára hlásí splaceno: pivo.“ |
 | `achievement` | INSERT `user_achievements` | držitel | karta noci / výzva | „Nový odznak: Hlubinář.“ / „Hlubinář. Zase.“ |
 | `night_ready` | INSERT `posts` (night, noc dnes/včera) | autor | karta | „Tvoje noc: 78. Doplň komentář.“ |
@@ -303,8 +304,34 @@ Pravidla:
 - **Úklid**: `notifications-cleanup` denně maže starší 30 dní (reakce se s každou novou posouvají).
 
 Navázání:
-- **#10 push**: fronta = `pushed_at is null or pushed_at < created_at` (částečný index `notifications_push_queue_idx`). Reakce posílat znovu nejdřív hodinu po `pushed_at`. Po prvním zapnutí posílat jen čerstvé (např. `created_at > now() - 1 day`), ať nepřijde dávka starých. Odesílač nastaví `pushed_at = now()`.
+- **#10 push**: hotovo, viz Push (APNs).
 - **#11 nastavení**: hotovo, viz níže.
+
+## Push (APNs, #10)
+Migrace `20261109120000_push.sql`, Edge Function `send-push`, `_shared/apns.ts`. **Zatím vypnuté** – bez APNs klíče a `push_function_url` se nic neposílá, fronta se jen uklízí.
+
+```
+pg_cron každou minutu ─▶ private.push_tick()
+   úklid fronty: starší než den / bez tokenu / kategorie vypnutá → pushed_at = now()
+   jen když je něco připravené a je nastavená push_function_url ─pg_net─▶ send-push
+send-push ─▶ claim_push_batch() ─▶ APNs (HTTP/2) ─▶ finish_push_batch()
+```
+- **Call budget**: prázdná fronta = 0 callů Edge Function, jinak max. 1 za minutu. Tick je jeden SQL dotaz na částečném indexu.
+- **Připravené** (`private.push_ready`): ve frontě, čerstvé (< 1 den), `push_decision = 'send'` (noční klid = počká), uživatel má token, reakce ne dřív než hodinu po minulém pushi na stejnou kartu.
+- **Dávka** (`claim_push_batch`, jen service role): `for update skip locked` + `pushed_at`, takže dvojí volání nepošle nic dvakrát. Jeden push na uživatele: text nejnovější notifikace (`notification_text`), víc naráz (ráno po nočním klidu) = „…\n+2 další“ a proklik na zvoneček. Badge = počet nepřečtených. Reakce mají `apns-collapse-id = r-<post>` (novější nahradí starší).
+- **Proklik** (`link` v payloadu): `post`, `challenge`, `profile` (s daty profilu), `recap` (`week_start`), `notifications`.
+- **Tokeny**: `push_tokens.env` = `sandbox` (Debug build) / `production` (TestFlight, App Store). Zápis jen přes `register_push_token(token, env)` (token se může přestěhovat k jinému účtu na stejném telefonu) a `unregister_push_token(token)` při odhlášení. Mrtvé tokeny (410, `BadDeviceToken`, `Unregistered`, `DeviceTokenNotForTopic`) maže `finish_push_batch`.
+- **JWT pro APNs**: cache v `private.apns_jwt` (40 min), protože APNs nechce nový token častěji než jednou za 20 min a funkce startuje často znovu. `ExpiredProviderToken` / `InvalidProviderToken` → cache se smaže.
+- **Appka** (`Core/Push.swift`): povolení se zeptá po vstupu do appky (po dialogu Zdraví), pak `registerForRemoteNotifications` při každém startu, server se volá jen při změně tokenu nebo účtu. Odhlášení token smaže. Badge se nastaví s feedem a vynuluje otevřením zvonečku. UI testy dialog přeskakují (`-debugNoPushPrompt`).
+
+**Zapnutí** (až bude Developer Program):
+1. Apple Developer → Keys: klíč s APNs (může být ten samý jako pro Sign in with Apple). U App ID zapnout Push Notifications.
+2. `supabase secrets set APPLE_TEAM_ID=… PUSH_SECRET=<náhodný>` a klíč: buď stejný jako Apple (`APPLE_KEY_ID`, `APPLE_PRIVATE_KEY`), nebo zvlášť `APNS_KEY_ID`, `APNS_PRIVATE_KEY`. Topic = `APPLE_CLIENT_ID` (bundle ID).
+3. `supabase functions deploy send-push --use-api --no-verify-jwt --yes`
+4. V SQL editoru: `insert into private.app_config values ('push_function_url', 'https://tlespfcbqzddddhjsieu.supabase.co/functions/v1/send-push'), ('push_secret', '<stejný PUSH_SECRET>');`
+5. Na telefonu přihlásit, povolit notifikace, nechat si od kamaráda reagovat. Log: Edge Functions → send-push.
+
+Test: `supabase/tests/local/push_test.sql` (38 kontrol), `_shared/apns_test.ts`.
 
 ## Nastavení notifikací (#11)
 Migrace `20261107140000_notification_prefs.sql`. Platí jen pro pushe – zvoneček ukazuje vše.
@@ -325,9 +352,9 @@ Migrace `20261107140000_notification_prefs.sql`. Platí jen pro pushe – zvone�
 
 ## Souhlas s podmínkami (#20)
 - `public.terms_acceptances (user_id → auth.users, version, accepted_at)` – RLS: čtu jen svoje, zápis jen přes `accept_terms()`. FK na `auth.users`, protože souhlas vzniká před profilem.
-- Aktuální verze = `private.terms_version()` = datum účinnosti podmínek na webu (`2026-11-06`). **Změna podmínek:** upravit `site/terms.html` + `site/en/terms.html` a novou migrací přepsat `private.terms_version()` → appka po spuštění ukáže všem „Nové podmínky“.
-- Appka: souhlas se dává při zakládání profilu (text s odkazy nad „Pokračovat“, `accept_terms` → `redeem_invite`). Člen bez souhlasu s aktuální verzí dostane po spuštění `TermsUpdateView` (`Session.State.needsTerms`). Když `my_terms_status` selže, appka pustí dál (nové účty hlídá server).
+- Aktuální verze = `private.terms_version()` = datum účinnosti podmínek na webu (`2026-11-09`, dřív `2026-11-06`). **Změna podmínek:** upravit `site/terms.html` + `site/en/terms.html` a novou migrací přepsat `private.terms_version()` → appka po spuštění ukáže všem „Nové podmínky“.
+- Appka: souhlas se dává při zakládání profilu dvěma zaškrtávátky (`ConsentChecks`: 18+ a podmínky/zásady; výslovný souhlas se spánkem a tepem z Apple Health, čl. 9 GDPR) – bez obou nejde dál, `accept_terms` → `redeem_invite`. Záznam verze v `terms_acceptances` = oba souhlasy (od verze `2026-11-09`). Člen bez souhlasu s aktuální verzí dostane po spuštění `TermsUpdateView` (`Session.State.needsTerms`). Když `my_terms_status` selže, appka pustí dál (nové účty hlídá server).
 - Export obsahuje `terms_acceptances`.
 
 ## Demo účet pro App Review (#18)
-`supabase/tests/review_seed.py` – trvalí uživatelé `review@bedrival.app` (Alex) + Bára, Cyril, Dana (`demo-*@bedrival.app`), 20–30 nocí s tagy, skončené souboje (výhra + prohra → dluhy, duše), běžící souboj a společný cíl, čekající výzva, nepoužitý kód pozvánky. Hesla v `~/.bedrival/review_state.json` (mimo git). Postup a review notes: `docs/app-review.md`. Nemazat.
+`supabase/tests/review_seed.py` – trvalí uživatelé `adam.mikolas64+bedrival-review@gmail.com` (Alex) + Bára, Cyril, Dana (`adam.mikolas64+bedrival-*@gmail.com`), 20–30 nocí s tagy, skončené souboje (výhra + prohra → dluhy, ovečky), běžící souboj a společný cíl, čekající výzva, nepoužitý kód pozvánky. Hesla v `~/.bedrival/review_state.json` (mimo git). Postup a review notes: `docs/app-review.md`. Nemazat.

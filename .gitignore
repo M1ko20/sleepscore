@@ -12,3 +12,4 @@ ios/*.xcodeproj
 ios/SleepApp/Info.plist
 ios/build/
 ios/SleepApp/SleepApp.entitlements
+__pycache__/

@@ -2,6 +2,7 @@ import SwiftUI
 
 @main
 struct SleepApp: App {
+    @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @State private var session = Session()
 
     init() {

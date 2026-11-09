@@ -5,7 +5,7 @@ import XCTest
 extension XCUIApplication {
     static func launchApp(_ extra: [String] = []) -> XCUIApplication {
         let app = XCUIApplication()
-        var args = ["-debugNoResult"]
+        var args = ["-debugNoResult", "-debugNoPushPrompt"]
         if let login = ProcessInfo.processInfo.environment["UITEST_LOGIN"], !login.isEmpty {
             args += ["-debugLogin", login]
         }
