@@ -53,6 +53,12 @@ struct ProfileSetupView: View {
 
             Spacer()
 
+            Text(.init(Legal.consentMarkdown))
+                .font(Font.app.caption)
+                .foregroundStyle(Color.app.textSecondary)
+                .tint(Color.app.textPrimary)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.bottom, 4)
             Button(busy ? "Zakládám…" : "Pokračovat", action: submit)
                 .buttonStyle(.primary)
                 .disabled(!canSubmit)
@@ -96,6 +102,7 @@ struct ProfileSetupView: View {
         Task {
             defer { busy = false }
             do {
+                try await API.acceptTerms()
                 let profile = try await API.redeemInvite(code: code, username: username, displayName: trimmedName)
                 onDone(profile)
             } catch {

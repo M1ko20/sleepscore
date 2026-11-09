@@ -120,6 +120,7 @@ try:
     for x in (B, C, D):
         st, code = req("POST", "/rest/v1/rpc/create_invite", {}, token=A["jwt"])
         ok("pozvánka", st, code)
+        ok(f"podmínky {x['name']}", *req("POST", "/rest/v1/rpc/accept_terms", {}, token=x["jwt"]))
         ok(f"redeem {x['name']}", *req("POST", "/rest/v1/rpc/redeem_invite",
                                        {"p_code": code, "p_username": x["username"], "p_display_name": x["name"]},
                                        token=x["jwt"]))

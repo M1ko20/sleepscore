@@ -1,6 +1,6 @@
 # Backend – jak to funguje
 
-Stav k 2026-11-07. Supabase projekt **Sleepscore** (`tlespfcbqzddddhjsieu`, eu-central-1, Free).
+Stav k 2026-11-07. Supabase projekt **Sleepscore** (název projektu zůstal, appka je Bedrival) (`tlespfcbqzddddhjsieu`, eu-central-1, Free).
 Tenhle soubor je zkratka, aby se nemuselo číst SQL. Při změně backendu ho aktualizuj.
 
 ## Princip
@@ -106,6 +106,7 @@ Storage: buckety `avatars` (max 150 kB), `night-photos` (max 400 kB) – privát
 | `create_invite()` | vrátí nový kód, ubere 1 pozvánku |
 | `check_invite(code)` | platí kód? (onboarding, nevrací zvoucího) |
 | `username_available(username)` | volná a platná přezdívka? |
+| `accept_terms()` / `my_terms_status()` | souhlas s aktuální verzí podmínek / `{version, accepted}` (#20); bez souhlasu `redeem_invite` hlásí `terms not accepted` |
 | `send_friend_request(user)` | žádost; když protistrana už žádala, rovnou přijme |
 | `respond_friend_request(user, accept)` / `remove_friend(user)` | |
 | `tag_insights(user)` | tagy: noci s tagem vs. bez (90 dní, min. 3+3) – skóre, deep, usínání, délka |
@@ -155,7 +156,7 @@ Pravidla:
   - Smazání Apple účtu: appka smaže Storage a místo RPC zavolá `delete-account` → `/auth/revoke` s refresh tokenem, pak `delete_my_account()` jménem uživatele (jeho JWT). Revokace je best effort: chybí-li konfigurace, token nebo Apple vrátí chybu, jen se zaloguje a účet se smaže stejně. Odpověď `{ deleted, revoked }`.
   - E-mailové účty (dev build) dál volají rovnou `delete_my_account()` → fungují i bez nasazené funkce.
   - `client_secret` = JWT ES256 podepsaný `.p8` klíčem (platnost 5 min), generuje se při každém volání.
-  - Secrets: `APPLE_TEAM_ID`, `APPLE_KEY_ID`, `APPLE_CLIENT_ID` (= bundle `cz.mikolas.sleepscore`), `APPLE_PRIVATE_KEY` (obsah `.p8`). Bez nich se výměna i revokace přeskočí (`apple-token` vrátí `{ stored: false }`).
+  - Secrets: `APPLE_TEAM_ID`, `APPLE_KEY_ID`, `APPLE_CLIENT_ID` (= bundle `cz.mikolas.bedrival`), `APPLE_PRIVATE_KEY` (obsah `.p8`). Bez nich se výměna i revokace přeskočí (`apple-token` vrátí `{ stored: false }`).
 - Chybí: zásady ochrany osobních údajů (privacy policy) a jejich odkaz v onboardingu – přijde s landing page (nutné i pro App Store a Garmin).
 
 ## Moderace (App Store 1.2)
@@ -227,7 +228,7 @@ supabase functions deploy ingest-sleep --use-api --yes    # funkce (bez Dockeru)
 supabase functions deploy apple-token --use-api --yes
 supabase functions deploy delete-account --use-api --yes
 # Apple secrets (až bude Developer Program; .p8 nikdy do gitu):
-supabase secrets set APPLE_TEAM_ID=… APPLE_KEY_ID=… APPLE_CLIENT_ID=cz.mikolas.sleepscore
+supabase secrets set APPLE_TEAM_ID=… APPLE_KEY_ID=… APPLE_CLIENT_ID=cz.mikolas.bedrival
 supabase secrets set APPLE_PRIVATE_KEY="$(cat AuthKey_XXXX.p8)"
 cd supabase/functions && deno test _shared/               # unit testy
 # E2E (vytvoří 2 testovací uživatele a smaže je):
@@ -321,3 +322,12 @@ Migrace `20261107140000_notification_prefs.sql`. Platí jen pro pushe – zvone�
   - Pozor u #10: ráno v 8:00 vyjde naráz všechno podržené z noci → slučovat do jednoho pushe na uživatele (nebo poslat jen poslední + badge).
 - Test: `supabase/tests/local/notification_prefs_test.sql`.
 
+
+## Souhlas s podmínkami (#20)
+- `public.terms_acceptances (user_id → auth.users, version, accepted_at)` – RLS: čtu jen svoje, zápis jen přes `accept_terms()`. FK na `auth.users`, protože souhlas vzniká před profilem.
+- Aktuální verze = `private.terms_version()` = datum účinnosti podmínek na webu (`2026-11-06`). **Změna podmínek:** upravit `site/terms.html` + `site/en/terms.html` a novou migrací přepsat `private.terms_version()` → appka po spuštění ukáže všem „Nové podmínky“.
+- Appka: souhlas se dává při zakládání profilu (text s odkazy nad „Pokračovat“, `accept_terms` → `redeem_invite`). Člen bez souhlasu s aktuální verzí dostane po spuštění `TermsUpdateView` (`Session.State.needsTerms`). Když `my_terms_status` selže, appka pustí dál (nové účty hlídá server).
+- Export obsahuje `terms_acceptances`.
+
+## Demo účet pro App Review (#18)
+`supabase/tests/review_seed.py` – trvalí uživatelé `review@bedrival.app` (Alex) + Bára, Cyril, Dana (`demo-*@bedrival.app`), 20–30 nocí s tagy, skončené souboje (výhra + prohra → dluhy, duše), běžící souboj a společný cíl, čekající výzva, nepoužitý kód pozvánky. Hesla v `~/.bedrival/review_state.json` (mimo git). Postup a review notes: `docs/app-review.md`. Nemazat.

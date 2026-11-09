@@ -7,6 +7,8 @@ struct FeedView: View {
     @State private var showRecap = false
     @State private var wrapped: SleepWrapped?
     @State private var path = NavigationPath()
+    /// Žádná moje noc ve feedu ani spánek ve Zdraví → nejspíš zakázaný přístup (#22).
+    @State private var healthMissing = false
 
     private var me: UUID? { session.profile?.id }
 
@@ -21,6 +23,9 @@ struct FeedView: View {
                     }
                     if let recap = store.recap {
                         RecapCard(recap: recap, onOpen: { showRecap = true }, onDismiss: { store.dismissRecap() })
+                    }
+                    if healthMissing {
+                        HealthMissingCard()
                     }
                     if store.loaded && store.isEmpty {
                         emptyState
@@ -62,6 +67,9 @@ struct FeedView: View {
             .refreshable { await store.load() }
             .task {
                 if !store.loaded { await store.load() }
+                if let me, HealthSync.shared.isAvailable, !store.posts.contains(where: { $0.author.id == me }) {
+                    healthMissing = !(await HealthSync.shared.hasRecentSleep())
+                }
                 #if DEBUG
                 // Screenshoty ze simulátoru: `simctl launch … -debugOpen 1` otevře n-tou kartu noci.
                 let args = ProcessInfo.processInfo.arguments
@@ -121,6 +129,30 @@ struct FeedView: View {
             }
         }
         .padding(.top, 120)
+    }
+}
+
+/// Feed bez mojí noci a Zdraví bez spánku: vysvětlit, kde povolit přístup (#22, HealthKit odmítnutý).
+struct HealthMissingCard: View {
+    @Environment(\.openURL) private var openURL
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Nevidíme tvůj spánek")
+                .font(Font.app.body.weight(.semibold))
+                .foregroundStyle(Color.app.textPrimary)
+            Text("Z Apple Health nám za poslední dva týdny nepřišla žádná noc. Povol přístup ke Spánku a Tepu v Nastavení → Zdraví → Přístup k datům a zařízení → Bedrival. Spánek musí zapisovat hodinky nebo prsten.")
+                .captionStyle()
+                .fixedSize(horizontal: false, vertical: true)
+            Button("Otevřít Nastavení") {
+                if let url = URL(string: UIApplication.openSettingsURLString) { openURL(url) }
+            }
+            .buttonStyle(.secondary)
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.app.surface, in: RoundedRectangle(cornerRadius: Metrics.cardRadius))
+        .accessibilityIdentifier("healthMissingCard")
     }
 }
 

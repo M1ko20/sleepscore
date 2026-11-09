@@ -58,6 +58,6 @@ func card(_ name: String, kicker: String, big: String, sub: String) {
         draw(sub, font(46, .semibold), text2, x: 80, yTop: 1010, width: W - 160)
     }
 }
-card("intro", kicker: "Spánek jako sport", big: "SLEEPSCORE", sub: "Spíš líp než kámoši?\nDokaž to.")
-card("outro", kicker: "Jen na pozvánku", big: "SLEEPSCORE", sub: "Brzy na iPhonu.")
+card("intro", kicker: "Spánek jako sport", big: "BEDRIVAL", sub: "Spíš líp než kámoši?\nDokaž to.")
+card("outro", kicker: "Jen na pozvánku", big: "BEDRIVAL", sub: "Brzy na iPhonu.")
 print("px=\(Int(px)) pyTop=\(Int(pyTop)) pw=\(Int(pw)) ph=\(Int(ph))")

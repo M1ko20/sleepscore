@@ -174,7 +174,7 @@ DEEP       ████            ███
 
 ### 1. Onboarding (pozvánka)
 1. **Kód pozvánky** – jedno pole, velké písmo, 8 znaků. Nahoře: „Sem se dostaneš jen přes kamaráda.“
-2. **Přihlášení** – Sign in with Apple (v dev buildu e-mail).
+2. **Přihlášení** – Sign in with Apple, pod ním textové tlačítko „Přihlásit e-mailem“ (jen ručně založené účty: demo pro App Review, testovací).
 3. **Přezdívka a jméno** – kontrola dostupnosti přezdívky za běhu.
 4. **Apple Health** – jedna obrazovka: co čteme (spánek, tep), co nikdy (nic dalšího, nic do reklamy), tlačítko Povolit.
 5. Hotovo → feed s kartou toho, kdo tě pozval, a větou „První noc se ukáže zítra ráno.“

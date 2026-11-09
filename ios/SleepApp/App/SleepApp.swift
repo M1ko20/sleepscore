@@ -34,6 +34,8 @@ struct RootView: View {
                 OnboardingFlow()
             case .ready:
                 MainTabView()
+            case .needsTerms:
+                TermsUpdateView()
             case .offline:
                 OfflineView()
             }

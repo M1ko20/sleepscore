@@ -14,7 +14,8 @@ Pokud se tento soubor a dokument liší, platí dokument – zeptej se Adama.
 Po každé větší práci aktualizuj `docs/devlog.md` (a backend/design, pokud se měnily).
 
 Rychlá fakta:
-- Repo https://github.com/M1ko20/sleepscore (veřejné – žádné klíče do gitu). Název appky ještě není.
+- Repo https://github.com/M1ko20/sleepscore (veřejné – žádné klíče do gitu; název repa zůstal z pracovního názvu).
+- Appka se jmenuje **Bedrival** (bundle ID `cz.mikolas.bedrival`).
 - Supabase projekt `tlespfcbqzddddhjsieu` (Free). CLI přihlášené a nalinkované: `supabase db push --remote --yes`, `supabase functions deploy <fn> --use-api --yes`.
 - Adam hlídá počet callů na Supabase (Free tier) – plánované věci dělat v DB (pg_cron), ne Edge Functions.
 - Apple Developer Program až bude appka skoro hotová → do té doby simulátor + testovací přihlášení e-mailem.
@@ -83,6 +84,5 @@ Váhy jsou první odhad. Otevřená otázka: ve V2 ve výzvách dál vlastní sk
 - Serverové úlohy: výpočet skóre, zápis do výzev, kontrola achievementů, uzavírání výzev, týdenní recap, push notifikace (APNs).
 
 ## Otevřené otázky
-- Název appky
 - Férovost skóre ve V2 (viz výše)
 - Kdy přejít na Supabase Pro

@@ -139,7 +139,7 @@ struct WrappedSummary: View {
             }
 
             if branded {
-                Text("Sleepscore").font(Font.app.label).tracking(1.2).textCase(.uppercase)
+                Text("Bedrival").font(Font.app.label).tracking(1.2).textCase(.uppercase)
                     .foregroundStyle(Color.app.accent)
             }
         }

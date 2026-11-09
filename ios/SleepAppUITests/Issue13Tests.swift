@@ -333,6 +333,9 @@ final class ReleaseHealthTests: XCTestCase {
                 app.buttons[title].tap(); break
             }
         }
+        // LoginView: e-mail je pod Sign in with Apple (#18).
+        let toggle = app.buttons["toggleEmailLogin"]
+        if !email.exists, toggle.waitForExistence(timeout: 5) { toggle.tap() }
         email.waitFor()
         email.tap(); email.typeText(parts[0])
         let pw = app.secureTextFields["Heslo"]

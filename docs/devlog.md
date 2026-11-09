@@ -253,3 +253,47 @@ Co je hotové a jak. Nejnovější nahoře. Detaily backendu v `backend.md`, vzh
   - Komentáře dostane i každý, kdo už pod kartu psal (kind `comment` + `payload.thread`), jen kdo kartu vidí, bez bloků, nahlášených karet a zabanovaných. Texty: autor karty „Bára komentuje tvoji noc: …“, ostatní „Cyril taky komentuje noc, pod kterou píšeš: …“, „Adam odpovídá pod svojí nocí: …“.
 - Appka: proklik funguje beze změny (karta / výzva), upravené popisy kategorií v Nastavení → Notifikace.
 - Ověřeno: celá lokální SQL sada (nový `notifications_overtake_threads_test.sql` 41 kontrol), xcodebuild OK.
+
+## 2026-11-09 – Privacy manifest, export compliance, launch screen (#17, #24, #16 část)
+- `ios/SleepApp/PrivacyInfo.xcprivacy`: bez trackingu; required reason API UserDefaults (`CA92.1`) a File timestamp (`C617.1` – Supabase SDK 2.55.6 nemá vlastní manifest a staticky linkuje `attributesOfItem` v uploadu Storage). Sbíraná data: Health, fotky, jiný uživatelský obsah, e-mail, jméno, user ID – vše linked, bez trackingu, účel App Functionality. Musí sedět s nutrition labels v App Store Connect (#24).
+- `Info.plist`: `ITSAppUsesNonExemptEncryption = NO`, `UILaunchScreen.UIColorName = LaunchBackground` (`#0B0D12` z `Assets.xcassets`), konec bílého záblesku.
+- Ikona zatím chybí (čeká na název, #30). Do té doby `ASSETCATALOG_COMPILER_APPICON_NAME: ""` v `project.yml`; s ikonou ten řádek smazat.
+- Ověřeno: Debug i Release build pro simulátor, obsah .app (`plutil`). Zbývá: po první archivaci Organizer → Generate Privacy Report.
+
+## 2026-11-09 – Přihlašovací obrazovka pro Release (#19, #18 část, #14 část)
+- `DevLoginView` → `Features/Auth/LoginView.swift`: Sign in with Apple (`SignInWithAppleButton`, nonce + SHA-256, bez scope jména/e-mailu → `Session.signInWithApple`), pod ním viditelné „Přihlásit e-mailem“ (demo účet pro App Review a testovací účty – žádné skryté gesto, 2.3.1). Pryč text o testovacím účtu a admin API, chyba e-mailu je „E-mail nebo heslo nesedí.“
+- Entitlement `com.apple.developer.applesignin` v `project.yml`. Apple tlačítko začne fungovat až s Developer Programem a secrets (#14); do té doby skončí hláškou „Přihlášení přes Apple se nepovedlo“.
+- Kontrola #19: všechny `-debug…` argumenty, `DebugHealthSeeder` i zápis do Zdraví už jsou jen pod `#if DEBUG`; `strings` na Release binárce nenašel debug argumenty ani TODO.
+- UI testy: nový `LoginScreenTests` (odhlášená appka: Apple tlačítko, přepnutí na e-mail, žádné „testovací“), `Issue13Tests` přepíná na e-mail přes `toggleEmailLogin`.
+
+## 2026-11-09 – Souhlas s podmínkami (#20, #23 část)
+- Migrace `20261109100000_terms_acceptance.sql` (**nenasazeno**): `terms_acceptances`, `accept_terms()`, `my_terms_status()`, `redeem_invite` bez souhlasu s aktuální verzí hlásí `terms not accepted`, export doplněný o souhlasy. Detaily v `backend.md` → Souhlas s podmínkami.
+- Appka: text „Pokračováním souhlasíš s Podmínkami a Zásadami…“ s odkazy (CZ/EN web podle jazyka) nad „Pokračovat“ při zakládání profilu; `TermsUpdateView` pro stávající členy bez souhlasu (po nasazení ho uvidí všichni z bety, jednou); Nastavení → Soukromí → Dokumenty s odkazy na zásady a podmínky. `Core/Legal.swift` drží URL.
+- Web: odstavec o změně podmínek (CZ + EN) – appka o souhlas s novou verzí požádá výslovně. Nulová tolerance a „sázky jen soukromá dohoda, appka nezprostředkovává peníze“ už v podmínkách byly (#23).
+- Testy: nový `supabase/tests/local/terms_acceptance_test.sql` (13 kontrol), `notifications_test.sql`, `e2e.py` (+ kontrola, že bez souhlasu profil nevznikne) a `ui_seed.py` volají před `redeem_invite` nejdřív `accept_terms`. Celá lokální SQL sada OK, xcodebuild OK.
+- **Pozor při nasazení:** migraci nasadit dřív, než někdo nainstaluje nový build (jinak `accept_terms` neexistuje a založení profilu spadne). Starý build po nasazení nového profil nezaloží (`terms not accepted`) – v betě nevadí.
+
+## 2026-11-09 – HealthKit a zdravotní tvrzení (#22)
+- Feed: karta „Nevidíme tvůj spánek“ (`HealthMissingCard`), když ve feedu není moje noc a ve Zdraví za 14 dní není žádný spánkový záznam (`HealthSync.hasRecentSleep`; při odmítnutém přístupu iOS vrací prázdno). Návod kudy povolit + „Otevřít Nastavení“. Kontrola je lokální, žádný call na server.
+- Upozornění „není zdravotnický prostředek, nenahrazuje lékaře“: Soukromí → Apple Health, pod Zjištěními „Jen orientační srovnání tvých nocí, ne lékařská rada.“ (podmínky to už měly).
+- Lokalizace: `developmentLanguage: cs` (systémové prvky na českém iPhonu česky – dřív „Back“ a „Sign in with Apple“), `cs.lproj` + `en.lproj/InfoPlist.strings` s textem žádosti o Zdraví (anglicky pro recenzenta). Texty v appce zůstávají jen česky.
+- Audit: HealthKit data nejsou v UserDefaults (jen anchor dotazu), `os.Logger` interpoluje bez `.public` → v logu skryté. Žádná léčebná tvrzení v appce ani na webu; z titulku webu pryč „Strava pro spánek“ (#25).
+- Ověřeno: Debug i Release build, `.app` obsahuje `cs.lproj` a `en.lproj`. Kartu „Nevidíme tvůj spánek“ jsem v simulátoru neviděl (chce přihlášený účet bez nocí).
+- Zbývá z #22: zmínit Apple Health v popisu appky v App Store (#25).
+
+## 2026-11-09 – Nasazení souhlasu s podmínkami, přejmenování na Bedrival (#30)
+- Migrace `20261109100000_terms_acceptance.sql` **nasazená**. `e2e.py` proti produkci 42/42. Test měl natvrdo data nocí a výzvy (5.–10. 11.) a po pár dnech zestárl, teď počítá relativně k dnešku (`d(0)` = včerejšek).
+- Přejmenování **Sleepscore → Bedrival**:
+  - bundle ID `cz.mikolas.bedrival` (UI testy `.uitests`), `CFBundleDisplayName`, Logger subsystem
+  - texty v appce (recap, Wrapped, Soukromí, karta Zdraví, název exportu `bedrival-…json`), web (CZ + EN), promo grafika, `CLAUDE.md`, `backend.md`
+  - Apple client ID v komentářích a testech
+- Beze změny: repo a URL webu (`m1ko20.github.io/sleepscore`), název Supabase projektu, testovací účty `@sleepscore.test`, historie v devlogu. Edge Functions není potřeba znovu nasadit (v `apple.ts` se měnil jen komentář).
+- Simulátor: nové bundle ID = nová appka (staré `cz.mikolas.sleepscore` jde smazat, Zdraví se zeptá znovu).
+- Zbývá z #30: ochranné známky, doména, rezervace jména v App Store Connect, ikona (#16).
+
+## 2026-11-09 – Demo účet pro App Review (#18)
+- `supabase/tests/review_seed.py` spuštěný proti produkci. Recenzent `review@bedrival.app` (Alex, bilance 1-1-0, duše Cyrila, dluží Báře večeři, Cyril mu dluží pivo), běžící souboj s Bárou, společný cíl 72 s Cyrilem a Danou, čekající výzva od Dany, 4 nepřečtené notifikace, zjištění z tagů. Hesla a kód pozvánky v `~/.bedrival/review_state.json`.
+- `--refresh` před odesláním k review (noci do dneška, nový souboj). `--reset-passwords`, když se ztratí state.
+- Karty výsledků zpětně uzavřených výzev se posouvají na den konce (jinak jsou nahoře ve feedu).
+- `ReviewAccountTests` (XCUITest): průchod feed → výzvy → profil přihlášený jako recenzent, zavře dialog Zdraví. Ověřeno v simulátoru.
+- `docs/app-review.md`: přístup + anglické review notes pro App Store Connect.

@@ -8,7 +8,7 @@ Vertikální video 1080×1920 z reálné appky v simulátoru (přihlášený ú�
    `xcodebuild … test-without-building -only-testing:SleepAppUITests/PromoTourTests > test.log`.
    Test vypisuje `PROMO_MARK <scéna> start|end <epoch>` → časy scén = značka − čas startu nahrávání.
 3. Výsledek výzvy a nastavení notifikací zvlášť (pod XCUITestem se nevykreslí):
-   `simctl launch <sim> cz.mikolas.sleepscore -debugTab 1` → `result.mp4`,
+   `simctl launch <sim> cz.mikolas.bedrival -debugTab 1` → `result.mp4`,
    `… -debugNoResult -debugTab 2 -debugNotificationSettings` → `settings.mp4`.
 4. `swift gfx.swift gfx/` vykreslí titulky a úvodní/závěrečnou kartu (SF Pro, barvy z docs/design.md).
 5. `./build.sh` (ffmpeg) složí scény; časy střihu v něm upravit podle nové nahrávky.

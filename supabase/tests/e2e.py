@@ -14,6 +14,14 @@ ok_count = 0
 fail_count = 0
 
 
+# Noci a výzva relativně k dnešku: d(0) = včerejšek v Praze (dřív natvrdo 2026-11-06, test po pár dnech zestárl).
+_D0 = datetime.datetime.now(zoneinfo.ZoneInfo("Europe/Prague")).date() - datetime.timedelta(days=1)
+
+
+def d(offset):
+    return (_D0 + datetime.timedelta(days=offset)).isoformat()
+
+
 def req(method, path, body=None, token=None, apikey=ANON, extra=None):
     h = {"apikey": apikey, "Content-Type": "application/json", "Authorization": f"Bearer {token or apikey}"}
     h.update(extra or {})
@@ -73,15 +81,19 @@ try:
     # pozvánka
     st, code = req("POST", "/rest/v1/rpc/create_invite", {}, token=A["jwt"])
     check("A vytvoří pozvánku", st == 200 and isinstance(code, str), code)
-    st, prof = req("POST", "/rest/v1/rpc/redeem_invite",
-                   {"p_code": code, "p_username": f"e2e_b_{tag}", "p_display_name": "E2E B"}, token=B["jwt"])
+    redeem = {"p_code": code, "p_username": f"e2e_b_{tag}", "p_display_name": "E2E B"}
+    st, err = req("POST", "/rest/v1/rpc/redeem_invite", redeem, token=B["jwt"])
+    check("B bez souhlasu s podmínkami profil nezaloží", st >= 400 and "terms not accepted" in str(err), err)
+    st, terms = req("POST", "/rest/v1/rpc/accept_terms", {}, token=B["jwt"])
+    check("B souhlasí s podmínkami", st == 200 and terms.get("accepted") is True, terms)
+    st, prof = req("POST", "/rest/v1/rpc/redeem_invite", redeem, token=B["jwt"])
     check("B uplatní pozvánku", st == 200, prof)
     st, fr = req("GET", "/rest/v1/friendships?select=status", token=B["jwt"])
     check("A a B jsou přátelé", fr == [{"status": "accepted"}], fr)
 
     # přímý zápis skóre z klienta nesmí projít
-    st, _ = req("POST", "/rest/v1/nights", {"user_id": B["id"], "night_date": "2026-11-01",
-                                            "sleep_start": "2026-10-31T22:00:00Z", "sleep_end": "2026-11-01T06:00:00Z",
+    st, _ = req("POST", "/rest/v1/nights", {"user_id": B["id"], "night_date": f"{d(-5)}",
+                                            "sleep_start": f"{d(-6)}T22:00:00Z", "sleep_end": f"{d(-5)}T06:00:00Z",
                                             "total_sleep_min": 480, "score": 100}, token=B["jwt"])
     check("klient nemůže zapsat noc přímo", st in (401, 403), st)
 
@@ -96,7 +108,7 @@ try:
     tomorrow = (datetime.datetime.now(zoneinfo.ZoneInfo("Europe/Prague")).date() + datetime.timedelta(days=1)).isoformat()
     check("souboj běží od zítřka", ch and ch[0]["status"] == "active" and ch[0]["start_date"] == tomorrow, ch)
     # posunout start do minulosti, ať jdou nahrát noci
-    svc("PATCH", f"/rest/v1/challenges?id=eq.{cid}", {"start_date": "2026-11-04", "end_date": "2026-11-10"})
+    svc("PATCH", f"/rest/v1/challenges?id=eq.{cid}", {"start_date": f"{d(-2)}", "end_date": f"{d(4)}"})
 
     # --- ingest ---------------------------------------------------------
     def seg(start, end, stage, src="Garmin Connect", ue=False, uid=None):
@@ -113,26 +125,26 @@ try:
             seg(f"{d}T04:10:00Z", f"{d}T06:00:00Z", "core"),
         ]
 
-    hr_a = [{"t": f"2026-11-06T0{h}:00:00Z", "bpm": 52 + h} for h in range(0, 6)]
+    hr_a = [{"t": f"{d(0)}T0{h}:00:00Z", "bpm": 52 + h} for h in range(0, 6)]
     payload_a = {
         "timezone": "Europe/Prague",
-        "samples": good_night("2026-11-04", "2026-11-05") + good_night("2026-11-05", "2026-11-06") + [
-            seg("2026-11-06T11:00:00Z", "2026-11-06T11:40:00Z", "core"),  # šlofík
-            seg("2026-11-03T22:00:00Z", "2026-11-04T06:00:00Z", "core", ue=True),  # ruční záznam
+        "samples": good_night(f"{d(-2)}", f"{d(-1)}") + good_night(f"{d(-1)}", f"{d(0)}") + [
+            seg(f"{d(0)}T11:00:00Z", f"{d(0)}T11:40:00Z", "core"),  # šlofík
+            seg(f"{d(-3)}T22:00:00Z", f"{d(-2)}T06:00:00Z", "core", ue=True),  # ruční záznam
         ],
         "heart_rate": hr_a,
     }
     st, res = req("POST", "/functions/v1/ingest-sleep", payload_a, token=A["jwt"])
     print("A ingest:", st, res)
     dates = [n["date"] for n in (res or {}).get("nights", [])]
-    check("A: dvě noci, šlofík ani ruční záznam ne", st == 200 and dates == ["2026-11-05", "2026-11-06"], res)
+    check("A: dvě noci, šlofík ani ruční záznam ne", st == 200 and dates == [f"{d(-1)}", f"{d(0)}"], res)
     check("A: karty vytvořené", all(n["status"] == "created" for n in res["nights"]), res)
     check("A: série 2 noci", res["nights"][1].get("streak") == 2, res)
 
     # B: jen 11-06, krátká rozbitá noc (02:00–06:30)
     b_samples = []
-    t = ["2026-11-06T01:00:00Z", "2026-11-06T01:40:00Z", "2026-11-06T01:50:00Z", "2026-11-06T03:00:00Z",
-         "2026-11-06T03:15:00Z", "2026-11-06T05:30:00Z"]
+    t = [f"{d(0)}T01:00:00Z", f"{d(0)}T01:40:00Z", f"{d(0)}T01:50:00Z", f"{d(0)}T03:00:00Z",
+         f"{d(0)}T03:15:00Z", f"{d(0)}T05:30:00Z"]
     stages = ["core", "awake", "core", "awake", "rem"]
     for i, stg in enumerate(stages):
         b_samples.append(seg(t[i], t[i + 1], stg, src="Apple Watch"))
@@ -172,7 +184,7 @@ try:
 
     # zpětné nahrání jen šlofíku nepřepíše noc
     st, res2 = req("POST", "/functions/v1/ingest-sleep",
-                   {"timezone": "Europe/Prague", "samples": [seg("2026-11-06T11:00:00Z", "2026-11-06T11:40:00Z", "core")]},
+                   {"timezone": "Europe/Prague", "samples": [seg(f"{d(0)}T11:00:00Z", f"{d(0)}T11:40:00Z", "core")]},
                    token=A["jwt"])
     check("šlofík nepřepíše hlavní noc", res2["nights"][0]["status"] == "kept_existing", res2)
     # opětovný upload stejné noci = update, ne nová karta
@@ -227,7 +239,7 @@ try:
           and exp["notification_prefs"]["reactions"] is False,
           {k: exp.get(k) for k in ("blocks", "reports_filed", "notification_prefs")} if isinstance(exp, dict) else exp)
 
-    print("\nA breakdown 11-06:", next(n for n in nights if n["user_id"] == A["id"] and n["night_date"] == "2026-11-06"))
+    print("\nA breakdown 11-06:", next(n for n in nights if n["user_id"] == A["id"] and n["night_date"] == f"{d(0)}"))
     print("B breakdown 11-06:", next(n for n in nights if n["user_id"] == B["id"]))
 finally:
     if "a" in users:  # hlášení přežije smazání hlásícího (reporter_id → null), tak ho uklidit

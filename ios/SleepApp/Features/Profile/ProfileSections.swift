@@ -118,6 +118,7 @@ struct InsightsSection: View {
                     }
                     .accessibilityElement(children: .combine)
                 }
+                Text("Jen orientační srovnání tvých nocí, ne lékařská rada.").captionStyle()
             }
         }
     }

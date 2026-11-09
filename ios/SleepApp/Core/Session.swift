@@ -3,7 +3,7 @@ import Observation
 import Supabase
 import os
 
-let log = Logger(subsystem: "cz.mikolas.sleepscore", category: "app")
+let log = Logger(subsystem: "cz.mikolas.bedrival", category: "app")
 
 /// Stav přihlášení a vlastního profilu.
 @MainActor
@@ -15,6 +15,8 @@ final class Session {
         /// Přihlášen, ale bez profilu (ještě neuplatnil pozvánku) – onboarding.
         case needsProfile(userID: UUID)
         case ready(Profile)
+        /// Člen, ale nesouhlasil s aktuální verzí podmínek (beta účty, změna podmínek) – #20.
+        case needsTerms(Profile)
         /// Přihlášen, ale profil se nepodařilo načíst (síť) – nehádat, nabídnout znovu.
         case offline
     }
@@ -78,7 +80,7 @@ final class Session {
         try await Backend.client.auth.signIn(email: email, password: password)
     }
 
-    /// Sign in with Apple (až bude Apple Developer Program – zatím ho žádná obrazovka nevolá).
+    /// Sign in with Apple (volá `LoginView`; funkční až s Apple Developer Programem a secrets, #14).
     /// Z `ASAuthorizationAppleIDCredential`: `identityToken`, `authorizationCode` a nonce,
     /// jehož SHA-256 šel do požadavku. Authorization code jde na server kvůli zneplatnění
     /// tokenu při smazání účtu (viz `API.deleteMyAccount`).
@@ -110,6 +112,13 @@ final class Session {
         await update(for: try? await Backend.client.auth.session)
     }
 
+    /// Souhlas s novou verzí podmínek → do appky.
+    func acceptTerms() async throws {
+        guard case .needsTerms(let profile) = state else { return }
+        try await API.acceptTerms()
+        state = .ready(profile)
+    }
+
     func reloadProfile() async {
         guard case .ready(let current) = state,
               let fresh = try? await API.profile(id: current.id) else { return }
@@ -125,7 +134,9 @@ final class Session {
         let userID = session.user.id
         do {
             if let profile = try await withTimeout(seconds: 15, { try await API.profile(id: userID) }) {
-                state = .ready(profile)
+                // Chyba (síť, starší server) appku neblokuje – nové účty hlídá redeem_invite na serveru.
+                let terms = try? await API.termsStatus()
+                state = terms?.accepted == false ? .needsTerms(profile) : .ready(profile)
             } else {
                 state = .needsProfile(userID: userID)
             }
