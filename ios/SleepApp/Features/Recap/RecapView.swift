@@ -123,8 +123,7 @@ struct RecapContent: View {
             }
 
             if branded {
-                Text("Bedrival").font(Font.app.label).tracking(1.2).textCase(.uppercase)
-                    .foregroundStyle(Color.app.accent)
+                BrandMark()
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)

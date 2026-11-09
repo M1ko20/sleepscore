@@ -19,6 +19,12 @@ Co je hotové a jak. Nejnovější nahoře. Detaily backendu v `backend.md`, vzh
 13. ~~Notifikace ve zvonečku~~ hotovo (#9). ~~Zneplatnění Apple tokenu~~ (#7), ~~Release bez zápisu do Health~~ (#8), ~~anglické zásady~~ (#3) hotovo.
 14. Další: push přes APNs (#10, Developer Program, pak i pondělní push na recap), nastavení notifikací (#11), test na iPhonu s Garminem.
 
+## 2026-11-09 – Logo (měsíc s krátery)
+- Adam vybral variantu 3 z návrhů (https://claude.ai/artifact/TApjMPAtXzwcfKtCBTb3E3): osvětlený srpek s krátery, zbytek měsíce ve stínu. Popis v `design.md` → Logo.
+- `MoonLogoDrawing.swift` (CoreGraphics) kreslí logo v appce (`MoonLogo`, `BrandMark`) i ve skriptu `ios/scripts/render_logo/main.swift`, který generuje `AppIcon` (1024, bez alfy) a `LaunchLogo` (@1–3x).
+- Ikona zapnutá (`project.yml` už nenastavuje prázdný `ASSETCATALOG_COMPILER_APPICON_NAME`), launch screen má logo uprostřed.
+- Logo na pozvánce a přihlášení, podpis s logem v recapu a ve Wrapped, logo na úvodní a závěrečné kartě promo videa (`tools/promo/gfx.swift`). Ověřeno v simulátoru (plocha + úvodní obrazovka).
+
 ## 2026-11-09 – Duše → ovečky
 - Trofej za poraženého je teď **ovečka**, sbírka na profilu je **stádo** (dřív vitrína duší). Bez emoji.
 - Odznaky: *První duše* → **První ovečka**, *Sběratel* → **Pastýř** (10 oveček).

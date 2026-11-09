@@ -19,6 +19,13 @@ Stav k 2026-11-06. Rozhodnuto s Adamem: **noční sportovní** směr, **jen tmav
 - Konfety jen jednou: když vyhraješ souboj. Nikde jinde.
 - Kontrola před každou obrazovkou: *Vypadala by takhle obrazovka v Whoopu nebo ve Stravě? Kdyby ne, proč?*
 
+## Logo
+Rozhodnuto s Adamem 2026-11-09: **měsíc s krátery** – osvětlený srpek vlevo (teplá bílá, krátery s tmavším okrajem), zbytek měsíce ve stínu (`surfaceRaised`) se slabými krátery (`hairline`). Ploché tvary, žádné gradienty ani glow. Návrhy: https://claude.ai/artifact/TApjMPAtXzwcfKtCBTb3E3 (varianta 3).
+- Jediný zdroj tvaru: `ios/SleepApp/Design/MoonLogoDrawing.swift` (prostor 100 × 100, měsíc r = 32).
+- V appce `MoonLogo(size:)`; podpis na sdílených obrázcích `BrandMark()` (logo + BEDRIVAL žlutě).
+- Kde je: ikona appky, launch screen (120 pt na `bg`), pozvánka a přihlášení (64 pt nad nadpisem), recap a Wrapped (podpis), úvodní a závěrečná karta promo videa.
+- PNG (ikona 1024 bez alfy, `LaunchLogo` @1–3x) se generují: z `ios/` spustit `swiftc -o /tmp/render_logo SleepApp/Design/MoonLogoDrawing.swift scripts/render_logo/main.swift && /tmp/render_logo`. Po změně tvaru vždy přegenerovat.
+
 ## Barvy
 Jen tmavý režim. Tokeny v kódu (`Color.app.*`), nikde natvrdo hex.
 

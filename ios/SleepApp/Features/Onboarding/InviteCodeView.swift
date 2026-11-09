@@ -13,6 +13,7 @@ struct InviteCodeView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Spacer()
+            MoonLogo(size: 64).padding(.bottom, 12)
             Text("Sem se dostaneš jen přes kamaráda.")
                 .font(Font.app.title)
                 .foregroundStyle(Color.app.textPrimary)
