@@ -290,3 +290,10 @@ Co je hotové a jak. Nejnovější nahoře. Detaily backendu v `backend.md`, vzh
 - Beze změny: repo a URL webu (`m1ko20.github.io/sleepscore`), název Supabase projektu, testovací účty `@sleepscore.test`, historie v devlogu. Edge Functions není potřeba znovu nasadit (v `apple.ts` se měnil jen komentář).
 - Simulátor: nové bundle ID = nová appka (staré `cz.mikolas.sleepscore` jde smazat, Zdraví se zeptá znovu).
 - Zbývá z #30: ochranné známky, doména, rezervace jména v App Store Connect, ikona (#16).
+
+## 2026-11-09 – Demo účet pro App Review (#18)
+- `supabase/tests/review_seed.py` spuštěný proti produkci. Recenzent `review@bedrival.app` (Alex, bilance 1-1-0, duše Cyrila, dluží Báře večeři, Cyril mu dluží pivo), běžící souboj s Bárou, společný cíl 72 s Cyrilem a Danou, čekající výzva od Dany, 4 nepřečtené notifikace, zjištění z tagů. Hesla a kód pozvánky v `~/.bedrival/review_state.json`.
+- `--refresh` před odesláním k review (noci do dneška, nový souboj). `--reset-passwords`, když se ztratí state.
+- Karty výsledků zpětně uzavřených výzev se posouvají na den konce (jinak jsou nahoře ve feedu).
+- `ReviewAccountTests` (XCUITest): průchod feed → výzvy → profil přihlášený jako recenzent, zavře dialog Zdraví. Ověřeno v simulátoru.
+- `docs/app-review.md`: přístup + anglické review notes pro App Store Connect.

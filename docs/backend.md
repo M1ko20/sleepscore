@@ -328,3 +328,6 @@ Migrace `20261107140000_notification_prefs.sql`. Platí jen pro pushe – zvone�
 - Aktuální verze = `private.terms_version()` = datum účinnosti podmínek na webu (`2026-11-06`). **Změna podmínek:** upravit `site/terms.html` + `site/en/terms.html` a novou migrací přepsat `private.terms_version()` → appka po spuštění ukáže všem „Nové podmínky“.
 - Appka: souhlas se dává při zakládání profilu (text s odkazy nad „Pokračovat“, `accept_terms` → `redeem_invite`). Člen bez souhlasu s aktuální verzí dostane po spuštění `TermsUpdateView` (`Session.State.needsTerms`). Když `my_terms_status` selže, appka pustí dál (nové účty hlídá server).
 - Export obsahuje `terms_acceptances`.
+
+## Demo účet pro App Review (#18)
+`supabase/tests/review_seed.py` – trvalí uživatelé `review@bedrival.app` (Alex) + Bára, Cyril, Dana (`demo-*@bedrival.app`), 20–30 nocí s tagy, skončené souboje (výhra + prohra → dluhy, duše), běžící souboj a společný cíl, čekající výzva, nepoužitý kód pozvánky. Hesla v `~/.bedrival/review_state.json` (mimo git). Postup a review notes: `docs/app-review.md`. Nemazat.
