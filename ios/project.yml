@@ -33,6 +33,8 @@ targets:
         CURRENT_PROJECT_VERSION: "1"
         TARGETED_DEVICE_FAMILY: "1"
         SWIFT_VERSION: "5.10"
+        # Ikona zatím není (čeká na finální název, #16/#30). Až bude AppIcon v Assets.xcassets, řádek smazat.
+        ASSETCATALOG_COMPILER_APPICON_NAME: ""
       configs:
         # Zápis do Zdraví jen v Debug (DebugHealthSeeder). Release o zápis nežádá (issue #8).
         Debug:
@@ -42,7 +44,11 @@ targets:
       path: SleepApp/Info.plist
       properties:
         CFBundleDisplayName: Sleepscore
-        UILaunchScreen: {}
+        # Launch screen v barvě pozadí appky (bg #0B0D12), ať při startu nebliká bílá (#16).
+        UILaunchScreen:
+          UIColorName: LaunchBackground
+        # Jen HTTPS (standardní šifrování OS) – App Store Connect se pak neptá u každého buildu (#24).
+        ITSAppUsesNonExemptEncryption: false
         UIUserInterfaceStyle: Dark
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
         NSHealthShareUsageDescription: Čteme jen spánek a tep z hodinek nebo prstenu. Nic dalšího a nic do reklamy.

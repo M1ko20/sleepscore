@@ -253,3 +253,9 @@ Co je hotové a jak. Nejnovější nahoře. Detaily backendu v `backend.md`, vzh
   - Komentáře dostane i každý, kdo už pod kartu psal (kind `comment` + `payload.thread`), jen kdo kartu vidí, bez bloků, nahlášených karet a zabanovaných. Texty: autor karty „Bára komentuje tvoji noc: …“, ostatní „Cyril taky komentuje noc, pod kterou píšeš: …“, „Adam odpovídá pod svojí nocí: …“.
 - Appka: proklik funguje beze změny (karta / výzva), upravené popisy kategorií v Nastavení → Notifikace.
 - Ověřeno: celá lokální SQL sada (nový `notifications_overtake_threads_test.sql` 41 kontrol), xcodebuild OK.
+
+## 2026-11-09 – Privacy manifest, export compliance, launch screen (#17, #24, #16 část)
+- `ios/SleepApp/PrivacyInfo.xcprivacy`: bez trackingu; required reason API UserDefaults (`CA92.1`) a File timestamp (`C617.1` – Supabase SDK 2.55.6 nemá vlastní manifest a staticky linkuje `attributesOfItem` v uploadu Storage). Sbíraná data: Health, fotky, jiný uživatelský obsah, e-mail, jméno, user ID – vše linked, bez trackingu, účel App Functionality. Musí sedět s nutrition labels v App Store Connect (#24).
+- `Info.plist`: `ITSAppUsesNonExemptEncryption = NO`, `UILaunchScreen.UIColorName = LaunchBackground` (`#0B0D12` z `Assets.xcassets`), konec bílého záblesku.
+- Ikona zatím chybí (čeká na název, #30). Do té doby `ASSETCATALOG_COMPILER_APPICON_NAME: ""` v `project.yml`; s ikonou ten řádek smazat.
+- Ověřeno: Debug i Release build pro simulátor, obsah .app (`plutil`). Zbývá: po první archivaci Organizer → Generate Privacy Report.
