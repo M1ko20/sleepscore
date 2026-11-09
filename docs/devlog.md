@@ -19,6 +19,14 @@ Co je hotové a jak. Nejnovější nahoře. Detaily backendu v `backend.md`, vzh
 13. ~~Notifikace ve zvonečku~~ hotovo (#9). ~~Zneplatnění Apple tokenu~~ (#7), ~~Release bez zápisu do Health~~ (#8), ~~anglické zásady~~ (#3) hotovo.
 14. Další: push přes APNs (#10, Developer Program, pak i pondělní push na recap), nastavení notifikací (#11), test na iPhonu s Garminem.
 
+## 2026-11-09 – Prázdné stavy, malý displej, screenshoty pro App Store (#28, #25)
+- Nový `EmptyStateTests` (XCUITest): účet bez nocí, přátel a výzev → feed, zvoneček, výzvy, nová výzva, profil, týden v číslech, přátelé, pozvánky. Volitelně `UITEST_SHOTS=<složka>` uloží PNG. Dočasný účet `qa-empty@sleepscore.test` (service klíč) po testu smazaný.
+- Prošlo na iPhonu 16 Pro i na iPhonu SE (3. gen.) s písmem `accessibility-medium`: nic se neořezává, všechny prázdné stavy mají text a další krok. Nic jsem neopravoval.
+- `ReviewAccountTests`: hlídal `review@` (po změně e-mailu by se přeskočil) → `bedrival-review`; víc obrazovek, `UITEST_SHOTS`.
+- `review_seed.py --refresh` spuštěný (souhlas s novými podmínkami, noci do dneška).
+- Screenshoty 6,9" (iPhone 16 Pro Max, 1320×2868, status bar 9:41, čeština) mimo git v `~/Pictures/Bedrival/app-store-6.9/`: feed, detail noci, výzvy, čekající souboj, profil, profil níž.
+- Neověřeno: appka bez připojení (simulátor sdílí síť Macu) – kód ukazuje „…se nenačetla“ texty, ale proklikané to není.
+
 ## 2026-11-09 – Demo účty na Adamův Gmail
 - `review@bedrival.app` a `demo-*@bedrival.app` → `adam.mikolas64+bedrival-{review,bara,cyril,dana}@gmail.com` (doména bedrival.app nám nepatří – kdo by ji koupil, mohl by si poslat reset hesla). Změněno přímo v `auth.users` + `auth.identities` (hesla beze změny), `~/.bedrival/review_state.json`, `review_seed.py`, `ReviewAccountTests`, docs. Přihlášení všech čtyř ověřené.
 
