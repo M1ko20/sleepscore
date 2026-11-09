@@ -79,6 +79,7 @@ struct NotificationSettingsView: View {
 
     private func requestPermission() async {
         _ = try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound])
+        await Push.shared.start()
         await refreshSystem()
     }
 

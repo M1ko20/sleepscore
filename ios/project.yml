@@ -28,6 +28,8 @@ targets:
         com.apple.developer.healthkit.access: []
         com.apple.developer.healthkit.background-delivery: true
         com.apple.developer.applesignin: [Default]
+        # Push (#10). Při exportu pro TestFlight/App Store Xcode přepne na production.
+        aps-environment: development
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: cz.mikolas.bedrival

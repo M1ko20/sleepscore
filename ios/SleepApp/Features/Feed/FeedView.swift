@@ -9,8 +9,25 @@ struct FeedView: View {
     @State private var path = NavigationPath()
     /// Žádná moje noc ve feedu ani spánek ve Zdraví → nejspíš zakázaný přístup (#22).
     @State private var healthMissing = false
+    /// Recap otevřený z pushe (konkrétní týden).
+    @State private var pushRecap: RecapItem?
 
     private var me: UUID? { session.profile?.id }
+
+    private func open(_ link: PushLink) {
+        Push.shared.pendingLink = nil
+        path = NavigationPath()
+        switch link {
+        case .post(let id): path.append(id)
+        case .challenge(let id): path.append(ChallengeLink(id: id))
+        case .profile(let p): path.append(p)
+        case .notifications: path.append(FeedRoute.notifications)
+        case .recap(let weekStart):
+            Task {
+                if let r = try? await API.weeklyRecap(weekStart: weekStart) { pushRecap = RecapItem(recap: r) }
+            }
+        }
+    }
 
     var body: some View {
         NavigationStack(path: $path) {
@@ -96,6 +113,11 @@ struct FeedView: View {
             }
             .sheet(item: $editing) { post in
                 EditPostSheet(post: post)
+            }
+            .sheet(item: $pushRecap) { RecapView(recap: $0.recap) }
+            // Klepnutí na push (i při studeném startu – proto initial).
+            .onChange(of: Push.shared.pendingLink, initial: true) { _, link in
+                if let link { open(link) }
             }
         }
     }

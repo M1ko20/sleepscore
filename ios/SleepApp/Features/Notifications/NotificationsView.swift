@@ -64,6 +64,7 @@ struct NotificationsView: View {
                 try? await API.markNotificationsRead()
             }
             feed.unreadNotifications = 0
+            Push.shared.setBadge(0)
         } catch {
             log.error("notifications load failed: \(String(describing: error))")
             self.error = "Upozornění se nenačetla."

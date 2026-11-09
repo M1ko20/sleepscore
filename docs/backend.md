@@ -227,6 +227,7 @@ supabase db push --remote --yes                          # migrace
 supabase functions deploy ingest-sleep --use-api --yes    # funkce (bez Dockeru)
 supabase functions deploy apple-token --use-api --yes
 supabase functions deploy delete-account --use-api --yes
+supabase functions deploy send-push --use-api --no-verify-jwt --yes   # volá ho pg_cron s x-push-secret
 # Apple secrets (až bude Developer Program; .p8 nikdy do gitu):
 supabase secrets set APPLE_TEAM_ID=… APPLE_KEY_ID=… APPLE_CLIENT_ID=cz.mikolas.bedrival
 supabase secrets set APPLE_PRIVATE_KEY="$(cat AuthKey_XXXX.p8)"
@@ -250,7 +251,7 @@ supabase/tests/local/run.sh cesta/x_test.sql     # jen jeden test
 Testy: `select t_ok(podmínka, 'popis')`, `select t_err($$sql$$, 'část chyby', 'popis')`; role přes `set role authenticated` + `set_config('request.jwt.claim.sub', …)`.
 
 ## Chybí / TODO
-- Push notifikace (APNs) – až bude Apple Developer Program (#10). Notifikace ve zvonečku hotové.
+- Push notifikace (APNs): kód hotový (#10, viz Push), zapnout až s Apple Developer Programem.
 - Sign in with Apple – totéž; do té doby testovací přihlášení e-mailem v dev buildu. Backend pro revokaci tokenu je hotový (viz GDPR), chybí přihlašovací obrazovka (`ASAuthorizationAppleIDProvider` → `Session.signInWithApple`).
 - První uživatel (Adam) nemá pozvánku → profil založit ručně (service role insert do `profiles` + `user_stats`).
 - Insighty z tagů, týdenní recap, Sleep Wrapped.
@@ -303,8 +304,34 @@ Pravidla:
 - **Úklid**: `notifications-cleanup` denně maže starší 30 dní (reakce se s každou novou posouvají).
 
 Navázání:
-- **#10 push**: fronta = `pushed_at is null or pushed_at < created_at` (částečný index `notifications_push_queue_idx`). Reakce posílat znovu nejdřív hodinu po `pushed_at`. Po prvním zapnutí posílat jen čerstvé (např. `created_at > now() - 1 day`), ať nepřijde dávka starých. Odesílač nastaví `pushed_at = now()`.
+- **#10 push**: hotovo, viz Push (APNs).
 - **#11 nastavení**: hotovo, viz níže.
+
+## Push (APNs, #10)
+Migrace `20261109120000_push.sql`, Edge Function `send-push`, `_shared/apns.ts`. **Zatím vypnuté** – bez APNs klíče a `push_function_url` se nic neposílá, fronta se jen uklízí.
+
+```
+pg_cron každou minutu ─▶ private.push_tick()
+   úklid fronty: starší než den / bez tokenu / kategorie vypnutá → pushed_at = now()
+   jen když je něco připravené a je nastavená push_function_url ─pg_net─▶ send-push
+send-push ─▶ claim_push_batch() ─▶ APNs (HTTP/2) ─▶ finish_push_batch()
+```
+- **Call budget**: prázdná fronta = 0 callů Edge Function, jinak max. 1 za minutu. Tick je jeden SQL dotaz na částečném indexu.
+- **Připravené** (`private.push_ready`): ve frontě, čerstvé (< 1 den), `push_decision = 'send'` (noční klid = počká), uživatel má token, reakce ne dřív než hodinu po minulém pushi na stejnou kartu.
+- **Dávka** (`claim_push_batch`, jen service role): `for update skip locked` + `pushed_at`, takže dvojí volání nepošle nic dvakrát. Jeden push na uživatele: text nejnovější notifikace (`notification_text`), víc naráz (ráno po nočním klidu) = „…\n+2 další“ a proklik na zvoneček. Badge = počet nepřečtených. Reakce mají `apns-collapse-id = r-<post>` (novější nahradí starší).
+- **Proklik** (`link` v payloadu): `post`, `challenge`, `profile` (s daty profilu), `recap` (`week_start`), `notifications`.
+- **Tokeny**: `push_tokens.env` = `sandbox` (Debug build) / `production` (TestFlight, App Store). Zápis jen přes `register_push_token(token, env)` (token se může přestěhovat k jinému účtu na stejném telefonu) a `unregister_push_token(token)` při odhlášení. Mrtvé tokeny (410, `BadDeviceToken`, `Unregistered`, `DeviceTokenNotForTopic`) maže `finish_push_batch`.
+- **JWT pro APNs**: cache v `private.apns_jwt` (40 min), protože APNs nechce nový token častěji než jednou za 20 min a funkce startuje často znovu. `ExpiredProviderToken` / `InvalidProviderToken` → cache se smaže.
+- **Appka** (`Core/Push.swift`): povolení se zeptá po vstupu do appky (po dialogu Zdraví), pak `registerForRemoteNotifications` při každém startu, server se volá jen při změně tokenu nebo účtu. Odhlášení token smaže. Badge se nastaví s feedem a vynuluje otevřením zvonečku. UI testy dialog přeskakují (`-debugNoPushPrompt`).
+
+**Zapnutí** (až bude Developer Program):
+1. Apple Developer → Keys: klíč s APNs (může být ten samý jako pro Sign in with Apple). U App ID zapnout Push Notifications.
+2. `supabase secrets set APPLE_TEAM_ID=… PUSH_SECRET=<náhodný>` a klíč: buď stejný jako Apple (`APPLE_KEY_ID`, `APPLE_PRIVATE_KEY`), nebo zvlášť `APNS_KEY_ID`, `APNS_PRIVATE_KEY`. Topic = `APPLE_CLIENT_ID` (bundle ID).
+3. `supabase functions deploy send-push --use-api --no-verify-jwt --yes`
+4. V SQL editoru: `insert into private.app_config values ('push_function_url', 'https://tlespfcbqzddddhjsieu.supabase.co/functions/v1/send-push'), ('push_secret', '<stejný PUSH_SECRET>');`
+5. Na telefonu přihlásit, povolit notifikace, nechat si od kamaráda reagovat. Log: Edge Functions → send-push.
+
+Test: `supabase/tests/local/push_test.sql` (38 kontrol), `_shared/apns_test.ts`.
 
 ## Nastavení notifikací (#11)
 Migrace `20261107140000_notification_prefs.sql`. Platí jen pro pushe – zvoneček ukazuje vše.

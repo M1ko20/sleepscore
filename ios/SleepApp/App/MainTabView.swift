@@ -69,6 +69,11 @@ struct MainTabView: View {
             }
             #endif
             await health.sync()
+            // Notifikace až po Zdraví – dva systémové dialogy naráz nechceme.
+            await Push.shared.start()
+        }
+        .onChange(of: Push.shared.pendingLink) { _, link in
+            if link != nil { tab = 0 }
         }
         .onChange(of: scenePhase) { _, phase in
             guard phase == .active else { return }

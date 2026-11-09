@@ -310,3 +310,10 @@ Co je hotové a jak. Nejnovější nahoře. Detaily backendu v `backend.md`, vzh
 - Karty výsledků zpětně uzavřených výzev se posouvají na den konce (jinak jsou nahoře ve feedu).
 - `ReviewAccountTests` (XCUITest): průchod feed → výzvy → profil přihlášený jako recenzent, zavře dialog Zdraví. Ověřeno v simulátoru.
 - `docs/app-review.md`: přístup + anglické review notes pro App Store Connect.
+
+## 2026-11-09 – Push notifikace přes APNs (#10), zatím vypnuté
+- Migrace `20261109120000_push.sql` (**nenasazeno**): `push_tokens.env` (sandbox/production), registrace jen přes `register_push_token` / `unregister_push_token`, pg_cron `push-tick` každou minutu (úklid fronty; Edge Function zavolá jen s neprázdnou frontou a nastavenou `push_function_url`), `claim_push_batch` (1 push na uživatele, „+N další“, badge, proklik, collapse reakcí), `finish_push_batch` (mrtvé tokeny, cache JWT v `private.apns_jwt`).
+- Edge Function `send-push` + `_shared/apns.ts` (JWT ES256, HTTP/2 na APNs, max 10 souběžně). Ověření hlavičkou `x-push-secret`. Bez APNs klíče nic neposílá.
+- Appka: `Core/Push.swift` (povolení po vstupu do appky, registrace tokenu jen při změně, odregistrace při odhlášení, badge, proklik z pushe na kartu / výzvu / profil / recap / zvoneček), `AppDelegate`, entitlement `aps-environment`. UI testy mají `-debugNoPushPrompt`.
+- Ověřeno: celá lokální SQL sada (nový `push_test.sql`, 38 kontrol), `deno test _shared/`, Debug i Release build, v simulátoru se po přihlášení ukáže dialog „povolit notifikace“. **Neověřeno:** skutečné doručení z APNs a klepnutí na push (chce Developer Program, resp. ruční `simctl push` + klepnutí).
+- Zapnutí: `backend.md` → Push (APNs) → Zapnutí. Migraci jde nasadit klidně hned (bez URL jen uklízí frontu), funkci až s klíčem.
