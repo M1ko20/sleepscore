@@ -55,17 +55,34 @@ final class Push {
         #endif
     }
 
-    /// Po vstupu do appky: poprvé se zeptá na povolení, pak (i při každém dalším startu) registrace u APNs.
+    /// Systémové povolení (nil = ještě nezjištěno). Feed podle něj ukáže kartu s nabídkou.
+    private(set) var status: UNAuthorizationStatus?
+    /// „Teď ne“ na kartě ve feedu – už ji neukazovat (v Nastavení → Notifikace jde povolit kdykoliv).
+    private let askDismissedKey = "pushAskDismissed"
+    var askDismissed: Bool {
+        get { access(keyPath: \.askDismissed); return UserDefaults.standard.bool(forKey: askDismissedKey) }
+        set { withMutation(keyPath: \.askDismissed) { UserDefaults.standard.set(newValue, forKey: askDismissedKey) } }
+    }
+
+    /// Ukázat ve feedu nabídku notifikací? Až v kontextu (je co sledovat), ne hned po startu – Apple 4.5.4 / HIG.
+    var shouldOfferPermission: Bool {
+        status == .notDetermined && !askDismissed && !Self.skipPrompt
+    }
+
+    /// Po vstupu do appky a při návratu do popředí: zjistí stav a když je povoleno, registruje u APNs.
+    /// Na povolení se sám neptá – to dělá až `requestPermission()` z karty ve feedu nebo z Nastavení.
     func start() async {
-        let center = UNUserNotificationCenter.current()
-        var status = await center.notificationSettings().authorizationStatus
-        if status == .notDetermined && !Self.skipPrompt {
-            _ = try? await center.requestAuthorization(options: [.alert, .badge, .sound])
-            status = await center.notificationSettings().authorizationStatus
-        }
-        if status == .authorized || status == .provisional || status == .ephemeral {
+        let s = await UNUserNotificationCenter.current().notificationSettings().authorizationStatus
+        status = s
+        if s == .authorized || s == .provisional || s == .ephemeral {
             UIApplication.shared.registerForRemoteNotifications()
         }
+    }
+
+    /// Systémový dialog (iOS ho ukáže jen jednou, pak jen Nastavení iOS).
+    func requestPermission() async {
+        _ = try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound])
+        await start()
     }
 
     /// Z AppDelegate. Bez Apple Developer Programu (simulátor bez týmu) sem nic nepřijde.

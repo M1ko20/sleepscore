@@ -44,6 +44,10 @@ struct FeedView: View {
                     if healthMissing {
                         HealthMissingCard()
                     }
+                    // Nabídka notifikací až ve chvíli, kdy je ve feedu co sledovat (ne hned po přihlášení).
+                    if Push.shared.shouldOfferPermission, !store.posts.isEmpty {
+                        PushAskCard()
+                    }
                     if store.loaded && store.isEmpty {
                         emptyState
                     }
@@ -175,6 +179,32 @@ struct HealthMissingCard: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color.app.surface, in: RoundedRectangle(cornerRadius: Metrics.cardRadius))
         .accessibilityIdentifier("healthMissingCard")
+    }
+}
+
+/// Vlastní nabídka před systémovým dialogem: vysvětlí, k čemu notifikace jsou, a nechá odmítnout bez dialogu.
+struct PushAskCard: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Ať ti nic neuteče")
+                .font(Font.app.body.weight(.semibold))
+                .foregroundStyle(Color.app.textPrimary)
+            Text("Dáme vědět, když ti někdo okomentuje noc, vyzve tě nebo tě v souboji předběhne. Co chodí, si nastavíš v Nastavení → Notifikace.")
+                .captionStyle()
+                .fixedSize(horizontal: false, vertical: true)
+            HStack(spacing: 12) {
+                Button("Zapnout") { Task { await Push.shared.requestPermission() } }
+                    .buttonStyle(.secondary)
+                    .accessibilityIdentifier("pushAskEnable")
+                Button("Teď ne") { Push.shared.askDismissed = true }
+                    .buttonStyle(.plainText)
+                    .accessibilityIdentifier("pushAskDismiss")
+            }
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.app.surface, in: RoundedRectangle(cornerRadius: Metrics.cardRadius))
+        .accessibilityIdentifier("pushAskCard")
     }
 }
 

@@ -69,7 +69,7 @@ struct MainTabView: View {
             }
             #endif
             await health.sync()
-            // Notifikace až po Zdraví – dva systémové dialogy naráz nechceme.
+            // Jen zjistí stav a registruje token; o povolení se appka ptá až kartou ve feedu.
             await Push.shared.start()
         }
         .onChange(of: Push.shared.pendingLink) { _, link in
@@ -78,6 +78,8 @@ struct MainTabView: View {
         .onChange(of: scenePhase) { _, phase in
             guard phase == .active else { return }
             Task { await HealthSync.shared.sync() }
+            // Povolení se mohlo změnit v Nastavení iOS.
+            Task { await Push.shared.start() }
             if let me = session.profile?.id { Task { await challenges.load(me: me) } }
         }
     }
