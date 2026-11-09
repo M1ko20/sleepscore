@@ -283,6 +283,8 @@ def refresh(state):
     users = state["users"]
     for u in users.values():
         login(u)
+        # Nová verze podmínek: demo účty souhlasí za recenzenta (jinak by ho vítala obrazovka souhlasu).
+        ok(f"{u['name']} souhlas", *req("POST", "/rest/v1/rpc/accept_terms", {}, token=u["jwt"]))
     for k in "rbcd":
         plan = ingest(k, users[k], -9)
         decorate_posts(k, users[k], plan, only_new=True)

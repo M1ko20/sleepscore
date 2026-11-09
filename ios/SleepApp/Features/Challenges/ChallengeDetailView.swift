@@ -29,7 +29,7 @@ struct ChallengeDetailView: View {
             if let c = store.challenge(challengeID), let stake = c.stake, !stake.isEmpty, c.creatorID != me {
                 ToolbarItem(placement: .topBarTrailing) {
                     Menu {
-                        Button("Nahlásit sázku") {
+                        Button("Nahlásit text výzvy") {
                             reporting = ReportRequest(kind: .challenge, targetID: c.id, author: c.creator?.profile)
                         }
                     } label: {
@@ -219,7 +219,7 @@ struct ChallengeDetailView: View {
 
     private func info(_ c: Challenge) -> some View {
         VStack(alignment: .leading, spacing: 0) {
-            infoRow("Sázka", c.stake ?? "bez sázky")
+            infoRow("Hraje se o", c.stake ?? "jen o čest")
             if c.type == .teamGoal { infoRow("Cíl", "průměr \(c.targetScore ?? 0)") }
             switch c.status {
             case .pending: infoRow("Start", c.type == .duel ? "den po přijetí" : "spustí zakladatel")

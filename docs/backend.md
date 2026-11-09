@@ -352,8 +352,8 @@ Migrace `20261107140000_notification_prefs.sql`. Platí jen pro pushe – zvone�
 
 ## Souhlas s podmínkami (#20)
 - `public.terms_acceptances (user_id → auth.users, version, accepted_at)` – RLS: čtu jen svoje, zápis jen přes `accept_terms()`. FK na `auth.users`, protože souhlas vzniká před profilem.
-- Aktuální verze = `private.terms_version()` = datum účinnosti podmínek na webu (`2026-11-06`). **Změna podmínek:** upravit `site/terms.html` + `site/en/terms.html` a novou migrací přepsat `private.terms_version()` → appka po spuštění ukáže všem „Nové podmínky“.
-- Appka: souhlas se dává při zakládání profilu (text s odkazy nad „Pokračovat“, `accept_terms` → `redeem_invite`). Člen bez souhlasu s aktuální verzí dostane po spuštění `TermsUpdateView` (`Session.State.needsTerms`). Když `my_terms_status` selže, appka pustí dál (nové účty hlídá server).
+- Aktuální verze = `private.terms_version()` = datum účinnosti podmínek na webu (`2026-11-09`, dřív `2026-11-06`). **Změna podmínek:** upravit `site/terms.html` + `site/en/terms.html` a novou migrací přepsat `private.terms_version()` → appka po spuštění ukáže všem „Nové podmínky“.
+- Appka: souhlas se dává při zakládání profilu dvěma zaškrtávátky (`ConsentChecks`: 18+ a podmínky/zásady; výslovný souhlas se spánkem a tepem z Apple Health, čl. 9 GDPR) – bez obou nejde dál, `accept_terms` → `redeem_invite`. Záznam verze v `terms_acceptances` = oba souhlasy (od verze `2026-11-09`). Člen bez souhlasu s aktuální verzí dostane po spuštění `TermsUpdateView` (`Session.State.needsTerms`). Když `my_terms_status` selže, appka pustí dál (nové účty hlídá server).
 - Export obsahuje `terms_acceptances`.
 
 ## Demo účet pro App Review (#18)

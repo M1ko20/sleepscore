@@ -93,7 +93,7 @@ struct NotificationPrefs: Decodable, Equatable, Sendable {
         ("reactions", "Reakce", "Kdo reaguje na tvoji noc."),
         ("comments", "Komentáře", "U tvých karet a tam, kde píšeš."),
         ("friends", "Přátelé", "Žádosti a nově přijatí."),
-        ("challenges", "Výzvy", "Pozvánky, start, předbíhání, konec, výsledky, sázky."),
+        ("challenges", "Výzvy", "Pozvánky, start, předbíhání, konec, výsledky, splacení."),
         ("achievements", "Odznaky", "Nový odznak."),
         ("morning", "Ranní karta", "Noc je tady. Doplň komentář."),
         ("recap", "Týdenní recap", "Pondělí ráno, minulý týden v číslech."),

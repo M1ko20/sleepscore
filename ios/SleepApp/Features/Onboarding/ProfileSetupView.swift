@@ -13,12 +13,14 @@ struct ProfileSetupView: View {
     @State private var availability: Availability = .unknown
     @State private var busy = false
     @State private var error: String?
+    @State private var termsOK = false
+    @State private var healthOK = false
 
     private static let pattern = /^[a-z0-9_.]{3,20}$/
 
     private var trimmedName: String { displayName.trimmingCharacters(in: .whitespaces) }
     private var canSubmit: Bool {
-        availability == .free && !trimmedName.isEmpty && trimmedName.count <= 40 && !busy
+        availability == .free && !trimmedName.isEmpty && trimmedName.count <= 40 && termsOK && healthOK && !busy
     }
 
     var body: some View {
@@ -53,11 +55,7 @@ struct ProfileSetupView: View {
 
             Spacer()
 
-            Text(.init(Legal.consentMarkdown))
-                .font(Font.app.caption)
-                .foregroundStyle(Color.app.textSecondary)
-                .tint(Color.app.textPrimary)
-                .fixedSize(horizontal: false, vertical: true)
+            ConsentChecks(terms: $termsOK, health: $healthOK)
                 .padding(.bottom, 4)
             Button(busy ? "Zakládám…" : "Pokračovat", action: submit)
                 .buttonStyle(.primary)

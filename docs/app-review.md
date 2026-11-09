@@ -29,13 +29,15 @@ declined.
 The sleep score and insights are for entertainment and comparison with friends only. The app
 is not a medical device and shows this in Settings → Privacy and under the insights.
 
-CHALLENGES AND STAKES
-Players can write a free-text stake (e.g. "loser buys a beer"). The app does not process,
-hold or transfer any money or items; it only displays the text and lets the debtor mark it
-as settled. There is no gambling or in-app purchase.
+CHALLENGES ("O co se hraje" = what's at stake)
+Players can optionally write a short free-text note about what the challenge is for
+(e.g. "loser buys a beer"). The app does not process, hold or transfer any money or items;
+it only displays the text and lets the loser mark it as settled. The Terms forbid playing
+for money or valuables. There is no gambling, no odds, no payments and no in-app purchase.
 
 USER-GENERATED CONTENT
-Users accept the Terms (zero tolerance for objectionable content) before creating a profile.
+Users tick two boxes before creating a profile: the Terms (zero tolerance for objectionable
+content) and explicit consent to processing sleep and heart rate data.
 Report: "…" menu on a card, comment or profile → Nahlásit (Report).
 Block: profile → "…" → Zablokovat (Block).
 Reports are delivered to the developer immediately and handled within 24 hours.

@@ -35,11 +35,11 @@ set role authenticated;
 select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-00000000000b', false);
 
 select t_ok((public.my_terms_status() ->> 'accepted')::boolean = false, 'nový účet: nesouhlasil');
-select t_ok(public.my_terms_status() ->> 'version' = '2026-11-06', 'verze = datum účinnosti');
+select t_ok(public.my_terms_status() ->> 'version' = '2026-11-09', 'verze = datum účinnosti');
 select t_err($$select public.redeem_invite('TERMS123', 'bara', 'Bára')$$, 'terms not accepted',
              'bez souhlasu profil nevznikne');
 select t_err($$insert into public.terms_acceptances (user_id, version)
-               values ('00000000-0000-0000-0000-00000000000b', '2026-11-06')$$, 'permission denied',
+               values ('00000000-0000-0000-0000-00000000000b', '2026-11-09')$$, 'permission denied',
              'přímý zápis nejde');
 
 select t_ok((public.accept_terms() ->> 'accepted')::boolean, 'souhlas uložen');

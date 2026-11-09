@@ -41,7 +41,7 @@ enum ChallengeCopy {
             let wn = name(w.profile, me: me)
             let souls = losers.count == 1 ? "ovečku" : (2...4).contains(losers.count) ? "\(losers.count) ovečky" : "\(losers.count) oveček"
             var line = w.userID == me ? "Bereš \(souls)." : "\(wn) bere \(souls)."
-            if let stake = c.stake { line += " Sázka: \(stake)." }
+            if let stake = c.stake { line += " Hraje se o: \(stake)." }
             return line
         }
     }

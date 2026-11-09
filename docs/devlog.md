@@ -19,6 +19,17 @@ Co je hotové a jak. Nejnovější nahoře. Detaily backendu v `backend.md`, vzh
 13. ~~Notifikace ve zvonečku~~ hotovo (#9). ~~Zneplatnění Apple tokenu~~ (#7), ~~Release bez zápisu do Health~~ (#8), ~~anglické zásady~~ (#3) hotovo.
 14. Další: push přes APNs (#10, Developer Program, pak i pondělní push na recap), nastavení notifikací (#11), test na iPhonu s Garminem.
 
+## 2026-11-09 – Notifikace v kontextu, výslovný souhlas, nové podmínky (#23, #21, #28 část)
+- Push (#10) commitnutý na větvi `push-apns`, migrace `20261109120000_push.sql` **nasazená** (bez URL funkce jen uklízí frontu). #16 zavřené.
+- Notifikace: appka se už neptá hned po přihlášení. `Push.start()` jen zjistí stav a registruje token; ve feedu (až je v něm aspoň jedna karta) je karta „Ať ti nic neuteče“ → „Zapnout“ ukáže systémový dialog, „Teď ne“ kartu schová natrvalo (povolit jde v Nastavení → Notifikace). Stav se obnoví při návratu do popředí.
+- Souhlas: dvě zaškrtávátka (`Features/Onboarding/ConsentChecks.swift`) při zakládání profilu i v `TermsUpdateView` – „Je mi 18 let a souhlasím s Podmínkami a Zásadami…“ a „Výslovně souhlasím, aby Bedrival zpracovával můj spánek a tep z Apple Health a ukazoval je mým přátelům…“. Dřív byl výslovný souhlas jen povolením Zdraví v iOS (slabé).
+- Migrace `20261109130000_terms_v2.sql` **nasazená**: verze podmínek `2026-11-09` → všichni členové jednou uvidí „Nové podmínky“. `review_seed.py --refresh` teď za demo účty souhlasí.
+- Sázky → **„O co se hraje“** v appce („Hraje se o“, „jen o čest“, „Nahlásit text výzvy“, nápověda „Pivo, snídaně, nádobí – ne peníze“). Mechanika i přehled dluhů beze změny; interní `stake` zůstává.
+- Podmínky (CZ + EN): zdraví má přednost (žádné prášky/alkohol kvůli skóre), „o co se hraje“ = text uživatele a kamarádská domluva, ne sázka ani smlouva s námi; přehled dluhů jen připomínka; zákaz hrát o peníze; obsah předem nekontrolujeme, autor odpovídá výhradně sám a odškodní nás; strop náhrady 1 000 Kč (kde to zákon dovolí); kontaktní místo podle DSA; povinná sekce o Apple (EULA minimum); bez souhlasu s novou verzí nejde appku používat.
+- Zásady (CZ + EN): právní základ zdravotních dat = zaškrtávátko + povolení Zdraví, řádek „Souhlasy“ (verze a čas), odvolání souhlasu rozepsané. Web: „o co se hraje“ na úvodu. Review notes upravené.
+- Ověřeno: celá lokální SQL sada, build, obrazovka „Nové podmínky“ v simulátoru. Kartu notifikací ve feedu a průchod zaškrtávátky jsem neklikal.
+- Neověřeno: prázdné stavy (#28) – chce dočasný testovací účet bez přátel (zakládá se service klíčem, na to jsem neměl povolení).
+
 ## 2026-11-09 – Logo (měsíc s krátery)
 - Adam vybral variantu 3 z návrhů (https://claude.ai/artifact/TApjMPAtXzwcfKtCBTb3E3): osvětlený srpek s krátery, zbytek měsíce ve stínu. Popis v `design.md` → Logo.
 - `MoonLogoDrawing.swift` (CoreGraphics) kreslí logo v appce (`MoonLogo`, `BrandMark`) i ve skriptu `ios/scripts/render_logo/main.swift`, který generuje `AppIcon` (1024, bez alfy) a `LaunchLogo` (@1–3x).
