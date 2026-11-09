@@ -1,0 +1,2 @@
+/* HealthKit read permission prompt. */
+"NSHealthShareUsageDescription" = "We only read sleep and heart rate from your watch or ring. Nothing else, and nothing is used for advertising.";

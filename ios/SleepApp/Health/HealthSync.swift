@@ -47,6 +47,20 @@ final class HealthSync {
         try await store.requestAuthorization(toShare: share, read: [sleepType, hrType])
     }
 
+    /// Je ve Zdraví za posledních `days` dní aspoň jeden spánkový záznam?
+    /// Při odmítnutém přístupu iOS vrací prázdno (neřekne, že je zakázaný) → false.
+    func hasRecentSleep(days: Int = 14) async -> Bool {
+        guard isAvailable else { return false }
+        let start = Calendar.current.date(byAdding: .day, value: -days, to: .now) ?? .now
+        let predicate = HKQuery.predicateForSamples(withStart: start, end: nil)
+        return await withCheckedContinuation { cont in
+            let q = HKSampleQuery(sampleType: sleepType, predicate: predicate, limit: 1, sortDescriptors: nil) { _, samples, _ in
+                cont.resume(returning: !(samples ?? []).isEmpty)
+            }
+            store.execute(q)
+        }
+    }
+
     // MARK: Pozadí
 
     /// Spustí observer + background delivery. Volat po přihlášení (s profilem).

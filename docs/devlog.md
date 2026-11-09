@@ -272,3 +272,11 @@ Co je hotové a jak. Nejnovější nahoře. Detaily backendu v `backend.md`, vzh
 - Web: odstavec o změně podmínek (CZ + EN) – appka o souhlas s novou verzí požádá výslovně. Nulová tolerance a „sázky jen soukromá dohoda, appka nezprostředkovává peníze“ už v podmínkách byly (#23).
 - Testy: nový `supabase/tests/local/terms_acceptance_test.sql` (13 kontrol), `notifications_test.sql`, `e2e.py` (+ kontrola, že bez souhlasu profil nevznikne) a `ui_seed.py` volají před `redeem_invite` nejdřív `accept_terms`. Celá lokální SQL sada OK, xcodebuild OK.
 - **Pozor při nasazení:** migraci nasadit dřív, než někdo nainstaluje nový build (jinak `accept_terms` neexistuje a založení profilu spadne). Starý build po nasazení nového profil nezaloží (`terms not accepted`) – v betě nevadí.
+
+## 2026-11-09 – HealthKit a zdravotní tvrzení (#22)
+- Feed: karta „Nevidíme tvůj spánek“ (`HealthMissingCard`), když ve feedu není moje noc a ve Zdraví za 14 dní není žádný spánkový záznam (`HealthSync.hasRecentSleep`; při odmítnutém přístupu iOS vrací prázdno). Návod kudy povolit + „Otevřít Nastavení“. Kontrola je lokální, žádný call na server.
+- Upozornění „není zdravotnický prostředek, nenahrazuje lékaře“: Soukromí → Apple Health, pod Zjištěními „Jen orientační srovnání tvých nocí, ne lékařská rada.“ (podmínky to už měly).
+- Lokalizace: `developmentLanguage: cs` (systémové prvky na českém iPhonu česky – dřív „Back“ a „Sign in with Apple“), `cs.lproj` + `en.lproj/InfoPlist.strings` s textem žádosti o Zdraví (anglicky pro recenzenta). Texty v appce zůstávají jen česky.
+- Audit: HealthKit data nejsou v UserDefaults (jen anchor dotazu), `os.Logger` interpoluje bez `.public` → v logu skryté. Žádná léčebná tvrzení v appce ani na webu; z titulku webu pryč „Strava pro spánek“ (#25).
+- Ověřeno: Debug i Release build, `.app` obsahuje `cs.lproj` a `en.lproj`. Kartu „Nevidíme tvůj spánek“ jsem v simulátoru neviděl (chce přihlášený účet bez nocí).
+- Zbývá z #22: zmínit Apple Health v popisu appky v App Store (#25).

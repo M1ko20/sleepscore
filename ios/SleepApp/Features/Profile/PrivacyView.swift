@@ -22,6 +22,8 @@ struct PrivacyView: View {
                 section("Apple Health") {
                     Text("Přístup ke Zdraví vypneš v Nastavení iPhonu → Zdraví → Přístup k datům a zařízení → Sleepscore. Už nahrané noci tím nezmizí – na to je smazání účtu.")
                         .captionStyle()
+                    Text("Sleep score, zjištění i výsledky výzev jsou orientační a pro zábavu. Appka není zdravotnický prostředek a nenahrazuje lékaře.")
+                        .captionStyle()
                 }
 
                 section("Dokumenty") {
