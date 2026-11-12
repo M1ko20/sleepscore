@@ -28,10 +28,13 @@ insert into auth.users (id) values
   ('00000000-0000-0000-0000-00000000000a'),
   ('00000000-0000-0000-0000-00000000000b'),
   ('00000000-0000-0000-0000-00000000000c');
+-- C: neplatné pásmo (od #33 ho trigger nepustí – simulujeme stará data, fallback zůstává)
+alter table public.profiles disable trigger profiles_guard_timezone;
 insert into public.profiles (id, username, display_name, timezone) values
   ('00000000-0000-0000-0000-00000000000a', 'adam', 'Adam', 'Europe/Prague'),
   ('00000000-0000-0000-0000-00000000000b', 'jakub', 'Jakub', 'America/New_York'),
   ('00000000-0000-0000-0000-00000000000c', 'karolina', 'Karolína', 'Mars/Olympus');
+alter table public.profiles enable trigger profiles_guard_timezone;
 
 -- ---------------------------------------------------------------------
 -- A: výchozí stav, uložení, validace
