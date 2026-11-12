@@ -19,7 +19,7 @@ iPhone (HealthKit) ──POST samples + tep──▶ Edge Function ingest-sleep
                                             ├─▶ challenge_day_scores (běžící výzvy)
                                             └─▶ rpc after_night_ingest → achievementy za noc + přepočet série
 pg_cron každou hodinu v :05 ─▶ private.hourly_jobs()
-                                ├─ finalize_due_challenges (poslední den ve 14:00 tz zakladatele)
+                                ├─ finalize_due_challenges (poslední den ve 14:00 tz výzvy)
                                 ├─ díry v sériích (1× denně po 14:00, jen rozjeté série)
                                 └─ Dvojí život (pondělí 10:00)
 pg_cron denně 3:45 UTC ─▶ private.compact_old_night_raw()  (noci starší 120 dní)
@@ -61,7 +61,7 @@ debts, user_achievements, posts, challenge_day_scores ─trigger─▶ notificat
 | `supabase/tests/local/auto_hide_test.sql` | automatické skrytí po hlášeních (44 kontrol) |
 
 ## Tabulky (public)
-- `profiles` – přezdívka (`^[a-z0-9_.]{3,20}$`), jméno, avatar, timezone, `invites_available` (start 3), `invited_by`
+- `profiles` – přezdívka (`^[a-z0-9_.]{3,20}$`), jméno, avatar, timezone (jen z `pg_timezone_names`, trigger `profiles_guard_timezone`), `invites_available` (start 3), `invited_by`
 - `invites` – kód (8 znaků bez 0/O/1/I/L), kdo pozval, kdo uplatnil
 - `friendships` – 1 řádek na dvojici (`user_a < user_b`), `pending/accepted`, `requested_by`
 - `nights` – 1 hlavní noc / uživatel / den; usnutí, vstávání, minuty fází, probuzení, tep, `score`, `score_breakdown` (jsonb), `score_version`
@@ -127,7 +127,7 @@ Storage: buckety `avatars` (max 150 kB), `night-photos` (max 400 kB) – privát
 | `my_notification_prefs()` | moje nastavení pushů (úplné, s výchozími hodnotami) |
 | `set_notification_prefs(prefs)` | uloží změněné klíče (`{"reactions": false}`), vrací úplné nastavení; neznámý klíč / ne-boolean → `invalid notification prefs` |
 
-Přímé zápisy: `profiles` (display_name, avatar_path, timezone), `posts` (title, body, photo_path – jen vlastní noční karta), `night_tags`, `comments`, `reactions`, `push_tokens`.
+Přímé zápisy: `profiles` (display_name, avatar_path; `timezone` nastavuje jen ingest, #33), `posts` (title, body, photo_path – jen vlastní noční karta), `night_tags`, `comments`, `reactions`, `push_tokens`.
 
 ## Edge Function `ingest-sleep`
 `POST /functions/v1/ingest-sleep` s JWT uživatele.
@@ -210,12 +210,13 @@ Přepočet starých nocí: zatím jen dev data → znovu nahrát (`seed_dev.py -
 
 ## Série
 - Dobrá noc = ≥ 6 h a usnutí ±30 min od průměru předchozích 14 nocí (při < 3 nocích stačí délka).
-- Freeze automaticky: první špatná/chybějící noc v týdnu (po–ne) nepřeruší, ale nepřičte se. Druhá přeruší.
+- Freeze automaticky: první špatná/chybějící noc v týdnu (po–ne) nepřeruší, ale nepřičte se. Druhá přeruší. Při nulové sérii se freeze nespotřebuje (#34).
 - Dnešní noc se počítá, když už dorazila nebo je po 14:00.
 - Přepočet celé historie jednoho uživatele (`private.recompute_streak`) – ms, správně i při zpětném nahrání.
 - Milníky 7/30/100 → achievement; 30 a 100 → +1 pozvánka. Udělují se jen za poslední týden.
 
 ## Uzavření výzvy (`private.finalize_challenge`)
+Uzávěrka = poslední den 14:00 v `challenges.timezone`. Od té chvíle trigger `challenge_day_scores_deadline` denní skóre tiše zahodí (ingest dál uloží noc i kartu), i když cron výzvu finalizuje až v :05. Finalizace se pozná podle `bedrival.finalizing = on` (nastaví `finalize_due_challenges`) a bere jen noci s `created_at` před uzávěrkou (#35).
 1. Dopíše skóre z nocí, které se nepropsaly; za chybějící noci 0 + achievement Zapomněl hodinky.
 2. Průměr (2 desetinná místa), vyhrané dny (jen jasně nejvyšší skóre dne).
 3. Výsledek: duel / všichni proti všem → nejvyšší průměr vyhrává, shoda nahoře = remíza mezi nimi, ostatní prohra. Společný cíl → průměr skupiny ≥ cíl = výhra všem, jinak prohra všem.
