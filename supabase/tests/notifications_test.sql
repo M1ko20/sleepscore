@@ -142,9 +142,12 @@ select pg_temp.ok('duel – žádná zvláštní odpověď', pg_temp.cnt('a', 'c
 select pg_temp.ok('kdo přijal, nedostane start', pg_temp.cnt('b', 'challenge_started'), 0);
 
 update public.challenges set start_date = current_date - 10, end_date = current_date - 4 where id = :'duel';
+-- fixture zapisuje do výzvy po uzávěrce – jako finalizace (pojistka #35)
+select set_config('bedrival.finalizing', 'on', false);
 insert into public.challenge_day_scores (challenge_id, user_id, day, score, night_id)
 select :'duel', u, d::date, case when u = pg_temp.u('a') then 80 else 70 end, null
 from unnest(array[pg_temp.u('a'), pg_temp.u('b')]) u, generate_series(current_date - 10, current_date - 4, '1 day') d;
+select set_config('bedrival.finalizing', 'off', false);
 select private.finalize_challenge(:'duel');
 select pg_temp.ok('výhra', pg_temp.text_of('a', 'challenge_result'), 'Vyhráno 80,0 : 70,0. Bára přichází o ovečku.');
 select pg_temp.ok('prohra', pg_temp.text_of('b', 'challenge_result'), 'Prohra 70,0 : 80,0. Adam bere tvoji ovečku.');
@@ -192,10 +195,13 @@ values ('40000000-0000-0000-0000-000000000001', 'duel', pg_temp.u('a'), 'večeř
 insert into public.challenge_participants (challenge_id, user_id, status) values
   ('40000000-0000-0000-0000-000000000001', pg_temp.u('a'), 'accepted'),
   ('40000000-0000-0000-0000-000000000001', pg_temp.u('c'), 'accepted');
+-- fixture zapisuje do výzvy po uzávěrce – jako finalizace (pojistka #35)
+select set_config('bedrival.finalizing', 'on', false);
 insert into public.challenge_day_scores (challenge_id, user_id, day, score)
 select '40000000-0000-0000-0000-000000000001'::uuid, pg_temp.u('a'), d::date, 80 from generate_series('2026-11-05'::date, '2026-11-09', '1 day') d
 union all
 select '40000000-0000-0000-0000-000000000001'::uuid, pg_temp.u('c'), d::date, 75 from generate_series('2026-11-05'::date, '2026-11-10', '1 day') d;
+select set_config('bedrival.finalizing', 'off', false);
 select pg_temp.ok('zítra konec – mimo 20:00 nic',
   private.notify_challenges_ending('2026-11-10 19:30'::timestamp at time zone 'Europe/Prague'), 0);
 select pg_temp.ok('zítra konec – 20:00',
