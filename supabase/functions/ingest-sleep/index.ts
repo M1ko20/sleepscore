@@ -45,8 +45,10 @@ Deno.serve(async (req) => {
   const userId = auth.user?.id;
   if (!userId) return json({ error: "unauthorized" }, 401);
 
-  const { data: profile } = await admin.from("profiles").select("id, timezone").eq("id", userId).maybeSingle();
+  const { data: profile } = await admin.from("profiles").select("id, timezone, banned_at").eq("id", userId)
+    .maybeSingle();
   if (!profile) return json({ error: "not a member" }, 403);
+  if (profile.banned_at) return json({ error: "banned" }, 403);
 
   // --- vstup ----------------------------------------------------------
   let body: { timezone?: unknown; samples?: unknown; heart_rate?: unknown };
@@ -56,9 +58,11 @@ Deno.serve(async (req) => {
     return json({ error: "invalid json" }, 400);
   }
   const samples = Array.isArray(body.samples) ? (body.samples as SleepSample[]) : null;
-  const hr = Array.isArray(body.heart_rate) ? (body.heart_rate as HrSample[]) : [];
+  // Tep jen jako čísla (string „70“ by se v průměru sčítal jako řetězec).
+  const rawHr = Array.isArray(body.heart_rate) ? (body.heart_rate as HrSample[]) : [];
+  const hr = rawHr.filter((h) => h && typeof h.t === "string" && typeof h.bpm === "number" && Number.isFinite(h.bpm));
   if (!samples) return json({ error: "samples must be an array" }, 400);
-  if (samples.length > MAX_SLEEP_SAMPLES || hr.length > MAX_HR_SAMPLES) {
+  if (samples.length > MAX_SLEEP_SAMPLES || rawHr.length > MAX_HR_SAMPLES) {
     return json({ error: "payload too large" }, 413);
   }
 
@@ -95,8 +99,9 @@ async function saveNight(
   session: Session,
   hr: HrSample[],
 ) {
-  // Ochrana zpětného nahrávání: neuložit kratší spánek přes delší,
-  // pokud se časově nepřekrývají (např. dorazil jen šlofík).
+  // Ochrana zpětného nahrávání: neuložit kratší spánek přes delší, pokud se
+  // časově nepřekrývají (např. dorazil jen šlofík), nebo když leží celý uvnitř
+  // uložené noci – to je useknutý kus téže noci z okraje okna (#32).
   const { data: existing } = await admin
     .from("nights")
     .select("id, sleep_start, sleep_end, total_sleep_min")
@@ -106,7 +111,9 @@ async function saveNight(
   if (existing) {
     const overlaps = session.sleepStart < Date.parse(existing.sleep_end) &&
       session.sleepEnd > Date.parse(existing.sleep_start);
-    if (!overlaps && session.asleepMin < existing.total_sleep_min) {
+    const inside = session.sleepStart >= Date.parse(existing.sleep_start) &&
+      session.sleepEnd <= Date.parse(existing.sleep_end);
+    if ((!overlaps || inside) && session.asleepMin < existing.total_sleep_min) {
       return { date, score: null, status: "kept_existing" };
     }
   }

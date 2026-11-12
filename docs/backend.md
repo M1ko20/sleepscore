@@ -143,7 +143,8 @@ Pravidla:
 - Ruční záznamy (`userEntered`) se zahazují.
 - Session = souvislé vzorky jednoho zdroje, mezera > 60 min = nová session. Úvodní/koncové awake se ořízne.
 - Hlavní spánek dne = nejdelší session (napříč zdroji), která skončila do 14:00 místního času. Zdroje se nesčítají.
-- Kratší nepřekrývající se session nepřepíše uloženou noc (ochrana proti šlofíku při zpětném nahrání).
+- Kratší session nepřepíše uloženou noc, když se s ní nepřekrývá (šlofík při zpětném nahrání) nebo leží celá uvnitř ní (useknutý kus noci z okraje okna, #32). Appka posílá okno od poledne dne D−4, takže nejstarší noc přijde vcelku.
+- Zabanovaný účet → 403 `banned`. Tep s nečíselným `bpm` se zahodí.
 
 ## GDPR
 - Data: Supabase eu-central-1 (Frankfurt). Spánek = zdravotní data (čl. 9) → jen přátelé (RLS), HealthKit data nikdy do reklamy ani třetím stranám.
