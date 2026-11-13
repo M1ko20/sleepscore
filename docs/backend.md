@@ -46,8 +46,10 @@ debts, user_achievements, posts, challenge_day_scores ─trigger─▶ notificat
 | `20261107010215_moderation.sql` | blokování, nahlášení, ban, upozornění (viz Moderace) |
 | `…20261107010500_notifications.sql` | notifikace: tabulka, triggery, text, cron (viz Notifikace) |
 | `…20261107150000_notifications_overtake_threads.sql` | „předbíhá“ ve výzvě, komentáře pro celé vlákno (#15) |
+| `20261113140000_challenge_forfeit.sql` | výzva bez soupeře: kontumace / zrušení hned po odchodu (trigger) |
 | `20261113130000_feed_rpc.sql` | feed přes RPC `feed_night_posts` / `feed_result_posts` (nečte celou tabulku karet) |
 | `supabase/tests/local/run.sh` + `stub.sql` | lokální test SQL: čistá DB, stub Supabase a pg_cron, všechny migrace, pak zadané testy |
+| `supabase/tests/local/challenge_forfeit_test.sql` | výzva bez soupeře (20 kontrol) |
 | `supabase/tests/notifications_test.sql` | test notifikací (63 kontrol) |
 | `supabase/tests/local/notifications_overtake_threads_test.sql` | „předbíhá“ a komentáře ve vlákně (41 kontrol) |
 | `supabase/functions/ingest-sleep/index.ts` | Edge Function pro příjem spánku |
@@ -72,7 +74,7 @@ debts, user_achievements, posts, challenge_day_scores ─trigger─▶ notificat
 - `tags` / `night_tags` – pevný seznam tagů
 - `posts` – feed: `night` (karta noci) nebo `challenge_result`; název, komentář, fotka
 - `comments`, `reactions` (1 reakce / člověk / karta)
-- `challenges` – `duel | free_for_all | team_goal`, sázka (text), `duration_days` 7–30 (horní mez `challenges_duration_max`, starší výzvy výjimkou), `forfeit` (kontumace po smazání účtu), `target_score` (jen team_goal), `pending/active/finished/cancelled`
+- `challenges` – `duel | free_for_all | team_goal`, sázka (text), `duration_days` 7–30 (horní mez `challenges_duration_max`, starší výzvy výjimkou), `forfeit` (kontumace – soupeř / všichni ostatní smazali účet), `target_score` (jen team_goal), `pending/active/finished/cancelled`
 - `challenge_participants` – `invited/accepted/declined`, `final_avg`, `days_won`, `result`
 - `challenge_day_scores` – skóre hráče za den výzvy (0 = chybějící noc, `night_id null`)
 - `debts` – dlužník, věřitel, sázka, `settled_at`
@@ -153,7 +155,7 @@ Pravidla:
 ## GDPR
 - Data: Supabase eu-central-1 (Frankfurt). Spánek = zdravotní data (čl. 9) → jen přátelé (RLS), HealthKit data nikdy do reklamy ani třetím stranám.
 - **Export** (`export_my_data`, security definer, vše filtrované `auth.uid()`): profil, statistiky, noci + `night_raw` + tagy, karty, moje komentáře a reakce, přátelství, účasti ve výzvách, denní skóre, dluhy, odznaky, pozvánky, bloky, podaná hlášení, notifikace, nastavení notifikací (`notification_prefs`, úplné + `updated_at`). Appka uloží `sleepscore-<přezdívka>-<datum>.json` (ochrana souboru `complete`) a nabídne sdílení.
-- **Smazání** (Nastavení → Soukromí → Smazat účet, potvrzení napsáním přezdívky): appka smaže moje soubory v `avatars/` a `night-photos/` (`<uid>/…`; přímý DELETE ze `storage.objects` Supabase blokuje), pak `delete_my_account()`: rozjetý souboj (už se hraje) → kontumace: soupeř `win` (průměr ze dosavadních dní), `forfeit = true`, +1 pozvánka, notifikace „Soupeř smazal účet. Výhra kontumačně.“, bez ovečky a dluhu (#37); souboje, které ještě nezačaly → `cancelled`, moje čekající výzvy → `cancelled`, `delete from auth.users` → kaskáda na `profiles` a vše navázané. Výzvy mají vlastní `timezone` a `creator_id … on delete set null` → ostatním zůstanou výsledky, MMA i duše proti jiným hráčům; skupinové výzvy běží dál beze mě.
+- **Smazání** (Nastavení → Soukromí → Smazat účet, potvrzení napsáním přezdívky): appka smaže moje soubory v `avatars/` a `night-photos/` (`<uid>/…`; přímý DELETE ze `storage.objects` Supabase blokuje), pak `delete_my_account()`: zamkne moje čekající/běžící výzvy, zruší moje čekající výzvy (jsem zakladatel), `delete from auth.users` → kaskáda na `profiles` a vše navázané. Co se stane s výzvami, řeší trigger po smazání účastníka (viz **Výzva bez soupeře**). Výzvy mají vlastní `timezone` a `creator_id … on delete set null` → ostatním zůstanou výsledky, MMA i duše proti jiným hráčům; skupinové výzvy běží dál beze mě.
 - Po odhlášení / smazání appka vyčistí cache obrázků a lokální klíče (`seenChallengeResults`, `dismissedRecapWeek`).
 - Ověřeno: export přes REST (Karolína 92 kB), anon 401, smazání v transakci s `rollback` (účet, profil, noci, přátelství, dluhy pryč; její výzvy zůstaly s `creator_id null`, výsledky ostatních zůstaly).
 - **Sign in with Apple – zneplatnění tokenu** (App Review 5.1.1(v)):
@@ -222,12 +224,20 @@ Přepočet starých nocí: zatím jen dev data → znovu nahrát (`seed_dev.py -
 
 ## Uzavření výzvy (`private.finalize_challenge`)
 Uzávěrka = poslední den 14:00 v `challenges.timezone`. Od té chvíle trigger `challenge_day_scores_deadline` denní skóre tiše zahodí (ingest dál uloží noc i kartu), i když cron výzvu finalizuje až v :05. Finalizace se pozná podle `bedrival.finalizing = on` (nastaví `finalize_due_challenges`) a bere jen noci s `created_at` před uzávěrkou (#35).
-0. Souboj / všichni proti všem s méně než 2 přijatými (ostatní si smazali účet) → `cancelled`, nikdo nic nezíská.
+0. Pojistka: souboj / všichni proti všem s méně než 2 přijatými → `cancelled` (normálně to dřív vyřeší trigger níž).
 1. Dopíše skóre z nocí, které se nepropsaly; za chybějící noci 0 + achievement Zapomněl hodinky.
 2. Průměr (2 desetinná místa), vyhrané dny (jen jasně nejvyšší skóre dne).
 3. Výsledek: duel / všichni proti všem → nejvyšší průměr vyhrává, shoda nahoře = remíza mezi nimi, ostatní prohra. Společný cíl → průměr skupiny ≥ cíl = výhra všem, jinak prohra všem.
 4. Karta výsledku do feedu.
 5. Jen při jasném vítězi (ne team_goal): dluhy poražených vůči vítězi (když je sázka), +1 pozvánka, achievementy První ovečka, Pastýř (každých 10 oveček), Neporazitelný (každých 5 výher v řadě), Odplata (porazil toho, kdo ho naposledy porazil), O chlup (< 1 bod).
+
+## Výzva bez soupeře (`20261113140000_challenge_forfeit.sql`)
+Trigger `challenge_participants_deleted` → `private.settle_orphaned_challenge` hned po smazání účastníka (smazání účtu přes appku i ručně adminem, třeba po banu). Zamyká výzvu stejně jako finalize, takže se s uzávěrkou nepotkají.
+- Rozjetý souboj / všichni proti všem a zbyl jediný přijatý → **kontumace**: `win` (průměr z dosavadních dní), `forfeit = true`, `finished`, +1 pozvánka, notifikace „Soupeř smazal účet. Výhra kontumačně.“ (ve všichni proti všem „Ostatní smazali účet. …“). Bez ovečky, dluhu, odznaků a karty ve feedu.
+- Běžící, ale ještě nezačala (start zítra) a zbyl jediný → `cancelled`.
+- Nezbyl nikdo (i společný cíl) → `cancelled`.
+- Čekající souboj bez jednoho z hráčů → `cancelled`. Čekající skupinová čeká dál (vyprší, nebo ji zakladatel spustí).
+- Ban sám nic neruší – rozjeté výzvy doběhnou s nulami; až účet smažeš, zbylí dostanou kontumaci.
 
 ## Jak nasazovat a testovat
 ```bash

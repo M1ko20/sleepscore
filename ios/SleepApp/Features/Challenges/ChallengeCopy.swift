@@ -38,7 +38,9 @@ enum ChallengeCopy {
             let avg = Fmt.avg(c.teamAverage)
             return winners.isEmpty ? "Cíl \(c.targetScore ?? 0) nesplněn. Průměr \(avg)." : "Cíl \(c.targetScore ?? 0) splněn. Průměr \(avg)."
         case .duel, .freeForAll:
-            if c.forfeit { return "Soupeř smazal účet. Výhra kontumačně." }
+            if c.forfeit {
+                return c.type == .freeForAll ? "Ostatní smazali účet. Výhra kontumačně." : "Soupeř smazal účet. Výhra kontumačně."
+            }
             guard let w = winners.first, winners.count == 1 else { return "Remíza. Nikdo nic nebere." }
             let wn = name(w.profile, me: me)
             let souls = losers.count == 1 ? "ovečku" : (2...4).contains(losers.count) ? "\(losers.count) ovečky" : "\(losers.count) oveček"
