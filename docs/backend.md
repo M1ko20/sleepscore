@@ -46,10 +46,11 @@ debts, user_achievements, posts, challenge_day_scores ─trigger─▶ notificat
 | `20261107010215_moderation.sql` | blokování, nahlášení, ban, upozornění (viz Moderace) |
 | `…20261107010500_notifications.sql` | notifikace: tabulka, triggery, text, cron (viz Notifikace) |
 | `…20261107150000_notifications_overtake_threads.sql` | „předbíhá“ ve výzvě, komentáře pro celé vlákno (#15) |
+| `20261113150000_challenge_cancel_notice.sql` | notifikace „Soupeř smazal účet. Souboj se ruší.“ při zrušení výzvy po odchodu |
 | `20261113140000_challenge_forfeit.sql` | výzva bez soupeře: kontumace / zrušení hned po odchodu (trigger) |
 | `20261113130000_feed_rpc.sql` | feed přes RPC `feed_night_posts` / `feed_result_posts` (nečte celou tabulku karet) |
 | `supabase/tests/local/run.sh` + `stub.sql` | lokální test SQL: čistá DB, stub Supabase a pg_cron, všechny migrace, pak zadané testy |
-| `supabase/tests/local/challenge_forfeit_test.sql` | výzva bez soupeře (20 kontrol) |
+| `supabase/tests/local/challenge_forfeit_test.sql` | výzva bez soupeře (22 kontrol) |
 | `supabase/tests/notifications_test.sql` | test notifikací (63 kontrol) |
 | `supabase/tests/local/notifications_overtake_threads_test.sql` | „předbíhá“ a komentáře ve vlákně (41 kontrol) |
 | `supabase/functions/ingest-sleep/index.ts` | Edge Function pro příjem spánku |
@@ -197,20 +198,21 @@ Slib v podmínkách: hlášení vyřídíme do 24 h, nulová tolerance.
 - Smazání účtu: moje bloky zmizí, moje hlášení zůstanou bez `reporter_id`.
 - Export dat (`export_my_data`) zatím bloky a hlášení neobsahuje.
 
-## Sleep score v2 (`_shared/sleep.ts`, `score_version = 2`)
+## Sleep score v3 (`_shared/sleep.ts`, `score_version = 3`)
 v1 dávalo běžným nocím 92–99 (plných 100 za 7–9 h, za 40 % deep+REM, za „normál“) → ve výzvách se noci skoro nelišily. v2: 100 jen za nadprůměr, „normál“ = 85.
+v3 (2026-11-13, soutěživější): co zařízení nezměří, už se nevynechává, ale dostane **50**. Ve v2 se váhy přepočítaly, takže 8 h „spí“ bez fází a tepu (starší zařízení, appka třetí strany) bralo 100 a Garmin s fázemi ~89. Teď 75 vs 89. Bez historie 70 místo 85. Spánek s fázemi má při výběru hlavního spánku přednost před delším bez fází. Staré noci si nechávají v2 skóre (nepřepočítává se).
 
 | Složka | Váha | Výpočet |
 |---|---|---|
 | Délka | 35 % | body: 4 h = 0, 5 h = 30, 6 h = 55, 7 h = 80, 8–9 h = 100, 10 h = 85, 11 h = 65, 12 h+ = 50 (lineárně mezi) |
-| Fáze | 25 % | půl deep, půl REM (podíl na spánku s fázemi): deep 4 % = 0 → 16 % = 100, REM 8 % = 0 → 22 % = 100. Bez fází (< 50 % spánku má fázi) = vynechat |
-| Přerušovanost | 15 % | 100 − 7 × probuzení − 1,2 × minuty vzhůru (probuzení ≥ 1 min) |
-| Pravidelnost | 15 % | odchylka usnutí od průměru 14 nocí; ≤ 10 min = 100, 90 min = 0; < 3 noci historie = 85 |
-| Tep | 10 % | průměr ve spánku vs. normál 30 nocí; normál = 85, −2 tepy = 100, +10 tepů = 5; < 3 noci = 85; bez tepu = vynechat |
+| Fáze | 25 % | půl deep, půl REM (podíl na spánku s fázemi): deep 4 % = 0 → 16 % = 100, REM 8 % = 0 → 22 % = 100. Bez fází (< 50 % spánku má fázi) = 50 |
+| Přerušovanost | 15 % | 100 − 7 × probuzení − 1,2 × minuty vzhůru (probuzení ≥ 1 min); bez fází a bez jediného záznamu vzhůru = 50 (zařízení to neměří) |
+| Pravidelnost | 15 % | odchylka usnutí od průměru 14 nocí; ≤ 10 min = 100, 90 min = 0; < 3 noci historie = 70 |
+| Tep | 10 % | průměr ve spánku vs. normál 30 nocí; normál = 85, −2 tepy = 100, +10 tepů = 5; < 3 noci = 70; bez tepu = 50 |
 
-Vynechané složky → váhy se přepočítají. **Strop podle délky:** < 5 h max 45, < 6 h max 65.
+**Strop podle délky:** < 5 h max 45, < 6 h max 65.
 Čas usnutí se počítá jako „minuty od poledne“ (bez skoku přes půlnoc).
-Referenční noc 8 h, 1 probuzení, 10 min vzhůru, deep 13 %, REM 19 %, bez historie → 88.
+Referenční noc 7 h 50 min, 1 probuzení, 10 min vzhůru, deep 13 %, REM 19 %: bez historie a tepu → 80; s historií, pravidelně a s tepem na normálu ~89. Váhy a body se doladí na reálných datech.
 Prahy achievementů zůstaly (Dokonalá noc ≥ 95, Navzdory = alkohol + ≥ 85, Pivo vyhrálo < 50) – s v2 jsou vzácnější, jak mají být.
 **Přepočet odznaků noci** (`private.reaward_night`, #37): při každém ingestu noci a při přidání/odebrání tagu alkohol se odznaky té noci smažou a vyhodnotí znovu. Co platí dál, dostane zpět původní `earned_at` a notifikace se neopakuje (`bedrival.reaward`); co už neplatí, zmizí i se svou notifikací.
 Přepočet starých nocí: zatím jen dev data → znovu nahrát (`seed_dev.py --ingest-only`). Až budou skuteční uživatelé, změna vzorce = nová verze + přepočet z `night_raw` (nenapsáno).
@@ -236,7 +238,7 @@ Trigger `challenge_participants_deleted` → `private.settle_orphaned_challenge`
 - Rozjetý souboj / všichni proti všem a zbyl jediný přijatý → **kontumace**: `win` (průměr z dosavadních dní), `forfeit = true`, `finished`, +1 pozvánka, notifikace „Soupeř smazal účet. Výhra kontumačně.“ (ve všichni proti všem „Ostatní smazali účet. …“). Bez ovečky, dluhu, odznaků a karty ve feedu.
 - Běžící, ale ještě nezačala (start zítra) a zbyl jediný → `cancelled`.
 - Nezbyl nikdo (i společný cíl) → `cancelled`.
-- Čekající souboj bez jednoho z hráčů → `cancelled`. Čekající skupinová čeká dál (vyprší, nebo ji zakladatel spustí).
+- Čekající souboj bez jednoho z hráčů → `cancelled`. Při každém zrušení dostanou zbylí notifikaci „Soupeř smazal účet. Souboj se ruší.“ / „Ostatní smazali účet. Výzva se ruší.“ (`challenge_result`, payload `cancelled`). Čekající skupinová čeká dál (vyprší, nebo ji zakladatel spustí).
 - Ban sám nic neruší – rozjeté výzvy doběhnou s nulami; až účet smažeš, zbylí dostanou kontumaci.
 
 ## Jak nasazovat a testovat

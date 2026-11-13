@@ -128,9 +128,11 @@ final class HealthSync {
                 status = .nothingNew(.now)
                 return
             }
-            let nights = try await upload()
-            if let newAnchor { saveAnchor(newAnchor) }
-            status = .done(.now, nights: nights)
+            let (nights, failed) = try await upload()
+            // Noc, kterou server neuložil, se zkusí znovu: bez uloženého anchoru se příště
+            // vzorky hlásí jako nové a okno se pošle znovu.
+            if let newAnchor, !failed { saveAnchor(newAnchor) }
+            status = failed ? .failed("Některou noc se nepodařilo uložit. Zkusím to znovu.") : .done(.now, nights: nights)
             onUploaded?()
         } catch {
             log.error("health sync failed: \(String(describing: error))")
@@ -152,10 +154,11 @@ final class HealthSync {
         return (fresh || !result.deletedObjects.isEmpty, result.newAnchor)
     }
 
-    private func upload() async throws -> Int {
+    /// Vrací počet uložených nocí a jestli některá na serveru selhala.
+    private func upload() async throws -> (Int, Bool) {
         let samples = try await sleepSamples()
         log.info("health upload: \(samples.count) sleep samples")
-        guard !samples.isEmpty else { return 0 }
+        guard !samples.isEmpty else { return (0, false) }
         let windows = Self.mergedWindows(samples.map { ($0.startDate, $0.endDate) })
         let hr = try await heartRate(in: windows)
 
@@ -168,7 +171,8 @@ final class HealthSync {
             "ingest-sleep", options: FunctionInvokeOptions(body: payload)
         )
         log.info("ingest: \(response.nights.map { "\($0.date)=\($0.score.map(String.init) ?? "-") \($0.status)" })")
-        return response.nights.filter { $0.status == "created" || $0.status == "updated" }.count
+        let saved = response.nights.filter { $0.status == "created" || $0.status == "updated" }.count
+        return (saved, response.nights.contains { $0.status == "error" })
     }
 
     private func sleepSamples() async throws -> [HKCategorySample] {

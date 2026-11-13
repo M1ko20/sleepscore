@@ -83,9 +83,17 @@ select pg_temp.delete_me(pg_temp.u('6'));
 select pg_temp.delete_me(pg_temp.u('7'));
 select pg_temp.ok('nezačatá výzva bez soupeřů zrušena', pg_temp.status(pg_temp.ch('3')), 'cancelled');
 select pg_temp.ok('nezačatá: žádná pozvánka', (select invites_available from public.profiles where id = pg_temp.u('5')), 3);
+select pg_temp.ok('nezačatá: notifikace o zrušení',
+  (select public.notification_text(n) from public.notifications n
+   where n.user_id = pg_temp.u('5') and n.challenge_id = pg_temp.ch('3')),
+  'Ostatní smazali účet. Výzva se ruší.');
 
 select pg_temp.delete_me(pg_temp.u('9'));
 select pg_temp.ok('čekající souboj bez pozvaného zrušen', pg_temp.status(pg_temp.ch('4')), 'cancelled');
+select pg_temp.ok('čekající souboj: notifikace zakladateli',
+  (select public.notification_text(n) from public.notifications n
+   where n.user_id = pg_temp.u('8') and n.challenge_id = pg_temp.ch('4')),
+  'Soupeř smazal účet. Souboj se ruší.');
 
 -- u('1') a u('2') už jsou smazaní výš → v C6 zbyl jen zakladatel, výzva dál čeká
 select pg_temp.ok('čekající skupina čeká dál', pg_temp.status(pg_temp.ch('6')), 'pending');

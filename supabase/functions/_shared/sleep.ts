@@ -56,13 +56,17 @@ export interface Baseline {
 export type ComponentKey = "duration" | "stages" | "interruptions" | "regularity" | "heart_rate";
 export type Breakdown = Record<ComponentKey, number | null>;
 
-export const SCORE_VERSION = 2;
+export const SCORE_VERSION = 3;
 export const DAY_CUTOFF_MIN = 14 * 60; // spánek patří ke dni, kdy skončil, pokud skončil do 14:00
 export const STREAK_MIN_SLEEP_MIN = 6 * 60; // minimální délka pro sérii
 export const REGULARITY_HISTORY_NIGHTS = 14;
 export const HR_HISTORY_NIGHTS = 30;
 const MIN_HISTORY = 3; // méně nocí v historii = neutrální body za pravidelnost/tep
-const NEUTRAL = 85; // „normál“ – plných 100 jen za nadprůměr
+const HR_AT_NORMAL = 85; // tep na osobním normálu – plných 100 jen pod normálem
+const NO_HISTORY = 70; // pravidelnost / tep, dokud nejsou aspoň 3 noci historie
+// v3: co zařízení nezměří (fáze, probuzení, tep), dostane 50 – průměr, ne zadarmo.
+// Jinak by spánek bez fází (starší zařízení, appka třetí strany) bral víc než Garmin.
+export const UNKNOWN = 50;
 const SESSION_GAP_MS = 60 * 60 * 1000; // mezera > 60 min = nová session
 const WAKE_MIN_LEN_MS = 60 * 1000; // probuzení kratší než minuta se nepočítá
 
@@ -167,10 +171,18 @@ function finishSession(source: string, segs: Segment[]): Session | null {
   return { source, segments, sleepStart, sleepEnd, asleepMin };
 }
 
+/** Má session fáze (core/deep/REM aspoň na polovině spánku)? Apple Watch, Garmin ano. */
+export function hasStages(s: Session): boolean {
+  const staged = s.segments.filter((x) => x.stage === "core" || x.stage === "deep" || x.stage === "rem")
+    .reduce((a, x) => a + (x.end - x.start), 0) / 60000;
+  return staged > 0 && staged >= s.asleepMin * 0.5;
+}
+
 /**
  * Pro každý den vybere hlavní spánek: nejdelší session (napříč zdroji),
  * která skončila v daný den do 14:00 místního času. Šlofíky a spánky
- * končící po 14:00 vypadnou.
+ * končící po 14:00 vypadnou. Spánek s fázemi má přednost před delším bez fází
+ * (jinak by delší záznam z jiné appky přebil hodinky).
  */
 export function assignMainSleep(sessions: Session[], tz: string): Map<string, Session> {
   const byDay = new Map<string, Session>();
@@ -178,7 +190,9 @@ export function assignMainSleep(sessions: Session[], tz: string): Map<string, Se
     const end = localParts(s.sleepEnd, tz);
     if (end.minutes > DAY_CUTOFF_MIN) continue;
     const prev = byDay.get(end.date);
-    if (!prev || s.asleepMin > prev.asleepMin) byDay.set(end.date, s);
+    const better = !prev ||
+      (hasStages(s) !== hasStages(prev) ? hasStages(s) : s.asleepMin > prev.asleepMin);
+    if (better) byDay.set(end.date, s);
   }
   return byDay;
 }
@@ -252,28 +266,37 @@ export function stagesScore(m: NightMetrics): number | null {
   return (deep + rem) / 2;
 }
 
-/** Přerušovanost (v2): −7 za každé probuzení, −1,2 za každou minutu vzhůru. */
+/**
+ * Přerušovanost (v2): −7 za každé probuzení, −1,2 za každou minutu vzhůru.
+ * v3: záznam bez fází i bez jediného probuzení zařízení neměřilo → UNKNOWN.
+ */
 export function interruptionsScore(m: NightMetrics): number {
+  const staged = m.coreMin + m.deepMin + m.remMin;
+  if (m.awakeMin === 0 && m.wakeCount === 0 && staged < m.totalSleepMin * 0.5) return UNKNOWN;
   return clamp(100 - m.wakeCount * 7 - m.awakeMin * 1.2);
 }
 
-/** Pravidelnost (v2): odchylka usnutí od průměru; do 10 min = 100, 90 min a víc = 0. Bez historie neutrálně. */
+/** Pravidelnost (v2): odchylka usnutí od průměru; do 10 min = 100, 90 min a víc = 0. Bez historie NO_HISTORY. */
 export function regularityScore(startFromNoon: number, history: number[]): number {
-  if (history.length < MIN_HISTORY) return NEUTRAL;
+  if (history.length < MIN_HISTORY) return NO_HISTORY;
   const d = Math.abs(startFromNoon - mean(history));
   if (d <= 10) return 100;
   return clamp(100 - ((d - 10) / 80) * 100);
 }
 
-/** Tep (v2): průměr ve spánku vs. osobní normál; normál = 85, −2 tepy = 100, +10 tepů = 5. Bez historie neutrálně. */
+/** Tep (v2): průměr ve spánku vs. osobní normál; normál = 85, −2 tepy = 100, +10 tepů = 5. Bez historie NO_HISTORY. */
 export function heartRateScore(hrAvg: number | null, history: number[]): number | null {
   if (hrAvg === null) return null;
-  if (history.length < MIN_HISTORY) return NEUTRAL;
+  if (history.length < MIN_HISTORY) return NO_HISTORY;
   const diff = hrAvg - mean(history);
-  return clamp(NEUTRAL - diff * 8);
+  return clamp(HR_AT_NORMAL - diff * 8);
 }
 
-/** Vážené skóre 0–100. Chybějící složky (null) se vynechají a váhy se přepočítají. */
+/**
+ * Vážené skóre 0–100. v3: co zařízení nezměřilo (fáze, tep), počítá se jako UNKNOWN
+ * a v rozpadu je taky UNKNOWN – dřív se vynechalo a váhy se přepočítaly, takže noc
+ * bez fází a tepu brala 100 jen za délku.
+ */
 export function computeScore(
   m: NightMetrics,
   baseline: Baseline,
@@ -281,10 +304,10 @@ export function computeScore(
 ): { score: number; breakdown: Breakdown } {
   const breakdown: Breakdown = {
     duration: durationScore(m.totalSleepMin),
-    stages: stagesScore(m),
+    stages: stagesScore(m) ?? UNKNOWN,
     interruptions: interruptionsScore(m),
     regularity: regularityScore(minutesFromNoon(m.sleepStart, tz), baseline.startMinutesFromNoon),
-    heart_rate: heartRateScore(m.hrAvg, baseline.hrAvgs),
+    heart_rate: heartRateScore(m.hrAvg, baseline.hrAvgs) ?? UNKNOWN,
   };
   let sum = 0;
   let weight = 0;

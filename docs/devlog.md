@@ -19,6 +19,12 @@ Co je hotové a jak. Nejnovější nahoře. Detaily backendu v `backend.md`, vzh
 13. ~~Notifikace ve zvonečku~~ hotovo (#9). ~~Zneplatnění Apple tokenu~~ (#7), ~~Release bez zápisu do Health~~ (#8), ~~anglické zásady~~ (#3) hotovo.
 14. Další: push přes APNs (#10, Developer Program, pak i pondělní push na recap), nastavení notifikací (#11), test na iPhonu s Garminem.
 
+## 2026-11-13 – Sleep score v3, opakování neuložené noci, notifikace o zrušení
+- **Skóre v3** (soutěživější, domluveno s Adamem): co zařízení nezměří (fáze, probuzení, tep), dostane 50 místo vynechání. Ve v2 bralo 8 h „spí“ bez fází a tepu 100 a Garmin ~89 → šlo podvádět appkou, která zapíše dlouhý spánek do Zdraví. Teď 75 vs 89. Bez historie 70 místo 85. Spánek s fázemi má přednost před delším bez fází. Staré noci zůstávají na v2. Váhy doladit na reálných datech. `deno test` 17/17.
+- **Synchronizace**: když server některou noc neuloží (`status: error`), telefon neuloží anchor → příště se okno pošle znovu (dřív se noc zkusila až s další nocí). Okno zůstává 3 dny (Adam: víc nedává smysl).
+- **Zrušená výzva** po odchodu soupeře už nezmizí bez vysvětlení: `20261113150000_challenge_cancel_notice.sql`, notifikace „Soupeř smazal účet. Souboj se ruší.“
+- Build OK, všechny lokální SQL testy OK.
+
 ## 2026-11-13 – Výzva bez soupeře: kontumace hned po odchodu
 - Review commitu z #42 našlo, že zrušení až při uzávěrce je špatně: zbylý hráč hrál až 30 dní mrtvou výzvu, pak mu bez notifikace zmizela ze seznamu. Ve všichni proti všem nedostal nic, v souboji kontumační výhru. Po banu a ručním smazání adminem se souboj zrušil místo výhry soupeři. A souběh se smazáním účtu mohl pořád dát sólo výhru.
 - Domluveno s Adamem: když odejde poslední soupeř, zbylý dostane **kontumační výhru + pozvánku** i ve všichni proti všem.
