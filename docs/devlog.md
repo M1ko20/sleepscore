@@ -20,6 +20,8 @@ Co je hotové a jak. Nejnovější nahoře. Detaily backendu v `backend.md`, vzh
 14. Další: push přes APNs (#10, Developer Program, pak i pondělní push na recap), nastavení notifikací (#11), test na iPhonu s Garminem.
 
 ## 2026-11-13 – Review: noc s fázemi dorazí později, odebrání z přátel
+- **Výsledková obrazovka** při kontumační výhře psala „Bereš 0 oveček.“ → teď „Soupeř smazal účet. Výhra kontumačně.“ (resp. „Ostatní smazali účet…“).
+- Nasazeno (migrace + `ingest-sleep`), E2E na produkci 42/42.
 - **Ingest**: když se pro den nejdřív uložila noc bez fází (jiná appka) a Garmin dorazil později s kratším spánkem uvnitř ní, ochrana #32 („useknutý kus téže noci“) ho zahodila → noc bez fází zůstala navždy. Teď `keepStoredNight` v `sleep.ts`: fáze rozhodují první, pak pravidla #32. `deno test` 20/20.
 - **Odebrání z přátel** nerušilo čekající výzvy → bývalý kamarád mohl souboj přijmout. `20261113160000_remove_friend_pending.sql`: stejně jako blok. Test `remove_friend_test.sql`.
 
