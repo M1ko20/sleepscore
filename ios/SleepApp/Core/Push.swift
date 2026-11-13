@@ -131,6 +131,10 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
     func application(_ application: UIApplication,
                      didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
         UNUserNotificationCenter.current().delegate = self
+        // HealthKit background delivery: observer hned při startu (i na pozadí), ne až s UI.
+        MainActor.assumeIsolated {
+            if HealthSync.shouldResumeObserving { HealthSync.shared.startObserving() }
+        }
         return true
     }
 

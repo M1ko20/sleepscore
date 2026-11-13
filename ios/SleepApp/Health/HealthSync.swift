@@ -72,8 +72,15 @@ final class HealthSync {
 
     // MARK: Pozadí
 
-    /// Spustí observer + background delivery. Volat po přihlášení (s profilem).
+    /// Sledování zapnuté (přihlášený člen) – při startu appky se hned obnoví v `AppDelegate`.
+    private static let observingKey = "healthObserving"
+    static var shouldResumeObserving: Bool { UserDefaults.standard.bool(forKey: observingKey) }
+
+    /// Spustí observer + background delivery. Volat po přihlášení (s profilem) a při každém
+    /// startu appky v `didFinishLaunching` – když iOS appku probudí na pozadí kvůli nové noci,
+    /// observer musí existovat dřív, než se načte session a UI, jinak se aktualizace ztratí.
     func startObserving() {
+        UserDefaults.standard.set(true, forKey: Self.observingKey)
         guard isAvailable, observer == nil else { return }
         let query = HKObserverQuery(sampleType: sleepType, predicate: nil) { _, completion, error in
             guard error == nil else { completion(); return }
@@ -90,6 +97,7 @@ final class HealthSync {
     }
 
     func stopObserving() {
+        UserDefaults.standard.removeObject(forKey: Self.observingKey)
         if let observer { store.stop(observer) }
         observer = nil
         store.disableAllBackgroundDelivery { _, _ in }

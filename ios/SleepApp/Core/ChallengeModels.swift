@@ -182,13 +182,15 @@ struct Challenge: Decodable, Hashable, Sendable, Identifiable {
         return n < 1 ? "začíná zítra" : "den \(min(n, durationDays))/\(durationDays)"
     }
 
-    /// „končí v neděli ve 14:00“ (čas zakladatele)
+    /// „končí v neděli 15. 11. ve 14:00“ (čas zakladatele).
+    /// Ručně, `EEEE` v češtině dává 1. pád („končí neděle“).
     var endsText: String? {
         guard let e = endDate.flatMap(ISODay.date) else { return nil }
-        let f = DateFormatter()
-        f.locale = Locale(identifier: "cs_CZ")
-        f.dateFormat = "EEEE d. M."
-        return "končí \(f.string(from: e)) ve 14:00"
+        let cal = Calendar.iso
+        // weekday: 1 = neděle … 7 = sobota
+        let onDay = ["v neděli", "v pondělí", "v úterý", "ve středu", "ve čtvrtek", "v pátek", "v sobotu"]
+        let wd = onDay[cal.component(.weekday, from: e) - 1]
+        return "končí \(wd) \(cal.component(.day, from: e)). \(cal.component(.month, from: e)). ve 14:00"
     }
 }
 
