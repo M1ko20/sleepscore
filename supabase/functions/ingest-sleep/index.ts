@@ -19,6 +19,7 @@ import {
   HR_HISTORY_NIGHTS,
   type HrSample,
   isValidTimeZone,
+  keepStoredNight,
   minutesFromNoon,
   REGULARITY_HISTORY_NIGHTS,
   SCORE_VERSION,
@@ -99,23 +100,15 @@ async function saveNight(
   session: Session,
   hr: HrSample[],
 ) {
-  // Ochrana zpětného nahrávání: neuložit kratší spánek přes delší, pokud se
-  // časově nepřekrývají (např. dorazil jen šlofík), nebo když leží celý uvnitř
-  // uložené noci – to je useknutý kus téže noci z okraje okna (#32).
+  // Ochrana zpětného nahrávání a přednost nocí s fázemi (viz keepStoredNight).
   const { data: existing } = await admin
     .from("nights")
-    .select("id, sleep_start, sleep_end, total_sleep_min")
+    .select("id, sleep_start, sleep_end, total_sleep_min, core_min, deep_min, rem_min")
     .eq("user_id", userId)
     .eq("night_date", date)
     .maybeSingle();
-  if (existing) {
-    const overlaps = session.sleepStart < Date.parse(existing.sleep_end) &&
-      session.sleepEnd > Date.parse(existing.sleep_start);
-    const inside = session.sleepStart >= Date.parse(existing.sleep_start) &&
-      session.sleepEnd <= Date.parse(existing.sleep_end);
-    if ((!overlaps || inside) && session.asleepMin < existing.total_sleep_min) {
-      return { date, score: null, status: "kept_existing" };
-    }
+  if (existing && keepStoredNight(existing, session)) {
+    return { date, score: null, status: "kept_existing" };
   }
 
   // Baseline z předchozích nocí
