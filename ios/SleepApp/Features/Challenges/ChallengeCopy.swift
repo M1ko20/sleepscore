@@ -8,7 +8,8 @@ enum ChallengeCopy {
     static func title(_ c: Challenge, me: UUID?) -> String {
         switch c.type {
         case .duel:
-            let names = c.participants.sorted { a, _ in a.userID == me }.map { name($0.profile, me: me) }
+            var names = c.participants.sorted { a, _ in a.userID == me }.map { name($0.profile, me: me) }
+            if names.count == 1 { names.append("smazaný účet") }
             return names.joined(separator: " vs ")
         case .freeForAll: return "Všichni proti všem (\(c.accepted.count))"
         case .teamGoal: return "Společný cíl \(c.targetScore ?? 0) (\(c.accepted.count))"
@@ -37,6 +38,7 @@ enum ChallengeCopy {
             let avg = Fmt.avg(c.teamAverage)
             return winners.isEmpty ? "Cíl \(c.targetScore ?? 0) nesplněn. Průměr \(avg)." : "Cíl \(c.targetScore ?? 0) splněn. Průměr \(avg)."
         case .duel, .freeForAll:
+            if c.forfeit { return "Soupeř smazal účet. Výhra kontumačně." }
             guard let w = winners.first, winners.count == 1 else { return "Remíza. Nikdo nic nebere." }
             let wn = name(w.profile, me: me)
             let souls = losers.count == 1 ? "ovečku" : (2...4).contains(losers.count) ? "\(losers.count) ovečky" : "\(losers.count) oveček"

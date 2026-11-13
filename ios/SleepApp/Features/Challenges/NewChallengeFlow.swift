@@ -85,7 +85,7 @@ struct NewChallengeFlow: View {
 
     private var effectiveDays: Int? {
         if days > 0 { return days }
-        return Int(customDays).flatMap { $0 >= 7 && $0 <= 365 ? $0 : nil }
+        return Int(customDays).flatMap { $0 >= 7 && $0 <= 30 ? $0 : nil }
     }
 
     private var canContinue: Bool {
@@ -168,7 +168,7 @@ struct NewChallengeFlow: View {
                 chip("Vlastní", selected: days == 0) { days = 0 }
             }
             if days == 0 {
-                TextField("", text: $customDays, prompt: Text("Počet dní (min. 7)").foregroundStyle(Color.app.textTertiary))
+                TextField("", text: $customDays, prompt: Text("Počet dní (7–30)").foregroundStyle(Color.app.textTertiary))
                     .textFieldStyle(AppTextFieldStyle())
                     .keyboardType(.numberPad)
             }

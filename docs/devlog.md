@@ -351,3 +351,16 @@ Review celého projektu → issues #32–#37, opravy na větvi `review-fixes`. *
 - **#37 k diskuzi** (neopraveno): smazání účtu během souboje, odebírání odznaků při přepočtu, `head_to_head` ve všichni proti všem, limit délky / expirace čekajících výzev, milníky série 2×.
 - Testy: nový `supabase/tests/local/review_fixes_test.sql` (14 kontrol). `auto_hide_test` a `notification_prefs_test` upravené na nové chování pásma, fixture v `notifications_test` píše do výzvy po uzávěrce jako finalizace. Celá lokální SQL sada OK, `deno test _shared/` 31/31, `deno check ingest-sleep`, xcodebuild OK. Okno synchronizace na skutečném iPhonu neověřeno.
 - Nasazení: `supabase db push --remote --yes` a `supabase functions deploy ingest-sleep --use-api --yes`. Pořadí nevadí.
+
+## 2026-11-13 – Pravidla z review (#37)
+Domluveno s Adamem, větev `review-rules` (navazuje na `review-fixes`). **Nenasazeno**: migrace `20261113100000_review_rules.sql` + nový build appky.
+- **Kontumace:** kdo smaže účet během rozjetého souboje, prohrává kontumačně. Soupeř má výhru v MMA a pozvánku navíc a přijde mu notifikace „Soupeř smazal účet. Výhra kontumačně.“ Ovečka a dluh odpadnou (data smazaného jdou pryč). Souboj, který ještě nezačal, se dál ruší. `challenges.forfeit` a appka u výsledku ukáže „Soupeř smazal účet. Výhra kontumačně.“ a „Ty vs smazaný účet“.
+- **Odznaky za noc se přepočítávají:** při každém ingestu noci a při změně tagu alkohol (`private.reaward_night`). Horší skóre vezme Dokonalou noc, smazaný alkohol vezme Navzdory, a to i s notifikací. Co platí dál, si nechá datum a znovu se nehlásí.
+- **Milník série** (7/30/100 a pozvánka) se udělí jen jednou za sérii, i když zpětné nahrání posune, která noc ho trefí.
+- **Vzájemná bilance:** ve všichni proti všem jen vítěz proti každému poraženému. Poražení mezi sebou nic.
+- **Výzvy max. 30 dní** (DB constraint `not valid`, starší zůstanou; appka „Vlastní“ 7–30). Čekající výzvy po 7 dnech vyprší (pg_cron 3:40 UTC → `cancelled`, bez notifikace).
+- Staré odznaky jsem zpětně nepřepočítával (např. Navzdory s už smazaným alkoholem zůstává). Kdyby to vadilo, jde to jednorázově projet přes `reaward_night`.
+- Testy: nový `review_rules_test.sql` (30 kontrol), celá lokální SQL sada OK, xcodebuild OK.
+- Navíc dvě drobnosti z review:
+  - `delete-account` nejdřív smaže účet a až pak zneplatní Apple token. Dřív to bylo obráceně a selhané smazání nechalo účet bez Apple přihlášení.
+  - `ISODay` a `Calendar.iso` sledují aktuální časové pásmo (`autoupdatingCurrent`). Dřív se pásmo načetlo jen při startu a po přeletu byly dny o jeden vedle.

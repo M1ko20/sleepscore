@@ -27,6 +27,7 @@ pg_cron každou hodinu v :35 ─▶ private.remind_open_reports()  (hlášení o
 reports INSERT ─trigger─▶ webhook pro nás (pg_net, bez Edge Function)
 pg_cron každou hodinu v :07 ─▶ private.notification_jobs()  (zítra konec 20:00, recap po 9:00)
 pg_cron denně 3:20 UTC ─▶ private.cleanup_notifications()  (starší 30 dní)
+pg_cron denně 3:40 UTC ─▶ private.expire_pending_challenges()  (čekající výzvy starší 7 dní → cancelled)
 night_tags INSERT ─trigger─▶ Navzdory / Pivo vyhrálo
 reactions, comments, friendships, challenge_participants, challenges,
 debts, user_achievements, posts, challenge_day_scores ─trigger─▶ notifications
@@ -52,7 +53,7 @@ debts, user_achievements, posts, challenge_day_scores ─trigger─▶ notificat
 | `supabase/functions/_shared/sleep.ts` | čistá logika: hlavní spánek, metriky, skóre |
 | `supabase/functions/_shared/sleep_test.ts` | unit testy skóre (15) |
 | `supabase/functions/apple-token/index.ts` | po Apple přihlášení: authorization code → refresh token |
-| `supabase/functions/delete-account/index.ts` | smazání Apple účtu: revokace tokenu + `delete_my_account` |
+| `supabase/functions/delete-account/index.ts` | smazání Apple účtu: `delete_my_account`, pak revokace tokenu |
 | `supabase/functions/_shared/apple.ts` (+ `apple_test.ts`, 8 testů) | Apple REST API: client_secret (ES256), `/auth/token`, `/auth/revoke` |
 | `supabase/tests/e2e.py` | E2E test proti živému projektu (25 kontrol, uklidí po sobě) |
 | `supabase/tests/ui_seed.py` | Dočasná data pro XCUITest (#13): 4 uživatelé `ui-…@example.test`, noci, komentáře, reakce, výzvy; `--cleanup` vše smaže |
@@ -69,7 +70,7 @@ debts, user_achievements, posts, challenge_day_scores ─trigger─▶ notificat
 - `tags` / `night_tags` – pevný seznam tagů
 - `posts` – feed: `night` (karta noci) nebo `challenge_result`; název, komentář, fotka
 - `comments`, `reactions` (1 reakce / člověk / karta)
-- `challenges` – `duel | free_for_all | team_goal`, sázka (text), `duration_days ≥ 7`, `target_score` (jen team_goal), `pending/active/finished/cancelled`
+- `challenges` – `duel | free_for_all | team_goal`, sázka (text), `duration_days` 7–30 (horní mez `challenges_duration_max`, starší výzvy výjimkou), `forfeit` (kontumace po smazání účtu), `target_score` (jen team_goal), `pending/active/finished/cancelled`
 - `challenge_participants` – `invited/accepted/declined`, `final_avg`, `days_won`, `result`
 - `challenge_day_scores` – skóre hráče za den výzvy (0 = chybějící noc, `night_id null`)
 - `debts` – dlužník, věřitel, sázka, `settled_at`
@@ -85,7 +86,7 @@ debts, user_achievements, posts, challenge_day_scores ─trigger─▶ notificat
 - `notifications` – zvoneček (viz Notifikace)
 - `notification_prefs` – nastavení pushů (přepínače kategorií, noční klid); 1 řádek na uživatele, chybí = výchozí. Čte jen majitel, zápis jen přes RPC.
 
-Pohledy (security_invoker): `mma_records` (všechny typy výzev), `souls` (bez team_goal), `head_to_head` (bez team_goal).
+Pohledy (security_invoker): `mma_records` (všechny typy výzev), `souls` (bez team_goal), `head_to_head` (bez team_goal; jen vítěz proti každému poraženému a remíza mezi remizujícími, poražení mezi sebou nic).
 
 Storage: buckety `avatars` (max 150 kB), `night-photos` (max 400 kB) – privátní, jen `image/jpeg`, cesta `<user_id>/<uuid>.jpg` (unikátní → klient cachuje navždy). Fotky karet vidí jen přátelé, profilovky všichni členové. Check constraint: `profiles.avatar_path` i `posts.photo_path` musí vést do vlastní složky.
 
@@ -149,12 +150,12 @@ Pravidla:
 ## GDPR
 - Data: Supabase eu-central-1 (Frankfurt). Spánek = zdravotní data (čl. 9) → jen přátelé (RLS), HealthKit data nikdy do reklamy ani třetím stranám.
 - **Export** (`export_my_data`, security definer, vše filtrované `auth.uid()`): profil, statistiky, noci + `night_raw` + tagy, karty, moje komentáře a reakce, přátelství, účasti ve výzvách, denní skóre, dluhy, odznaky, pozvánky, bloky, podaná hlášení, notifikace, nastavení notifikací (`notification_prefs`, úplné + `updated_at`). Appka uloží `sleepscore-<přezdívka>-<datum>.json` (ochrana souboru `complete`) a nabídne sdílení.
-- **Smazání** (Nastavení → Soukromí → Smazat účet, potvrzení napsáním přezdívky): appka smaže moje soubory v `avatars/` a `night-photos/` (`<uid>/…`; přímý DELETE ze `storage.objects` Supabase blokuje), pak `delete_my_account()`: neuzavřené souboje se mnou → `cancelled`, moje čekající výzvy → `cancelled`, `delete from auth.users` → kaskáda na `profiles` a vše navázané. Výzvy mají vlastní `timezone` a `creator_id … on delete set null` → ostatním zůstanou výsledky, MMA i duše proti jiným hráčům; skupinové výzvy běží dál beze mě.
+- **Smazání** (Nastavení → Soukromí → Smazat účet, potvrzení napsáním přezdívky): appka smaže moje soubory v `avatars/` a `night-photos/` (`<uid>/…`; přímý DELETE ze `storage.objects` Supabase blokuje), pak `delete_my_account()`: rozjetý souboj (už se hraje) → kontumace: soupeř `win` (průměr ze dosavadních dní), `forfeit = true`, +1 pozvánka, notifikace „Soupeř smazal účet. Výhra kontumačně.“, bez ovečky a dluhu (#37); souboje, které ještě nezačaly → `cancelled`, moje čekající výzvy → `cancelled`, `delete from auth.users` → kaskáda na `profiles` a vše navázané. Výzvy mají vlastní `timezone` a `creator_id … on delete set null` → ostatním zůstanou výsledky, MMA i duše proti jiným hráčům; skupinové výzvy běží dál beze mě.
 - Po odhlášení / smazání appka vyčistí cache obrázků a lokální klíče (`seenChallengeResults`, `dismissedRecapWeek`).
 - Ověřeno: export přes REST (Karolína 92 kB), anon 401, smazání v transakci s `rollback` (účet, profil, noci, přátelství, dluhy pryč; její výzvy zůstaly s `creator_id null`, výsledky ostatních zůstaly).
 - **Sign in with Apple – zneplatnění tokenu** (App Review 5.1.1(v)):
   - Po přihlášení (`Session.signInWithApple`) appka pošle jednorázový `authorizationCode` na `apple-token` → server ho vymění na `https://appleid.apple.com/auth/token` za refresh token, ověří, že `sub` z `id_token` = Apple identita přihlášeného účtu, a uloží do `apple_tokens`. Chyba přihlášení neblokuje (jen log). 1 call na přihlášení přes Apple.
-  - Smazání Apple účtu: appka smaže Storage a místo RPC zavolá `delete-account` → `/auth/revoke` s refresh tokenem, pak `delete_my_account()` jménem uživatele (jeho JWT). Revokace je best effort: chybí-li konfigurace, token nebo Apple vrátí chybu, jen se zaloguje a účet se smaže stejně. Odpověď `{ deleted, revoked }`.
+  - Smazání Apple účtu: appka smaže Storage a místo RPC zavolá `delete-account` → načte refresh token, `delete_my_account()` jménem uživatele (jeho JWT) a teprve po úspěšném smazání `/auth/revoke` (selhané smazání tak nenechá účet bez Apple přihlášení). Revokace je best effort: chybí-li konfigurace, token nebo Apple vrátí chybu, jen se zaloguje a účet se smaže stejně. Odpověď `{ deleted, revoked }`.
   - E-mailové účty (dev build) dál volají rovnou `delete_my_account()` → fungují i bez nasazené funkce.
   - `client_secret` = JWT ES256 podepsaný `.p8` klíčem (platnost 5 min), generuje se při každém volání.
   - Secrets: `APPLE_TEAM_ID`, `APPLE_KEY_ID`, `APPLE_CLIENT_ID` (= bundle `cz.mikolas.bedrival`), `APPLE_PRIVATE_KEY` (obsah `.p8`). Bez nich se výměna i revokace přeskočí (`apple-token` vrátí `{ stored: false }`).
@@ -206,6 +207,7 @@ Vynechané složky → váhy se přepočítají. **Strop podle délky:** < 5 h m
 Čas usnutí se počítá jako „minuty od poledne“ (bez skoku přes půlnoc).
 Referenční noc 8 h, 1 probuzení, 10 min vzhůru, deep 13 %, REM 19 %, bez historie → 88.
 Prahy achievementů zůstaly (Dokonalá noc ≥ 95, Navzdory = alkohol + ≥ 85, Pivo vyhrálo < 50) – s v2 jsou vzácnější, jak mají být.
+**Přepočet odznaků noci** (`private.reaward_night`, #37): při každém ingestu noci a při přidání/odebrání tagu alkohol se odznaky té noci smažou a vyhodnotí znovu. Co platí dál, dostane zpět původní `earned_at` a notifikace se neopakuje (`bedrival.reaward`); co už neplatí, zmizí i se svou notifikací.
 Přepočet starých nocí: zatím jen dev data → znovu nahrát (`seed_dev.py --ingest-only`). Až budou skuteční uživatelé, změna vzorce = nová verze + přepočet z `night_raw` (nenapsáno).
 
 ## Série
@@ -213,7 +215,7 @@ Přepočet starých nocí: zatím jen dev data → znovu nahrát (`seed_dev.py -
 - Freeze automaticky: první špatná/chybějící noc v týdnu (po–ne) nepřeruší, ale nepřičte se. Druhá přeruší. Při nulové sérii se freeze nespotřebuje (#34).
 - Dnešní noc se počítá, když už dorazila nebo je po 14:00.
 - Přepočet celé historie jednoho uživatele (`private.recompute_streak`) – ms, správně i při zpětném nahrání.
-- Milníky 7/30/100 → achievement; 30 a 100 → +1 pozvánka. Udělují se jen za poslední týden.
+- Milníky 7/30/100 → achievement; 30 a 100 → +1 pozvánka. Udělují se jen za poslední týden a jen jednou za sérii (zpětné nahrání milník nezdvojí).
 
 ## Uzavření výzvy (`private.finalize_challenge`)
 Uzávěrka = poslední den 14:00 v `challenges.timezone`. Od té chvíle trigger `challenge_day_scores_deadline` denní skóre tiše zahodí (ingest dál uloží noc i kartu), i když cron výzvu finalizuje až v :05. Finalizace se pozná podle `bedrival.finalizing = on` (nastaví `finalize_due_challenges`) a bere jen noci s `created_at` před uzávěrkou (#35).
