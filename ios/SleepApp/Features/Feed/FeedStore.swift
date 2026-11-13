@@ -143,12 +143,15 @@ final class FeedStore {
     /// Nahlášená karta zmizí hned (server ji volajícímu už nevrátí).
     func removePost(_ id: UUID) {
         posts.removeAll { $0.id == id }
+        extraPosts.removeAll { $0.id == id }
     }
 
     /// Po zablokování: karty i reakce blokovaného pryč bez dalšího callu.
     func removeAuthor(_ userID: UUID) {
         posts.removeAll { $0.author.id == userID }
+        extraPosts.removeAll { $0.author.id == userID }
         for i in posts.indices { posts[i].reactions.removeAll { $0.userID == userID } }
+        for i in extraPosts.indices { extraPosts[i].reactions.removeAll { $0.userID == userID } }
     }
 
     func setCommentCount(postID: UUID, _ count: Int) {

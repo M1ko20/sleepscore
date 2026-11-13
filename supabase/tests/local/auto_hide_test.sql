@@ -162,8 +162,9 @@ select t_err($$update public.profiles set display_name = 'Zase sprostě' where i
              'profile hidden pending review', 'skryté jméno nejde změnit');
 select t_err($$update public.profiles set avatar_path = '00000000-0000-0000-0000-00000000000b/b.jpg' where id = '00000000-0000-0000-0000-00000000000b'$$,
              'profile hidden pending review', 'skrytou fotku nejde změnit');
-update public.profiles set timezone = 'Europe/London' where id = '00000000-0000-0000-0000-00000000000b';
-select t_ok((select timezone from public.profiles where id = '00000000-0000-0000-0000-00000000000b') = 'Europe/London', 'timezone jde změnit');
+-- timezone klient od #33 nemění (nastavuje ho ingest)
+select t_err($$update public.profiles set timezone = 'Europe/London' where id = '00000000-0000-0000-0000-00000000000b'$$,
+             'permission denied', 'timezone klient nemění (#33)');
 select t_as('0a');
 update public.profiles set display_name = 'Adámek' where id = '00000000-0000-0000-0000-00000000000a';
 select t_ok((select display_name from public.profiles where id = '00000000-0000-0000-0000-00000000000a') = 'Adámek', 'ostatní profily beze změny');

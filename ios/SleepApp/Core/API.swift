@@ -56,10 +56,11 @@ enum API {
     // MARK: Feed
 
     /// Karty nocí (RLS vrátí jen moje a přátel). Výsledky výzev přijdou s výzvami.
-    nonisolated static func feed(limit: Int = 30, before: Date? = nil) async throws -> [FeedPost] {
-        var q = db.from("posts").select(FeedPost.select).eq("kind", value: "night")
-        if let before { q = q.lt("created_at", value: before.ISO8601Format()) }
-        return try await decode(q.order("created_at", ascending: false).limit(limit).execute().data)
+    /// Stránkování zatím není – až bude, tak keyset přes (created_at, id) s mikrosekundami,
+    /// `ISO8601Format()` zahazuje zlomky sekund a karty ze stejné sekundy by vypadly (#36).
+    nonisolated static func feed(limit: Int = 30) async throws -> [FeedPost] {
+        try await decode(db.from("posts").select(FeedPost.select).eq("kind", value: "night")
+            .order("created_at", ascending: false).limit(limit).execute().data)
     }
 
     nonisolated static func post(id: UUID) async throws -> FeedPost? {

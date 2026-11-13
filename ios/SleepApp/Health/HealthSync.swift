@@ -29,10 +29,19 @@ final class HealthSync {
     private let sleepType = HKCategoryType(.sleepAnalysis)
     private let hrType = HKQuantityType(.heartRate)
     private var observer: HKObserverQuery?
-    /// Přišel požadavek během běžící synchronizace → po dokončení ještě jednou.
-    private var rerun = false
+    /// Přišel požadavek během běžící synchronizace → po dokončení ještě jednou
+    /// (`true` = aspoň jeden z nich byl ruční `force`).
+    private var rerun: Bool?
     private static let anchorKey = "healthSleepAnchor"
     private static let windowDays = 3
+
+    /// Začátek okna: poledne dne před nejstarším dnem okna. Hranice „teď − 3 dny“ by mohla
+    /// spadnout doprostřed noci a server by dostal jen její konec (#32).
+    static func windowStart(now: Date = .now, calendar: Calendar = .current) -> Date {
+        let today = calendar.startOfDay(for: now)
+        let day = calendar.date(byAdding: .day, value: -(windowDays + 1), to: today)!
+        return calendar.date(byAdding: .hour, value: 12, to: day)!
+    }
 
     var isAvailable: Bool { HKHealthStore.isHealthDataAvailable() }
 
@@ -96,12 +105,12 @@ final class HealthSync {
     /// - Parameter force: poslat okno i bez nových vzorků (ruční „Synchronizovat“).
     func sync(force: Bool = false) async {
         guard isAvailable else { return }
-        guard status != .syncing else { rerun = true; return }
+        guard status != .syncing else { rerun = (rerun ?? false) || force; return }
         status = .syncing
         defer {
-            if rerun {
-                rerun = false
-                Task { await self.sync() }
+            if let again = rerun {
+                rerun = nil
+                Task { await self.sync(force: again) }
             }
         }
         do {
@@ -124,7 +133,7 @@ final class HealthSync {
     /// Přibyly od posledně spánkové vzorky ze zařízení?
     private func newSleepSamples() async throws -> (Bool, HKQueryAnchor?) {
         let anchor = loadAnchor()
-        let since = Calendar.current.date(byAdding: .day, value: -Self.windowDays, to: .now)!
+        let since = Self.windowStart()
         let predicate = HKQuery.predicateForSamples(withStart: since, end: nil)
         let descriptor = HKAnchoredObjectQueryDescriptor(
             predicates: [.categorySample(type: sleepType, predicate: predicate)],
@@ -155,7 +164,7 @@ final class HealthSync {
     }
 
     private func sleepSamples() async throws -> [HKCategorySample] {
-        let since = Calendar.current.date(byAdding: .day, value: -Self.windowDays, to: .now)!
+        let since = Self.windowStart()
         let descriptor = HKSampleQueryDescriptor(
             predicates: [.categorySample(type: sleepType, predicate: HKQuery.predicateForSamples(withStart: since, end: nil))],
             sortDescriptors: [SortDescriptor(\.startDate)]
