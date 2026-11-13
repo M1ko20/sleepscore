@@ -221,19 +221,20 @@ enum ISODay {
         let f = DateFormatter()
         f.calendar = .iso
         f.locale = Locale(identifier: "en_US_POSIX")
-        f.timeZone = .current
+        f.timeZone = .autoupdatingCurrent   // po přeletu do jiného pásma bez restartu appky
         f.dateFormat = "yyyy-MM-dd"
         return f
     }()
 }
 
 extension Calendar {
-    static let iso: Calendar = {
+    /// Počítá se při každém použití, ať sedí aktuální pásmo i po přeletu (levné).
+    static var iso: Calendar {
         var c = Calendar(identifier: .gregorian)
-        c.timeZone = .current
+        c.timeZone = .autoupdatingCurrent
         c.firstWeekday = 2   // týden od pondělí (recap, ISO týdny)
         return c
-    }()
+    }
 }
 
 extension Fmt {

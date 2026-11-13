@@ -53,7 +53,7 @@ debts, user_achievements, posts, challenge_day_scores ─trigger─▶ notificat
 | `supabase/functions/_shared/sleep.ts` | čistá logika: hlavní spánek, metriky, skóre |
 | `supabase/functions/_shared/sleep_test.ts` | unit testy skóre (15) |
 | `supabase/functions/apple-token/index.ts` | po Apple přihlášení: authorization code → refresh token |
-| `supabase/functions/delete-account/index.ts` | smazání Apple účtu: revokace tokenu + `delete_my_account` |
+| `supabase/functions/delete-account/index.ts` | smazání Apple účtu: `delete_my_account`, pak revokace tokenu |
 | `supabase/functions/_shared/apple.ts` (+ `apple_test.ts`, 8 testů) | Apple REST API: client_secret (ES256), `/auth/token`, `/auth/revoke` |
 | `supabase/tests/e2e.py` | E2E test proti živému projektu (25 kontrol, uklidí po sobě) |
 | `supabase/tests/ui_seed.py` | Dočasná data pro XCUITest (#13): 4 uživatelé `ui-…@example.test`, noci, komentáře, reakce, výzvy; `--cleanup` vše smaže |
@@ -155,7 +155,7 @@ Pravidla:
 - Ověřeno: export přes REST (Karolína 92 kB), anon 401, smazání v transakci s `rollback` (účet, profil, noci, přátelství, dluhy pryč; její výzvy zůstaly s `creator_id null`, výsledky ostatních zůstaly).
 - **Sign in with Apple – zneplatnění tokenu** (App Review 5.1.1(v)):
   - Po přihlášení (`Session.signInWithApple`) appka pošle jednorázový `authorizationCode` na `apple-token` → server ho vymění na `https://appleid.apple.com/auth/token` za refresh token, ověří, že `sub` z `id_token` = Apple identita přihlášeného účtu, a uloží do `apple_tokens`. Chyba přihlášení neblokuje (jen log). 1 call na přihlášení přes Apple.
-  - Smazání Apple účtu: appka smaže Storage a místo RPC zavolá `delete-account` → `/auth/revoke` s refresh tokenem, pak `delete_my_account()` jménem uživatele (jeho JWT). Revokace je best effort: chybí-li konfigurace, token nebo Apple vrátí chybu, jen se zaloguje a účet se smaže stejně. Odpověď `{ deleted, revoked }`.
+  - Smazání Apple účtu: appka smaže Storage a místo RPC zavolá `delete-account` → načte refresh token, `delete_my_account()` jménem uživatele (jeho JWT) a teprve po úspěšném smazání `/auth/revoke` (selhané smazání tak nenechá účet bez Apple přihlášení). Revokace je best effort: chybí-li konfigurace, token nebo Apple vrátí chybu, jen se zaloguje a účet se smaže stejně. Odpověď `{ deleted, revoked }`.
   - E-mailové účty (dev build) dál volají rovnou `delete_my_account()` → fungují i bez nasazené funkce.
   - `client_secret` = JWT ES256 podepsaný `.p8` klíčem (platnost 5 min), generuje se při každém volání.
   - Secrets: `APPLE_TEAM_ID`, `APPLE_KEY_ID`, `APPLE_CLIENT_ID` (= bundle `cz.mikolas.bedrival`), `APPLE_PRIVATE_KEY` (obsah `.p8`). Bez nich se výměna i revokace přeskočí (`apple-token` vrátí `{ stored: false }`).

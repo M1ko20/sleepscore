@@ -361,3 +361,6 @@ Domluveno s Adamem, větev `review-rules` (navazuje na `review-fixes`). **Nenasa
 - **Výzvy max. 30 dní** (DB constraint `not valid`, starší zůstanou; appka „Vlastní“ 7–30). Čekající výzvy po 7 dnech vyprší (pg_cron 3:40 UTC → `cancelled`, bez notifikace).
 - Staré odznaky jsem zpětně nepřepočítával (např. Navzdory s už smazaným alkoholem zůstává). Kdyby to vadilo, jde to jednorázově projet přes `reaward_night`.
 - Testy: nový `review_rules_test.sql` (30 kontrol), celá lokální SQL sada OK, xcodebuild OK.
+- Navíc dvě drobnosti z review:
+  - `delete-account` nejdřív smaže účet a až pak zneplatní Apple token. Dřív to bylo obráceně a selhané smazání nechalo účet bez Apple přihlášení.
+  - `ISODay` a `Calendar.iso` sledují aktuální časové pásmo (`autoupdatingCurrent`). Dřív se pásmo načetlo jen při startu a po přeletu byly dny o jeden vedle.
