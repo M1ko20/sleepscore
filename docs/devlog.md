@@ -19,6 +19,11 @@ Co je hotové a jak. Nejnovější nahoře. Detaily backendu v `backend.md`, vzh
 13. ~~Notifikace ve zvonečku~~ hotovo (#9). ~~Zneplatnění Apple tokenu~~ (#7), ~~Release bez zápisu do Health~~ (#8), ~~anglické zásady~~ (#3) hotovo.
 14. Další: push přes APNs (#10, Developer Program, pak i pondělní push na recap), nastavení notifikací (#11), test na iPhonu s Garminem.
 
+## 2026-11-13 – Feed: obnovení po návratu, rychlé dotazy
+- **Rychlost** (`20261113130000_feed_rpc.sql`): appka četla `posts` od nejnovější a RLS kontrolovala kartu po kartě, dokud jich nenašla 30. Kdo měl málo aktivních přátel, prošel celou tabulku. Výsledky výzev (jsou vzácné) ji procházely vždycky, u každého načtení feedu. Lokálně na 40 000 kartách ~1 s → teď 1 ms. Nové RPC `feed_night_posts` / `feed_result_posts` začínají od přátel; security invoker, takže RLS platí dál a výsledek je stejný (test `feed_test.sql` to porovnává pro každého uživatele i po bloku, nahlášení a skrytí). Počet callů stejný.
+- **Obnovení po návratu do appky**: feed se při návratu z pozadí nenačítal (jen po vlastní nahrané noci) – ráno byl vidět včerejší feed i počet na zvonečku. Teď `FeedStore.loadIfStale()` po synchronizaci Zdraví: načte, jen když je feed starší než 15 min (1 načtení = 4 cally). Když se nahrála vlastní noc, feed už načetl `onUploaded`.
+- Build OK, lokální SQL test OK. **Migrace čeká na nasazení** (`supabase db push --remote`; na produkci je i #42, tak ji nasadit z větve, kde je jeho migrace). Bez ní nová appka feed nenačte. V simulátoru neověřeno.
+
 ## 2026-11-13 – Druhé review: HealthKit na pozadí, výzva bez soupeře, čeština
 - **HealthKit na pozadí**: observer se zapínal až v `MainTabView` (po načtení session a profilu ze sítě), takže při probuzení appky na pozadí kvůli nové noci nikdo neposlouchal a noc dorazila až po otevření appky. Teď se observer obnoví hned v `AppDelegate.didFinishLaunching` (příznak `healthObserving` v UserDefaults: zapne `startObserving`, smaže `stopObserving` při odhlášení). Build OK; na iPhonu s Garminem zatím neověřeno.
 - **Výzva bez soupeře** (`20261113120000_solo_challenge_cancel.sql`): všichni proti všem, kde si ostatní smazali účet, dávala jedinému zbylému hráči výhru, pozvánku a První ovečku. Souboj / všichni proti všem s méně než 2 přijatými se při uzávěrce zruší. Test `solo_challenge_cancel_test.sql`.

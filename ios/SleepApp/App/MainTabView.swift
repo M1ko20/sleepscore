@@ -77,7 +77,11 @@ struct MainTabView: View {
         }
         .onChange(of: scenePhase) { _, phase in
             guard phase == .active else { return }
-            Task { await HealthSync.shared.sync() }
+            Task {
+                await HealthSync.shared.sync()
+                // Nová vlastní noc už feed načetla (onUploaded); jinak jen když je starý.
+                await feed.loadIfStale()
+            }
             // Povolení se mohlo změnit v Nastavení iOS.
             Task { await Push.shared.start() }
             if let me = session.profile?.id { Task { await challenges.load(me: me) } }

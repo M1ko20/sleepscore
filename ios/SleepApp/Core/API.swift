@@ -55,12 +55,12 @@ enum API {
 
     // MARK: Feed
 
-    /// Karty nocí (RLS vrátí jen moje a přátel). Výsledky výzev přijdou s výzvami.
+    /// Karty nocí moje a přátel. RPC začíná od přátel, ne od celé tabulky karet (RLS platí dál).
     /// Stránkování zatím není – až bude, tak keyset přes (created_at, id) s mikrosekundami,
     /// `ISO8601Format()` zahazuje zlomky sekund a karty ze stejné sekundy by vypadly (#36).
     nonisolated static func feed(limit: Int = 30) async throws -> [FeedPost] {
-        try await decode(db.from("posts").select(FeedPost.select).eq("kind", value: "night")
-            .order("created_at", ascending: false).limit(limit).execute().data)
+        try await decode(db.rpc("feed_night_posts", params: ["p_limit": limit])
+            .select(FeedPost.select).order("created_at", ascending: false).execute().data)
     }
 
     nonisolated static func post(id: UUID) async throws -> FeedPost? {
@@ -205,12 +205,11 @@ enum API {
         _ = try await db.rpc("settle_debt", params: ["p_debt": id]).execute().data
     }
 
-    /// Karty výsledků výzev do feedu.
+    /// Výsledky výzev, kterých se účastnil někdo z nás (RPC, viz `feed`).
     nonisolated static func challengeResultPosts(limit: Int = 20) async throws -> [ChallengeResultPost] {
-        try await decode(db.from("posts")
+        try await decode(db.rpc("feed_result_posts", params: ["p_limit": limit])
             .select("id,created_at,challenge:challenges(\(Challenge.select))")
-            .eq("kind", value: "challenge_result")
-            .order("created_at", ascending: false).limit(limit)
+            .order("created_at", ascending: false)
             .execute().data)
     }
 

@@ -21,7 +21,19 @@ final class FeedStore {
     /// Starší karty otevřené ze zvonečku (nejsou v načteném feedu).
     private var extraPosts: [FeedPost] = []
 
+    /// Začátek posledního načtení – podle něj se feed obnoví po návratu do appky.
+    private var loadedAt: Date?
+    /// Po návratu z pozadí se feed načte jen, když je starší (každé načtení = 4 cally).
+    private static let staleAfter: TimeInterval = 15 * 60
+
+    /// Návrat do appky: obnovit, pokud je feed starý. Před prvním načtením nic (to dělá FeedView).
+    func loadIfStale() async {
+        guard let loadedAt, Date.now.timeIntervalSince(loadedAt) > Self.staleAfter else { return }
+        await load()
+    }
+
     func load() async {
+        loadedAt = .now
         do {
             async let postsReq = API.feed()
             async let resultsReq = API.challengeResultPosts()
@@ -38,6 +50,7 @@ final class FeedStore {
         } catch {
             log.error("feed load failed: \(String(describing: error))")
             self.error = "Feed se nenačetl."
+            loadedAt = .distantPast   // při dalším návratu do appky zkusit znovu
         }
         loaded = true
     }

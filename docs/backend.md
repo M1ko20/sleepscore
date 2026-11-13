@@ -46,6 +46,7 @@ debts, user_achievements, posts, challenge_day_scores ─trigger─▶ notificat
 | `20261107010215_moderation.sql` | blokování, nahlášení, ban, upozornění (viz Moderace) |
 | `…20261107010500_notifications.sql` | notifikace: tabulka, triggery, text, cron (viz Notifikace) |
 | `…20261107150000_notifications_overtake_threads.sql` | „předbíhá“ ve výzvě, komentáře pro celé vlákno (#15) |
+| `20261113130000_feed_rpc.sql` | feed přes RPC `feed_night_posts` / `feed_result_posts` (nečte celou tabulku karet) |
 | `supabase/tests/local/run.sh` + `stub.sql` | lokální test SQL: čistá DB, stub Supabase a pg_cron, všechny migrace, pak zadané testy |
 | `supabase/tests/notifications_test.sql` | test notifikací (63 kontrol) |
 | `supabase/tests/local/notifications_overtake_threads_test.sql` | „předbíhá“ a komentáře ve vlákně (41 kontrol) |
@@ -60,6 +61,7 @@ debts, user_achievements, posts, challenge_day_scores ─trigger─▶ notificat
 | `supabase/tests/local/run.sh` | lokální SQL testy: dočasný Postgres 16 + `stub.sql` (auth, storage, cron, net) + všechny migrace + `*_test.sql` |
 | `supabase/tests/local/moderation_test.sql` | moderace (68 kontrol) |
 | `supabase/tests/local/auto_hide_test.sql` | automatické skrytí po hlášeních (44 kontrol) |
+| `supabase/tests/local/feed_test.sql` | feed RPC: stejné karty jako přes RLS (blok, nahlášení, skrytí, odmítnutá výzva), čas na 40k kartách |
 
 ## Tabulky (public)
 - `profiles` – přezdívka (`^[a-z0-9_.]{3,20}$`), jméno, avatar, timezone (jen z `pg_timezone_names`, trigger `profiles_guard_timezone`), `invites_available` (start 3), `invited_by`
@@ -115,6 +117,7 @@ Storage: buckety `avatars` (max 150 kB), `night-photos` (max 400 kB) – privát
 | `export_my_data()` | GDPR export: všechna moje data jako JSON (vč. surových dat nocí) |
 | `delete_my_account()` | GDPR smazání: zruší neuzavřené souboje se mnou a moje čekající výzvy, smaže `auth.users` → kaskáda |
 | `sleep_wrapped(year?)` | rok volajícího (Wrapped) jedním callem |
+| `feed_night_posts(limit=30)` / `feed_result_posts(limit=20)` | feed: karty nocí mě a přátel / výsledky výzev, kde hrál někdo z nás; od nejnovější, max. 100. Začíná od přátel (index `posts_user_idx`, `challenge_participants_user_idx`), ne od celé tabulky; security invoker → RLS platí dál. Appka k nim přidá embedy přes `select` |
 | `profile_summary(user)` | celý profil jedním callem (bilance, série, průměr 30 dní, ovečky, odznaky, vzájemná bilance, stav přátelství); security invoker → RLS |
 | `create_challenge(type, opponents[], duration_days, stake?, target_score?)` | jen s přáteli; duel = 1 soupeř, skupina ≥ 2 pozvaní |
 | `respond_challenge(challenge, accept)` | duel po přijetí startuje zítra (tz zakladatele) |
