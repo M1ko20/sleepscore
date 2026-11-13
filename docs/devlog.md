@@ -19,6 +19,13 @@ Co je hotové a jak. Nejnovější nahoře. Detaily backendu v `backend.md`, vzh
 13. ~~Notifikace ve zvonečku~~ hotovo (#9). ~~Zneplatnění Apple tokenu~~ (#7), ~~Release bez zápisu do Health~~ (#8), ~~anglické zásady~~ (#3) hotovo.
 14. Další: push přes APNs (#10, Developer Program, pak i pondělní push na recap), nastavení notifikací (#11), test na iPhonu s Garminem.
 
+## 2026-11-13 – Výzva bez soupeře: kontumace hned po odchodu
+- Review commitu z #42 našlo, že zrušení až při uzávěrce je špatně: zbylý hráč hrál až 30 dní mrtvou výzvu, pak mu bez notifikace zmizela ze seznamu. Ve všichni proti všem nedostal nic, v souboji kontumační výhru. Po banu a ručním smazání adminem se souboj zrušil místo výhry soupeři. A souběh se smazáním účtu mohl pořád dát sólo výhru.
+- Domluveno s Adamem: když odejde poslední soupeř, zbylý dostane **kontumační výhru + pozvánku** i ve všichni proti všem.
+- `20261113140000_challenge_forfeit.sql`: trigger po smazání účastníka → `private.settle_orphaned_challenge` (pravidla v `backend.md`, sekce Výzva bez soupeře). Zamyká výzvu jako finalize. `delete_my_account` jen zamkne výzvy a smaže účet, kontumaci souboje dělá taky trigger. Prázdný společný cíl se zruší (dřív vznikla prázdná karta výsledku). Migrace na konci jednou projde už běžící výzvy.
+- Text: ve všichni proti všem „Ostatní smazali účet. Výhra kontumačně.“ (notifikace i iOS).
+- Test `challenge_forfeit_test.sql` (20 kontrol), všechny lokální SQL testy a iOS build OK.
+
 ## 2026-11-13 – Feed: obnovení po návratu, rychlé dotazy
 - **Rychlost** (`20261113130000_feed_rpc.sql`): appka četla `posts` od nejnovější a RLS kontrolovala kartu po kartě, dokud jich nenašla 30. Kdo měl málo aktivních přátel, prošel celou tabulku. Výsledky výzev (jsou vzácné) ji procházely vždycky, u každého načtení feedu. Lokálně na 40 000 kartách ~1 s → teď 1 ms. Nové RPC `feed_night_posts` / `feed_result_posts` začínají od přátel; security invoker, takže RLS platí dál a výsledek je stejný (test `feed_test.sql` to porovnává pro každého uživatele i po bloku, nahlášení a skrytí). Počet callů stejný.
 - **Obnovení po návratu do appky**: feed se při návratu z pozadí nenačítal (jen po vlastní nahrané noci) – ráno byl vidět včerejší feed i počet na zvonečku. Teď `FeedStore.loadIfStale()` po synchronizaci Zdraví: načte, jen když je feed starší než 15 min (1 načtení = 4 cally). Když se nahrála vlastní noc, feed už načetl `onUploaded`.

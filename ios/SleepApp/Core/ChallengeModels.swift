@@ -76,7 +76,7 @@ struct Challenge: Decodable, Hashable, Sendable, Identifiable {
     let startDate: String?
     let endDate: String?
     let status: ChallengeStatus
-    /// Soupeř během souboje smazal účet → kontumační výhra (#37).
+    /// Soupeř (ve všichni proti všem poslední soupeř) smazal účet → kontumační výhra.
     let forfeit: Bool
     let createdAt: Date
     let participants: [Participant]
