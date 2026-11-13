@@ -76,19 +76,21 @@ struct Challenge: Decodable, Hashable, Sendable, Identifiable {
     let startDate: String?
     let endDate: String?
     let status: ChallengeStatus
+    /// Soupeř během souboje smazal účet → kontumační výhra (#37).
+    let forfeit: Bool
     let createdAt: Date
     let participants: [Participant]
     let scores: [DayScore]
 
     static let select = """
-    id,type,creator_id,stake,duration_days,target_score,start_date,end_date,status,created_at,\
+    id,type,creator_id,stake,duration_days,target_score,start_date,end_date,status,forfeit,created_at,\
     participants:challenge_participants(user_id,status,final_avg,days_won,result,\
     profile:profiles(id,username,display_name,avatar_path,timezone)),\
     scores:challenge_day_scores(user_id,day,score)
     """
 
     enum CodingKeys: String, CodingKey {
-        case id, type, stake, status, participants, scores
+        case id, type, stake, status, forfeit, participants, scores
         case creatorID = "creator_id"
         case durationDays = "duration_days"
         case targetScore = "target_score"
@@ -108,6 +110,7 @@ struct Challenge: Decodable, Hashable, Sendable, Identifiable {
         startDate = try c.decodeIfPresent(String.self, forKey: .startDate)
         endDate = try c.decodeIfPresent(String.self, forKey: .endDate)
         status = try c.decode(ChallengeStatus.self, forKey: .status)
+        forfeit = try c.decodeIfPresent(Bool.self, forKey: .forfeit) ?? false
         createdAt = try c.decode(Date.self, forKey: .createdAt)
         participants = try c.decodeIfPresent([Participant].self, forKey: .participants) ?? []
         scores = try c.decodeIfPresent([DayScore].self, forKey: .scores) ?? []
