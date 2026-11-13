@@ -219,6 +219,7 @@ Přepočet starých nocí: zatím jen dev data → znovu nahrát (`seed_dev.py -
 
 ## Uzavření výzvy (`private.finalize_challenge`)
 Uzávěrka = poslední den 14:00 v `challenges.timezone`. Od té chvíle trigger `challenge_day_scores_deadline` denní skóre tiše zahodí (ingest dál uloží noc i kartu), i když cron výzvu finalizuje až v :05. Finalizace se pozná podle `bedrival.finalizing = on` (nastaví `finalize_due_challenges`) a bere jen noci s `created_at` před uzávěrkou (#35).
+0. Souboj / všichni proti všem s méně než 2 přijatými (ostatní si smazali účet) → `cancelled`, nikdo nic nezíská.
 1. Dopíše skóre z nocí, které se nepropsaly; za chybějící noci 0 + achievement Zapomněl hodinky.
 2. Průměr (2 desetinná místa), vyhrané dny (jen jasně nejvyšší skóre dne).
 3. Výsledek: duel / všichni proti všem → nejvyšší průměr vyhrává, shoda nahoře = remíza mezi nimi, ostatní prohra. Společný cíl → průměr skupiny ≥ cíl = výhra všem, jinak prohra všem.

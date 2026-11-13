@@ -19,6 +19,12 @@ Co je hotové a jak. Nejnovější nahoře. Detaily backendu v `backend.md`, vzh
 13. ~~Notifikace ve zvonečku~~ hotovo (#9). ~~Zneplatnění Apple tokenu~~ (#7), ~~Release bez zápisu do Health~~ (#8), ~~anglické zásady~~ (#3) hotovo.
 14. Další: push přes APNs (#10, Developer Program, pak i pondělní push na recap), nastavení notifikací (#11), test na iPhonu s Garminem.
 
+## 2026-11-13 – Druhé review: HealthKit na pozadí, výzva bez soupeře, čeština
+- **HealthKit na pozadí**: observer se zapínal až v `MainTabView` (po načtení session a profilu ze sítě), takže při probuzení appky na pozadí kvůli nové noci nikdo neposlouchal a noc dorazila až po otevření appky. Teď se observer obnoví hned v `AppDelegate.didFinishLaunching` (příznak `healthObserving` v UserDefaults: zapne `startObserving`, smaže `stopObserving` při odhlášení). Build OK; na iPhonu s Garminem zatím neověřeno.
+- **Výzva bez soupeře** (`20261113120000_solo_challenge_cancel.sql`): všichni proti všem, kde si ostatní smazali účet, dávala jedinému zbylému hráči výhru, pozvánku a První ovečku. Souboj / všichni proti všem s méně než 2 přijatými se při uzávěrce zruší. Test `solo_challenge_cancel_test.sql`.
+- **Čeština**: detail výzvy psal „končí neděle 15. 11.“ → „končí v neděli 15. 11. ve 14:00“.
+- Milník série jednou za sérii už opravil #40 (review-rules), smazání účtu s víc stejnými odznaky ověřeno – funguje.
+
 ## 2026-11-09 – Prázdné stavy, malý displej, screenshoty pro App Store (#28, #25)
 - Nový `EmptyStateTests` (XCUITest): účet bez nocí, přátel a výzev → feed, zvoneček, výzvy, nová výzva, profil, týden v číslech, přátelé, pozvánky. Volitelně `UITEST_SHOTS=<složka>` uloží PNG. Dočasný účet `qa-empty@sleepscore.test` (service klíč) po testu smazaný.
 - Prošlo na iPhonu 16 Pro i na iPhonu SE (3. gen.) s písmem `accessibility-medium`: nic se neořezává, všechny prázdné stavy mají text a další krok. Nic jsem neopravoval.
@@ -341,7 +347,7 @@ Co je hotové a jak. Nejnovější nahoře. Detaily backendu v `backend.md`, vzh
 - Zapnutí: `backend.md` → Push (APNs) → Zapnutí. Migraci jde nasadit klidně hned (bez URL jen uklízí frontu), funkci až s klíčem.
 
 ## 2026-11-12 – Opravy z code review (#32–#36)
-Review celého projektu → issues #32–#37, opravy na větvi `review-fixes`. **Nenasazeno** (4 migrace + `ingest-sleep`).
+Review celého projektu → issues #32–#37, opravy v PR #38. **Nasazeno 2026-11-13** (4 migrace + `ingest-sleep`).
 - **#32 Sync přepsal noc jejím koncem:** okno „teď − 3 dny“ mohlo říznout noc před 3 dny a server ji přepsal 30min kouskem (nízké skóre, výzvy, falešné odznaky, přerušená série). Appka teď posílá okno od poledne dne D−4 (`HealthSync.windowStart`), ingest nenahradí uloženou noc kratší session, která leží celá uvnitř ní.
 - **#33 Neplatné časové pásmo shodilo cron všem:** `profiles.timezone = 'Mars/Olympus'` (klient to směl zapsat) → `hourly_jobs` i `notification_jobs` padaly a rollback zastavil uzavírání výzev. Migrace `20261112100000_timezone_guard.sql`: validace vůči `pg_timezone_names` (profil chybou, výzva fallbackem na Prahu), úklid starých hodnot, klient už `timezone` nemění (appka to nedělala).
 - **#34 Freeze při nulové sérii:** spotřeboval se na špatnou noc, i když nebylo co chránit. `20261112100100_streak_freeze_fix.sql`.
@@ -353,7 +359,7 @@ Review celého projektu → issues #32–#37, opravy na větvi `review-fixes`. *
 - Nasazení: `supabase db push --remote --yes` a `supabase functions deploy ingest-sleep --use-api --yes`. Pořadí nevadí.
 
 ## 2026-11-13 – Pravidla z review (#37)
-Domluveno s Adamem, větev `review-rules` (navazuje na `review-fixes`). **Nenasazeno**: migrace `20261113100000_review_rules.sql` + nový build appky.
+Domluveno s Adamem, PR #40 (nahradil #39). **Nasazeno 2026-11-13**: migrace `20261113100000_review_rules.sql` a funkce `delete-account`. Nový build appky zatím jen v simulátoru.
 - **Kontumace:** kdo smaže účet během rozjetého souboje, prohrává kontumačně. Soupeř má výhru v MMA a pozvánku navíc a přijde mu notifikace „Soupeř smazal účet. Výhra kontumačně.“ Ovečka a dluh odpadnou (data smazaného jdou pryč). Souboj, který ještě nezačal, se dál ruší. `challenges.forfeit` a appka u výsledku ukáže „Soupeř smazal účet. Výhra kontumačně.“ a „Ty vs smazaný účet“.
 - **Odznaky za noc se přepočítávají:** při každém ingestu noci a při změně tagu alkohol (`private.reaward_night`). Horší skóre vezme Dokonalou noc, smazaný alkohol vezme Navzdory, a to i s notifikací. Co platí dál, si nechá datum a znovu se nehlásí.
 - **Milník série** (7/30/100 a pozvánka) se udělí jen jednou za sérii, i když zpětné nahrání posune, která noc ho trefí.
@@ -364,3 +370,4 @@ Domluveno s Adamem, větev `review-rules` (navazuje na `review-fixes`). **Nenasa
 - Navíc dvě drobnosti z review:
   - `delete-account` nejdřív smaže účet a až pak zneplatní Apple token. Dřív to bylo obráceně a selhané smazání nechalo účet bez Apple přihlášení.
   - `ISODay` a `Calendar.iso` sledují aktuální časové pásmo (`autoupdatingCurrent`). Dřív se pásmo načetlo jen při startu a po přeletu byly dny o jeden vedle.
+- Ověřeno po nasazení: `e2e.py` proti produkci 42/42, cron `hourly-jobs` (11:05) a `notification-jobs` (11:07) succeeded, nový job `expire-pending-challenges` v rozvrhu. Debug a Release build OK, appka v simulátoru naběhne.
