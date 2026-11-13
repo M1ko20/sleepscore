@@ -5,6 +5,7 @@ import {
   computeMetrics,
   computeScore,
   heartRateScore,
+  keepStoredNight,
   stagesScore,
   durationScore,
   minutesFromNoon,
@@ -193,4 +194,29 @@ Deno.test("krátká rozbitá noc má nízké skóre", () => {
   const sess = assignMainSleep(buildSessions(samples), TZ).values().next().value!;
   const { score } = computeScore(computeMetrics(sess, []), { startMinutesFromNoon: [660, 660, 660], hrAvgs: [] }, TZ);
   assert(score < 40, `score ${score}`);
+});
+
+const stored = (from: string, to: string, total: number, staged: boolean) => ({
+  sleep_start: from, sleep_end: to, total_sleep_min: total,
+  core_min: staged ? total - 150 : 0, deep_min: staged ? 60 : 0, rem_min: staged ? 90 : 0,
+});
+
+Deno.test("uložená noc: Garmin s fázemi nahradí dřívější delší noc bez fází", () => {
+  const garmin = assignMainSleep(buildSessions(night()), TZ).get("2026-11-06")!;   // 23:00–07:00, 470 min
+  // jiná appka dřív uložila 22:00–08:00 bez fází
+  assertEquals(keepStoredNight(stored("2026-11-05T21:00:00Z", "2026-11-06T07:00:00Z", 600, false), garmin), false);
+});
+
+Deno.test("uložená noc: delší noc bez fází nepřepíše noc s fázemi", () => {
+  const plain = assignMainSleep(buildSessions([s("2026-11-05T21:00:00Z", "2026-11-06T07:00:00Z", "asleep", "Appka")]), TZ)
+    .get("2026-11-06")!;
+  assertEquals(keepStoredNight(stored("2026-11-05T22:00:00Z", "2026-11-06T06:00:00Z", 470, true), plain), true);
+});
+
+Deno.test("uložená noc: useknutý kus téže noci (#32) ji nepřepíše, delší verze ano", () => {
+  const full = stored("2026-11-05T22:00:00Z", "2026-11-06T06:00:00Z", 470, true);
+  const tail = assignMainSleep(buildSessions(night().slice(3)), TZ).get("2026-11-06")!;
+  assertEquals(keepStoredNight(full, tail), true);
+  const shorter = { ...full, total_sleep_min: 300 };
+  assertEquals(keepStoredNight(shorter, assignMainSleep(buildSessions(night()), TZ).get("2026-11-06")!), false);
 });

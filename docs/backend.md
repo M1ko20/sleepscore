@@ -46,6 +46,7 @@ debts, user_achievements, posts, challenge_day_scores ─trigger─▶ notificat
 | `20261107010215_moderation.sql` | blokování, nahlášení, ban, upozornění (viz Moderace) |
 | `…20261107010500_notifications.sql` | notifikace: tabulka, triggery, text, cron (viz Notifikace) |
 | `…20261107150000_notifications_overtake_threads.sql` | „předbíhá“ ve výzvě, komentáře pro celé vlákno (#15) |
+| `20261113160000_remove_friend_pending.sql` | odebrání z přátel ruší čekající souboj / pozvánku do skupiny mezi námi (jako blok) |
 | `20261113150000_challenge_cancel_notice.sql` | notifikace „Soupeř smazal účet. Souboj se ruší.“ při zrušení výzvy po odchodu |
 | `20261113140000_challenge_forfeit.sql` | výzva bez soupeře: kontumace / zrušení hned po odchodu (trigger) |
 | `20261113130000_feed_rpc.sql` | feed přes RPC `feed_night_posts` / `feed_result_posts` (nečte celou tabulku karet) |
@@ -200,7 +201,7 @@ Slib v podmínkách: hlášení vyřídíme do 24 h, nulová tolerance.
 
 ## Sleep score v3 (`_shared/sleep.ts`, `score_version = 3`)
 v1 dávalo běžným nocím 92–99 (plných 100 za 7–9 h, za 40 % deep+REM, za „normál“) → ve výzvách se noci skoro nelišily. v2: 100 jen za nadprůměr, „normál“ = 85.
-v3 (2026-11-13, soutěživější): co zařízení nezměří, už se nevynechává, ale dostane **50**. Ve v2 se váhy přepočítaly, takže 8 h „spí“ bez fází a tepu (starší zařízení, appka třetí strany) bralo 100 a Garmin s fázemi ~89. Teď 75 vs 89. Bez historie 70 místo 85. Spánek s fázemi má při výběru hlavního spánku přednost před delším bez fází. Staré noci si nechávají v2 skóre (nepřepočítává se).
+v3 (2026-11-13, soutěživější): co zařízení nezměří, už se nevynechává, ale dostane **50**. Ve v2 se váhy přepočítaly, takže 8 h „spí“ bez fází a tepu (starší zařízení, appka třetí strany) bralo 100 a Garmin s fázemi ~89. Teď 75 vs 89. Bez historie 70 místo 85. Spánek s fázemi má při výběru hlavního spánku přednost před delším bez fází. Staré noci si nechávají v2 skóre (nepřepočítává se). Při zpětném nahrání (`keepStoredNight`) rozhodují fáze první: noc s fázemi vždy nahradí uloženou noc bez fází (Garmin dorazil později než jiná appka) a noc bez fází nikdy nepřepíše noc s fázemi.
 
 | Složka | Váha | Výpočet |
 |---|---|---|

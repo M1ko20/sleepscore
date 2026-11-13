@@ -19,6 +19,10 @@ Co je hotové a jak. Nejnovější nahoře. Detaily backendu v `backend.md`, vzh
 13. ~~Notifikace ve zvonečku~~ hotovo (#9). ~~Zneplatnění Apple tokenu~~ (#7), ~~Release bez zápisu do Health~~ (#8), ~~anglické zásady~~ (#3) hotovo.
 14. Další: push přes APNs (#10, Developer Program, pak i pondělní push na recap), nastavení notifikací (#11), test na iPhonu s Garminem.
 
+## 2026-11-13 – Review: noc s fázemi dorazí později, odebrání z přátel
+- **Ingest**: když se pro den nejdřív uložila noc bez fází (jiná appka) a Garmin dorazil později s kratším spánkem uvnitř ní, ochrana #32 („useknutý kus téže noci“) ho zahodila → noc bez fází zůstala navždy. Teď `keepStoredNight` v `sleep.ts`: fáze rozhodují první, pak pravidla #32. `deno test` 20/20.
+- **Odebrání z přátel** nerušilo čekající výzvy → bývalý kamarád mohl souboj přijmout. `20261113160000_remove_friend_pending.sql`: stejně jako blok. Test `remove_friend_test.sql`.
+
 ## 2026-11-13 – Sleep score v3, opakování neuložené noci, notifikace o zrušení
 - **Skóre v3** (soutěživější, domluveno s Adamem): co zařízení nezměří (fáze, probuzení, tep), dostane 50 místo vynechání. Ve v2 bralo 8 h „spí“ bez fází a tepu 100 a Garmin ~89 → šlo podvádět appkou, která zapíše dlouhý spánek do Zdraví. Teď 75 vs 89. Bez historie 70 místo 85. Spánek s fázemi má přednost před delším bez fází. Staré noci zůstávají na v2. Váhy doladit na reálných datech. `deno test` 17/17.
 - **Synchronizace**: když server některou noc neuloží (`status: error`), telefon neuloží anchor → příště se okno pošle znovu (dřív se noc zkusila až s další nocí). Okno zůstává 3 dny (Adam: víc nedává smysl).

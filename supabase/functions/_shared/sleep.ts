@@ -178,6 +178,34 @@ export function hasStages(s: Session): boolean {
   return staged > 0 && staged >= s.asleepMin * 0.5;
 }
 
+/** Uložená noc (sloupce z `nights`), se kterou se porovnává nově nahraná. */
+export interface StoredNight {
+  sleep_start: string;
+  sleep_end: string;
+  total_sleep_min: number;
+  core_min: number | null;
+  deep_min: number | null;
+  rem_min: number | null;
+}
+
+/**
+ * Nechat uloženou noc a novou zahodit?
+ * - Fáze rozhodují první: noc s fázemi nepřepíše noc bez fází a naopak noc s fázemi
+ *   (Garmin dorazil později než jiná appka) vždycky nahradí noc bez fází.
+ * - Jinak (#32): kratší spánek nepřepíše delší, když se nepřekrývají (dorazil jen šlofík),
+ *   nebo když leží celý uvnitř uložené noci (useknutý kus téže noci z okraje okna).
+ */
+export function keepStoredNight(stored: StoredNight, s: Session): boolean {
+  const staged = (stored.core_min ?? 0) + (stored.deep_min ?? 0) + (stored.rem_min ?? 0);
+  const storedStaged = staged > 0 && staged >= stored.total_sleep_min * 0.5;
+  if (storedStaged !== hasStages(s)) return storedStaged;
+  const start = Date.parse(stored.sleep_start);
+  const end = Date.parse(stored.sleep_end);
+  const overlaps = s.sleepStart < end && s.sleepEnd > start;
+  const inside = s.sleepStart >= start && s.sleepEnd <= end;
+  return (!overlaps || inside) && s.asleepMin < stored.total_sleep_min;
+}
+
 /**
  * Pro každý den vybere hlavní spánek: nejdelší session (napříč zdroji),
  * která skončila v daný den do 14:00 místního času. Šlofíky a spánky
