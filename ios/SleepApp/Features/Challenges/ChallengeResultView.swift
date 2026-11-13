@@ -77,6 +77,9 @@ struct ChallengeResultView: View {
         switch (challenge.type, result) {
         case (.teamGoal, .win): return "Cíl splněn. Všichni berou výhru."
         case (.teamGoal, _): return "Cíl nesplněn. Prohra pro všechny."
+        case (_, .win) where challenge.forfeit || losers.isEmpty:
+            // kontumace: poražení smazali účet, žádná ovečka
+            return ChallengeCopy.resultLine(challenge, me: me)
         case (_, .win):
             return losers.count == 1 ? "Bereš ovečku: \(losers[0].profile.displayName)." : (2...4).contains(losers.count) ? "Bereš \(losers.count) ovečky." : "Bereš \(losers.count) oveček."
         case (_, .loss):
