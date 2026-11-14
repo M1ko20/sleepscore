@@ -19,6 +19,9 @@ Co je hotové a jak. Nejnovější nahoře. Detaily backendu v `backend.md`, vzh
 13. ~~Notifikace ve zvonečku~~ hotovo (#9). ~~Zneplatnění Apple tokenu~~ (#7), ~~Release bez zápisu do Health~~ (#8), ~~anglické zásady~~ (#3) hotovo.
 14. Další: push přes APNs (#10, Developer Program, pak i pondělní push na recap), nastavení notifikací (#11), test na iPhonu s Garminem.
 
+## 2026-11-14 – Profil: jen získané odznaky
+- `BadgeGrid` ukazuje jen získané (Adam). Klepnutí otevře podmínku pod mřížkou a profil se k ní posune (`ScrollViewReader` uvnitř ScrollView profilu). Platí i pro profil přítele.
+
 ## 2026-11-14 – Tagy v2 a nové odznaky
 - Domluveno s Adamem: 4 tagy, které spánek kazí (alkohol, nemoc, telefon v posteli, **učení**), a 4, které pomáhají (**trénink, bez telefonu, čtení, sauna**). Kafe po 15:00, večerní trénink, pozdní jídlo a dítě jsou pryč i ze starých nocí (jen testovací/review účty).
 - Migrace `20261114100000_tags_v2.sql` (**nasazená**): `tags.positive`, nový katalog, odznaky Scroll vyhrál, Nezničitelný, Zkouškové, Regenerace (za noc, přepočet při přidání i odebrání tagu) a Detox (každá 7. noc v řadě s „bez telefonu“, `private.recompute_detox`).

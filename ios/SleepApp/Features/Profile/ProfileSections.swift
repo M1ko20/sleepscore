@@ -180,46 +180,62 @@ struct SoulShowcase: View {
     }
 }
 
-/// Odznaky: šestiúhelníky, získané žlutě s ×N, nezískané šedě. Klepnutí = podmínka.
+/// Odznaky: jen získané (žlutě s ×N). Klepnutí = podmínka pod mřížkou a posun k ní.
 struct BadgeGrid: View {
     let catalog: [AchievementInfo]
     let counts: [String: Int]
 
     @State private var selected: AchievementInfo?
     private let columns = Array(repeating: GridItem(.flexible(), spacing: 8), count: 5)
+    private static let detailID = "badgeDetail"
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            SectionTitle(title: "Odznaky", value: "\(counts.count)/\(catalog.count)")
-            LazyVGrid(columns: columns, spacing: 14) {
-                ForEach(sorted, id: \.code) { a in
-                    let n = counts[a.code] ?? 0
-                    Button { selected = (selected?.code == a.code) ? nil : a } label: {
-                        BadgeHex(symbol: BadgeGlyph.symbol(a.code), earned: n > 0, count: n,
-                                 selected: selected?.code == a.code)
+        // Reader uvnitř ScrollView profilu – scrollTo posouvá ten nadřazený.
+        ScrollViewReader { proxy in
+            VStack(alignment: .leading, spacing: 12) {
+                SectionTitle(title: "Odznaky", value: "\(earned.count)/\(catalog.count)")
+                if earned.isEmpty {
+                    Text("Zatím žádný. První přijde dřív, než čekáš.").captionStyle()
+                }
+                LazyVGrid(columns: columns, spacing: 14) {
+                    ForEach(earned, id: \.code) { a in
+                        let n = counts[a.code] ?? 0
+                        Button { selected = (selected?.code == a.code) ? nil : a } label: {
+                            BadgeHex(symbol: BadgeGlyph.symbol(a.code), earned: true, count: n,
+                                     selected: selected?.code == a.code)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("\(a.name), získáno \(n)×")
+                        .accessibilityHint(a.description)
                     }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("\(a.name)\(n > 0 ? ", získáno \(n)×" : ", nezískáno")")
-                    .accessibilityHint(a.description)
+                }
+                if let s = selected {
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack {
+                            Text(s.name).font(Font.app.body.weight(.semibold)).foregroundStyle(Color.app.textPrimary)
+                            if let n = counts[s.code], n > 0 { Text("×\(n)").captionStyle() }
+                        }
+                        Text(s.description).captionStyle()
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .cardStyle()
+                    .id(Self.detailID)
                 }
             }
-            if let s = selected {
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack {
-                        Text(s.name).font(Font.app.body.weight(.semibold)).foregroundStyle(Color.app.textPrimary)
-                        if let n = counts[s.code], n > 0 { Text("×\(n)").captionStyle() }
-                    }
-                    Text(s.description).captionStyle()
+            .onChange(of: selected?.code) { _, code in
+                guard code != nil else { return }
+                // Až po vložení karty do layoutu, jinak scrollTo nemá kam.
+                Task { @MainActor in
+                    try? await Task.sleep(for: .milliseconds(50))
+                    withAnimation(.snappy) { proxy.scrollTo(Self.detailID, anchor: .bottom) }
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .cardStyle()
             }
         }
     }
 
-    /// Získané první (v pořadí katalogu), pak ty, co se dají honit.
-    private var sorted: [AchievementInfo] {
-        catalog.filter { counts[$0.code] != nil } + catalog.filter { counts[$0.code] == nil }
+    /// Jen získané, v pořadí katalogu.
+    private var earned: [AchievementInfo] {
+        catalog.filter { (counts[$0.code] ?? 0) > 0 }
     }
 }
 

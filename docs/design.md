@@ -161,7 +161,8 @@ DEEP       ████            ███
 ### Odznaky (achievementy)
 - Plochý šestiúhelník (ne 3D medaile), uvnitř SF Symbol nebo vlastní glyf.
 - Získaný: obrys `accent`, glyf `textPrimary`; opakovaný má vpravo dole `×3`.
-- Nezískaný: obrys `hairline`, glyf `textTertiary`, podmínka v detailu (ať je co honit).
+- Na profilu (mém i přítele) jen získané, v pořadí katalogu; nadpis `14/22` napoví, že jsou další. Bez žádného: „Zatím žádný. První přijde dřív, než čekáš.“
+- Klepnutí na odznak → karta s názvem, `×N` a podmínkou pod mřížkou, profil se k ní posune.
 
 ### Stádo (ovečky poražených)
 - Mřížka 4 sloupce. Ovečka = avatar poraženého v kroužku, desaturovaný, s datem pod ním.
