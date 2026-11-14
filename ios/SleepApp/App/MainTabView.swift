@@ -5,6 +5,9 @@ struct MainTabView: View {
     @State private var challenges = ChallengeStore()
     @State private var friends = FriendsStore()
     @State private var rematch: ProfileLite?
+    /// Výsledek výzvy přes celou obrazovku až po dotazu na Zdraví – jinak systémové okno
+    /// o povolení zavře (vyskočí a hned zmizí, viděno na iPhonu s nevideným výsledkem).
+    @State private var healthAsked = false
     @State private var tab: Int = {
         #if DEBUG
         let args = ProcessInfo.processInfo.arguments
@@ -32,7 +35,7 @@ struct MainTabView: View {
         .environment(feed)
         .environment(challenges)
         .environment(friends)
-        .fullScreenCover(item: Binding(get: { challenges.unseenResult }, set: { _ in })) { c in
+        .fullScreenCover(item: Binding(get: { healthAsked ? challenges.unseenResult : nil }, set: { _ in })) { c in
             if let me = session.profile?.id {
                 ChallengeResultView(
                     challenge: c, me: me,
@@ -62,6 +65,7 @@ struct MainTabView: View {
             }
             // Už rozhodnuté oprávnění se znovu neptá.
             try? await health.requestAuthorization()
+            healthAsked = true
             health.startObserving()
             #if DEBUG
             if ProcessInfo.processInfo.arguments.contains("-debugSeedHealth") {

@@ -8,6 +8,7 @@ struct NightCard: View {
     var tagLine: String
     var achievementNames: [String]
     var onEdit: (() -> Void)?
+    var onOpen: () -> Void = {}
     var onReact: (ReactionKind?) -> Void
 
     @State private var picking = false
@@ -89,6 +90,11 @@ struct NightCard: View {
             }
         }
         .cardStyle(highlighted: highlight)
+        // Klepnutí i podržení přímo na kartě, ne NavigationLink kolem ní: na iOS 17 long press
+        // uvnitř NavigationLinku ve ScrollView spolkl klepnutí a zasekával scroll.
+        // Tap před long pressem = scroll začne, i když prst chvíli stojí.
+        .contentShape(Rectangle())
+        .onTapGesture { onOpen() }
         .onLongPressGesture(minimumDuration: 0.35) {
             guard !isMine else { return }
             withAnimation(.snappy) { picking = true }
