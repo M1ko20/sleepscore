@@ -19,6 +19,17 @@ Co je hotové a jak. Nejnovější nahoře. Detaily backendu v `backend.md`, vzh
 13. ~~Notifikace ve zvonečku~~ hotovo (#9). ~~Zneplatnění Apple tokenu~~ (#7), ~~Release bez zápisu do Health~~ (#8), ~~anglické zásady~~ (#3) hotovo.
 14. Další: push přes APNs (#10, Developer Program, pak i pondělní push na recap), nastavení notifikací (#11), test na iPhonu s Garminem.
 
+## 2026-11-14 – Apple Developer Program: podepisování
+- Adam má nový (firemní) Apple účet s Developer Programem, Team ID `UV56DGQ2BR`. Na Macu zůstává osobní Apple ID, firemní je jen v Xcode → Accounts.
+- `ios/project.yml`: `DEVELOPMENT_TEAM` + `CODE_SIGN_STYLE: Automatic` pro oba targety. Build pro zařízení (`-allowProvisioningUpdates`) zaregistroval `cz.mikolas.bedrival`, vytvořil vývojový certifikát a profil s HealthKit (+ background delivery), Sign in with Apple a push.
+- Na nahrání do TestFlightu je potřeba Xcode 26 (iOS 26 SDK); na Macu je zatím 16.3.
+- **Sign in with Apple** byl v Supabase vypnutý → zapnuto přes Management API (`external_apple_client_id = cz.mikolas.bedrival`, nativní flow bez secretu), `supabase/config.toml` srovnaný. Secret pro zneplatnění tokenu (#7) zatím chybí.
+- První test na iPhonu (iOS 17.6.2, Debug build přes `devicectl`):
+  - **Feed**: karta jako `NavigationLink` s `onLongPressGesture` uvnitř → na iOS 17 nešlo rozkliknout a scroll se zasekával (simulátor iOS 18 to neukázal). Teď `onTapGesture` + `onLongPressGesture` přímo na kartě, otevření přes `path.append`.
+  - **Okno o povolení Zdraví** vyskočilo a hned zmizelo: zavřela ho výsledková obrazovka výzvy (`fullScreenCover`), která se načetla souběžně. Cover teď čeká na dotaz na Zdraví (`healthAsked`). Tlačítko Synchronizovat v Profilu nejdřív požádá o přístup (když okno dřív zmizelo bez odpovědi, ukáže se znovu).
+- Testovací přihlášení Adama: `adam@sleepscore.test`, heslo v `~/.bedrival/dev_accounts.json` (mimo git).
+- Logy z telefonu: `xcrun devicectl device process launch --device <id> --console --environment-variables '{"OS_ACTIVITY_DT_MODE":"enable"}' cz.mikolas.bedrival`.
+
 ## 2026-11-13 – Review: noc s fázemi dorazí později, odebrání z přátel
 - **Výsledková obrazovka** při kontumační výhře psala „Bereš 0 oveček.“ → teď „Soupeř smazal účet. Výhra kontumačně.“ (resp. „Ostatní smazali účet…“).
 - Nasazeno (migrace + `ingest-sleep`), E2E na produkci 42/42.

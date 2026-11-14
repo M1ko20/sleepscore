@@ -10,6 +10,11 @@ packages:
   Supabase:
     url: https://github.com/supabase/supabase-swift
     from: 2.20.0
+# Podepisování: tým z Apple Developer Programu (Team ID není tajné). Profily spravuje Xcode sám.
+settings:
+  base:
+    DEVELOPMENT_TEAM: UV56DGQ2BR
+    CODE_SIGN_STYLE: Automatic
 configFiles:
   Debug: Config/App.xcconfig
   Release: Config/App.xcconfig

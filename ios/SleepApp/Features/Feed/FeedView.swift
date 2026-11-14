@@ -127,20 +127,18 @@ struct FeedView: View {
     }
 
     private func nightCard(_ post: FeedPost) -> some View {
-                        NavigationLink(value: post.id) {
-                            NightCard(
-                                post: post, me: me,
-                                streak: store.streakBadge(for: post),
-                                tagLine: store.tagLine(post.night.tags),
-                                achievementNames: post.night.achievementCodes.compactMap { store.achievementNames[$0] },
-                                onEdit: { editing = post },
-                                onReact: { kind in
-                                    guard let me else { return }
-                                    Task { await store.react(post.id, me: me, kind: kind) }
-                                }
-                            )
-                        }
-                        .buttonStyle(.plain)
+        NightCard(
+            post: post, me: me,
+            streak: store.streakBadge(for: post),
+            tagLine: store.tagLine(post.night.tags),
+            achievementNames: post.night.achievementCodes.compactMap { store.achievementNames[$0] },
+            onEdit: { editing = post },
+            onOpen: { path.append(post.id) },
+            onReact: { kind in
+                guard let me else { return }
+                Task { await store.react(post.id, me: me, kind: kind) }
+            }
+        )
     }
 
     private var emptyState: some View {

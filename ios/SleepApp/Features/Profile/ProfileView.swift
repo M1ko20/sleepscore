@@ -161,7 +161,11 @@ struct HealthSection: View {
             Text("Apple Health").statLabel()
             Text(statusText).captionStyle()
             Button(health.status == .syncing ? "Synchronizuju…" : "Synchronizovat") {
-                Task { await health.sync(force: true) }
+                Task {
+                    // Když se okno o povolení dřív zavřelo bez odpovědi, ukáže se znovu (jinak nic).
+                    try? await health.requestAuthorization()
+                    await health.sync(force: true)
+                }
             }
             .buttonStyle(.secondary)
             .disabled(health.status == .syncing || !health.isAvailable)
