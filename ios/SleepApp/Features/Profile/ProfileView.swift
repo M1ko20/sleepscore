@@ -149,38 +149,54 @@ struct ProfileRow: View {
     }
 }
 
-/// Stav synchronizace s Apple Health + ruční synchronizace.
+/// Apple Health v Nastavení: co čteme, sdílení (povolení / úprava ve Zdraví), stav a ruční synchronizace.
 struct HealthSection: View {
     @State private var health = HealthSync.shared
-    #if DEBUG
-    @State private var seeding = false
-    #endif
+    /// nil = ještě nezjištěno
+    @State private var canPrompt: Bool?
+    @Environment(\.openURL) private var openURL
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Apple Health").statLabel()
+            Text("Čteme jen spánek a tep z hodinek nebo prstenu. Nic dalšího a nic do reklamy.").captionStyle()
+                .fixedSize(horizontal: false, vertical: true)
+            if health.isAvailable {
+                Button(canPrompt == true ? "Sdílet spánek a tep" : "Upravit sdílení ve Zdraví", action: share)
+                    .buttonStyle(.secondary)
+                    .disabled(canPrompt == nil)
+                if canPrompt == false {
+                    Text("Ve Zdraví: profilovka vpravo nahoře → Aplikace → Bedrival.").captionStyle()
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
             Text(statusText).captionStyle()
             Button(health.status == .syncing ? "Synchronizuju…" : "Synchronizovat") {
                 Task {
                     // Když se okno o povolení dřív zavřelo bez odpovědi, ukáže se znovu (jinak nic).
                     try? await health.requestAuthorization()
                     await health.sync(force: true)
-                }
-            }
-            .buttonStyle(.secondary)
-            .disabled(health.status == .syncing || !health.isAvailable)
-            #if DEBUG
-            Button(seeding ? "Vkládám…" : "DEBUG: vložit noc do Zdraví") {
-                seeding = true
-                Task {
-                    try? await health.requestAuthorization()
-                    do { try await DebugHealthSeeder.insertNight() } catch { log.error("seed: \(String(describing: error))") }
-                    seeding = false
-                    await health.sync()
+                    canPrompt = await health.needsAuthorizationPrompt()
                 }
             }
             .buttonStyle(.plainText)
-            #endif
+            .disabled(health.status == .syncing || !health.isAvailable)
+        }
+        .task { canPrompt = await health.needsAuthorizationPrompt() }
+    }
+
+    /// Nevyjádřil se → systémové okno a pak synchronizace. Jinak se iOS znovu nezeptá → aplikace Zdraví
+    /// + cesta pod tlačítkem (přímý odkaz na přepínače iOS veřejně nemá, `App-prefs:` neprojde review,
+    /// stránka appky v Nastavení Zdraví neobsahuje).
+    private func share() {
+        if canPrompt == true {
+            Task {
+                try? await health.requestAuthorization()
+                canPrompt = await health.needsAuthorizationPrompt()
+                await health.sync(force: true)
+            }
+        } else if let url = URL(string: "x-apple-health://") {
+            openURL(url)
         }
     }
 
