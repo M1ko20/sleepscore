@@ -1,2 +1,3 @@
 /* Text žádosti o přístup ke Zdraví (HealthKit). */
 "NSHealthShareUsageDescription" = "Čteme jen spánek a tep z hodinek nebo prstenu. Nic dalšího a nic do reklamy.";
+"NSHealthUpdateUsageDescription" = "Bedrival do Apple Health nic nezapisuje. Jen testovací verze vkládá vzorovou noc.";
