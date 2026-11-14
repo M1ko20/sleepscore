@@ -221,6 +221,8 @@ struct Comment: Decodable, Identifiable, Hashable, Sendable {
 struct Tag: Decodable, Hashable, Sendable, Identifiable {
     let slug: String
     let label: String
+    /// Pomáhá spánku (pravý sloupec výběru), jinak ho kazí.
+    var positive: Bool = false
     var id: String { slug }
 }
 

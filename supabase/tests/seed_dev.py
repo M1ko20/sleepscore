@@ -91,11 +91,11 @@ def make_night(rng, wake_date, style, deep_factor=1.0, bed_shift=0.0):
 
 
 TITLES = [
-    ("Spal jsem jak dřevo", "Konečně normální noc.", ["evening_workout"]),
-    ("Narozeniny", "Nebudu to rozebírat.", ["alcohol", "late_meal"]),
-    ("Kafe ve čtyři byla chyba", None, ["late_coffee"]),
+    ("Spal jsem jak dřevo", "Konečně normální noc.", ["workout"]),
+    ("Narozeniny", "Nebudu to rozebírat.", ["alcohol"]),
+    ("Zítra zkouška", None, ["studying"]),
     ("Netflix vyhrál", "Ještě jeden díl. A ještě jeden.", ["phone_in_bed"]),
-    (None, "Malá se budila dvakrát.", ["kid"]),
+    (None, "Sauna a pak jak mimino.", ["sauna", "no_phone"]),
     ("Klasika", None, []),
 ]
 
@@ -157,11 +157,13 @@ def main(users, ingest_only=False):
 # Tag → (styl, násobek deep, posun usnutí v h). Bez tagu normální noc.
 EFFECTS = {
     "alcohol": ("normal", 0.55, 0.6),
-    "late_coffee": ("normal", 0.85, 0.7),
-    "evening_workout": ("early", 1.15, 0.0),
+    "sick": ("normal", 0.8, 0.2),
     "phone_in_bed": ("normal", 0.95, 0.8),
-    "late_meal": ("normal", 0.8, 0.3),
-    "kid": ("normal", 0.9, 0.0),
+    "studying": ("late", 0.9, 0.7),
+    "workout": ("early", 1.15, 0.0),
+    "no_phone": ("normal", 1.05, -0.2),
+    "reading": ("normal", 1.0, -0.3),
+    "sauna": ("early", 1.2, 0.0),
 }
 
 
@@ -174,8 +176,8 @@ def history(n_days, users):
         samples, hr, plan = [], [], {}
         for i in range(n_days, 7, -1):
             wake = today - timedelta(days=i)
-            tags = rng.choices([[], ["alcohol"], ["late_coffee"], ["evening_workout"], ["phone_in_bed"],
-                                ["alcohol", "late_meal"], ["kid"]], [6, 2, 2, 2, 2, 1, 1])[0]
+            tags = rng.choices([[], ["alcohol"], ["studying"], ["workout"], ["phone_in_bed"],
+                                ["no_phone", "reading"], ["sauna"], ["sick"]], [6, 2, 2, 2, 2, 1, 1, 1])[0]
             style, deep_f, shift = "normal", 1.0, 0.0
             for t in tags:
                 st, df, sh = EFFECTS[t]

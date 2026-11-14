@@ -51,12 +51,13 @@ enum InsightCopy {
     private static func prefix(_ i: TagInsight) -> String {
         switch i.tag {
         case "alcohol": "S alkoholem"
-        case "late_coffee": "S kafem po 15:00"
-        case "evening_workout": "Po večerním tréninku"
-        case "phone_in_bed": "S telefonem v posteli"
-        case "late_meal": "Po pozdním jídle"
-        case "kid": "Když tě budí dítě,"
         case "sick": "V nemoci"
+        case "phone_in_bed": "S telefonem v posteli"
+        case "studying": "Po učení"
+        case "workout": "Po tréninku"
+        case "no_phone": "Bez telefonu"
+        case "reading": "Když před spaním čteš,"
+        case "sauna": "Po sauně"
         default: "S tagem \(i.label)"
         }
     }

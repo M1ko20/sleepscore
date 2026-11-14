@@ -238,7 +238,7 @@ Platí pro pushe. Ve zvonečku uvidíš všechno.
 Shora: autor a datum → `scoreXL` + 3 statistiky (délka, usnutí, vstávání) → hypnogram → délky fází (4 vodorovné pruhy s minutami) → **rozpad skóre** (5 řádků: název složky, tenký pruh, číslo; vynechaná složka šedě „bez dat“) → tagy → fotka → komentáře.
 
 ### 4. Úprava karty (sheet)
-Název (1 řádek), komentář, tagy (mřížka chipů `surfaceRaised`, vybraný = obrys `accent`), fotka (zmenšení na ~200 kB na telefonu). Uložit = primární tlačítko.
+Název (1 řádek), komentář, tagy (dva sloupce chipů `surfaceRaised` – vlevo „Kazí“, vpravo „Pomáhá“, vybraný = obrys `accent`), fotka (zmenšení na ~200 kB na telefonu). Uložit = primární tlačítko.
 
 ### 5. Výzvy
 ```
