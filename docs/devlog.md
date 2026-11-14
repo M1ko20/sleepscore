@@ -19,6 +19,9 @@ Co je hotové a jak. Nejnovější nahoře. Detaily backendu v `backend.md`, vzh
 13. ~~Notifikace ve zvonečku~~ hotovo (#9). ~~Zneplatnění Apple tokenu~~ (#7), ~~Release bez zápisu do Health~~ (#8), ~~anglické zásady~~ (#3) hotovo.
 14. Další: push přes APNs (#10, Developer Program, pak i pondělní push na recap), nastavení notifikací (#11), test na iPhonu s Garminem.
 
+## 2026-11-14 – Feed: výsledek výzvy jde rozkliknout
+- Karta výsledku výzvy ve feedu otevře detail výzvy (`NavigationLink(value: Challenge)`). Detail bere výzvu ze seznamu mých výzev, jinak z karty (`initial`) – i cizí, ve které nehraju, bez dalšího callu. Proklik ze zvonečku na neznámou výzvu ji po načtení seznamu dotáhne přes `API.challenge(id:)`.
+
 ## 2026-11-14 – Profil: jen získané odznaky
 - `BadgeGrid` ukazuje jen získané (Adam). Klepnutí otevře podmínku pod mřížkou a profil se k ní posune (`ScrollViewReader` uvnitř ScrollView profilu). Platí i pro profil přítele.
 

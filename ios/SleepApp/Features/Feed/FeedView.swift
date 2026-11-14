@@ -57,7 +57,10 @@ struct FeedView: View {
                     ForEach(store.items(me: me)) { item in
                         switch item {
                         case .result(let r):
-                            ChallengeResultCard(post: r, me: me)
+                            NavigationLink(value: r.challenge) {
+                                ChallengeResultCard(post: r, me: me)
+                            }
+                            .buttonStyle(.plain)
                         case .night(let post):
                             nightCard(post)
                         }
@@ -73,6 +76,7 @@ struct FeedView: View {
             }
             .navigationDestination(for: ProfileLite.self) { UserProfileView(profile: $0) }
             .navigationDestination(for: ChallengeLink.self) { ChallengeDetailView(challengeID: $0.id) }
+            .navigationDestination(for: Challenge.self) { ChallengeDetailView(challengeID: $0.id, initial: $0) }
             .navigationDestination(for: FeedRoute.self) { route in
                 switch route {
                 case .notifications: NotificationsView()

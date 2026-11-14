@@ -3,6 +3,8 @@ import SwiftUI
 /// Detail výzvy (design.md → Detail výzvy).
 struct ChallengeDetailView: View {
     let challengeID: UUID
+    /// Výzva z karty ve feedu – i cizí, ve které nehraju (seznam má jen moje).
+    var initial: Challenge?
 
     @Environment(Session.self) private var session
     @Environment(ChallengeStore.self) private var store
@@ -10,12 +12,14 @@ struct ChallengeDetailView: View {
     @State private var busy = false
     @State private var rematch: ProfileLite?
     @State private var reporting: ReportRequest?
+    @State private var fetched: Challenge?
 
     private var me: UUID? { session.profile?.id }
+    private var current: Challenge? { store.challenge(challengeID) ?? fetched ?? initial }
 
     var body: some View {
         Group {
-            if let c = store.challenge(challengeID) {
+            if let c = current {
                 content(c)
             } else {
                 Text("Výzva už není k dispozici.").captionStyle()
@@ -26,7 +30,7 @@ struct ChallengeDetailView: View {
         .sheet(item: $rematch) { NewChallengeFlow(prefill: $0) }
         .sheet(item: $reporting) { ReportSheet(request: $0) }
         .toolbar {
-            if let c = store.challenge(challengeID), let stake = c.stake, !stake.isEmpty, c.creatorID != me {
+            if let c = current, let stake = c.stake, !stake.isEmpty, c.creatorID != me {
                 ToolbarItem(placement: .topBarTrailing) {
                     Menu {
                         Button("Nahlásit text výzvy") {
@@ -42,7 +46,9 @@ struct ChallengeDetailView: View {
         }
         .task {
             // proklik ze zvonečku na výzvu, kterou seznam ještě nezná
-            if store.challenge(challengeID) == nil, let me { await store.load(me: me) }
+            guard current == nil, let me else { return }
+            await store.load(me: me)
+            if store.challenge(challengeID) == nil { fetched = try? await API.challenge(id: challengeID) }
         }
     }
 
