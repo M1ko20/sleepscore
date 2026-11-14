@@ -19,6 +19,11 @@ Co je hotové a jak. Nejnovější nahoře. Detaily backendu v `backend.md`, vzh
 13. ~~Notifikace ve zvonečku~~ hotovo (#9). ~~Zneplatnění Apple tokenu~~ (#7), ~~Release bez zápisu do Health~~ (#8), ~~anglické zásady~~ (#3) hotovo.
 14. Další: push přes APNs (#10, Developer Program, pak i pondělní push na recap), nastavení notifikací (#11), test na iPhonu s Garminem.
 
+## 2026-11-14 – První build v App Store Connect
+- Xcode 26.3 v `/Applications/Xcode-26.3.app` (Xcode 16.3 zůstává). Archiv a upload: `DEVELOPER_DIR=/Applications/Xcode-26.3.app/Contents/Developer`, `xcodebuild archive … -derivedDataPath build26 -allowProvisioningUpdates`, pak `-exportArchive` s `method app-store-connect`, `destination upload`.
+- Validace chtěla `NSHealthUpdateUsageDescription` i v Release (kvůli HealthKit entitlementu) → v `project.yml` pro všechny buildy, text „Bedrival do Apple Health nic nezapisuje…“ (CZ/EN). Release o zápis dál nežádá.
+- Nahráno 0.1.0 (1). Review účet osvěžený (`review_seed.py --refresh`), kód pozvánky pro recenzenta `HEC3XBY6`.
+
 ## 2026-11-14 – Push a Apple klíč zapnuté
 - Klíč `A8NSKYFS8N` (APNs + Sign in with Apple) → Supabase secrets `APPLE_TEAM_ID`, `APPLE_KEY_ID`, `APPLE_CLIENT_ID`, `APPLE_PRIVATE_KEY`, `PUSH_SECRET`; `.p8` a push secret v `~/.bedrival/` (mimo git).
 - `send-push` nasazená (`--no-verify-jwt`), `private.app_config`: `push_function_url`, `push_secret`. Test: reakce od `jakub` na Adamovu noc → `send-push` `{"sent":1}`, push dorazil na iPhone.
