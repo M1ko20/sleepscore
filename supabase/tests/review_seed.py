@@ -120,8 +120,8 @@ def login(u):
 # Kdo kdy spí hůř/líp, aby výsledky skončených soubojů vyšly, jak má ukázat demo.
 def night_plan(key, wake):
     rng = random.Random(f"review:{key}:{wake.isoformat()}")
-    tags = rng.choices([[], ["alcohol"], ["late_coffee"], ["evening_workout"], ["phone_in_bed"],
-                        ["alcohol", "late_meal"], ["kid"]], [7, 2, 2, 2, 2, 1, 1])[0]
+    tags = rng.choices([[], ["alcohol"], ["studying"], ["workout"], ["phone_in_bed"],
+                        ["no_phone", "reading"], ["sauna"]], [7, 2, 2, 2, 2, 1, 1])[0]
     style, deep_f, shift = rng.choices(["early", "normal", "late"], [2, 6, 1])[0], 1.0, 0.0
     off = (wake - TODAY).days
     if -20 <= off <= -14:   # souboj B×R: Bára vyhraje

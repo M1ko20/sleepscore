@@ -47,23 +47,10 @@ struct EditPostSheet: View {
                             .onChange(of: bodyText) { _, v in if v.count > 1000 { bodyText = String(v.prefix(1000)) } }
                     }
                     field("Tagy") {
-                        LazyVGrid(columns: [GridItem(.adaptive(minimum: 150), spacing: 8)], spacing: 8) {
-                            ForEach(store.tagCatalog) { tag in
-                                let on = tags.contains(tag.slug)
-                                Button {
-                                    if on { tags.remove(tag.slug) } else { tags.insert(tag.slug) }
-                                } label: {
-                                    Text(tag.label)
-                                        .font(Font.app.caption.weight(.semibold))
-                                        .foregroundStyle(Color.app.textPrimary)
-                                        .frame(maxWidth: .infinity, minHeight: 44)
-                                        .background(Color.app.surfaceRaised, in: RoundedRectangle(cornerRadius: Metrics.controlRadius))
-                                        .overlay(RoundedRectangle(cornerRadius: Metrics.controlRadius)
-                                            .strokeBorder(on ? Color.app.accent : .clear, lineWidth: 1))
-                                }
-                                .buttonStyle(.plain)
-                                .accessibilityAddTraits(on ? .isSelected : [])
-                            }
+                        // Vlevo co spánek kazí, vpravo co pomáhá.
+                        HStack(alignment: .top, spacing: 8) {
+                            tagColumn("Kazí", store.tagCatalog.filter { !$0.positive })
+                            tagColumn("Pomáhá", store.tagCatalog.filter(\.positive))
                         }
                     }
                     field("Fotka") { photoField }
@@ -136,6 +123,29 @@ struct EditPostSheet: View {
                 newPhoto = (jpeg, small)
             }
         }
+    }
+
+    private func tagColumn(_ heading: String, _ items: [Tag]) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(heading).font(Font.app.caption).foregroundStyle(Color.app.textSecondary)
+            ForEach(items) { tag in
+                let on = tags.contains(tag.slug)
+                Button {
+                    if on { tags.remove(tag.slug) } else { tags.insert(tag.slug) }
+                } label: {
+                    Text(tag.label)
+                        .font(Font.app.caption.weight(.semibold))
+                        .foregroundStyle(Color.app.textPrimary)
+                        .frame(maxWidth: .infinity, minHeight: 44)
+                        .background(Color.app.surfaceRaised, in: RoundedRectangle(cornerRadius: Metrics.controlRadius))
+                        .overlay(RoundedRectangle(cornerRadius: Metrics.controlRadius)
+                            .strokeBorder(on ? Color.app.accent : .clear, lineWidth: 1))
+                }
+                .buttonStyle(.plain)
+                .accessibilityAddTraits(on ? .isSelected : [])
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .topLeading)
     }
 
     private func field<C: View>(_ label: String, @ViewBuilder _ content: () -> C) -> some View {

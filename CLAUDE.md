@@ -18,15 +18,15 @@ Rychlá fakta:
 - Appka se jmenuje **Bedrival** (bundle ID `cz.mikolas.bedrival`).
 - Supabase projekt `tlespfcbqzddddhjsieu` (Free). CLI přihlášené a nalinkované: `supabase db push --remote --yes`, `supabase functions deploy <fn> --use-api --yes`.
 - Adam hlídá počet callů na Supabase (Free tier) – plánované věci dělat v DB (pg_cron), ne Edge Functions.
-- Apple Developer Program až bude appka skoro hotová → do té doby simulátor + testovací přihlášení e-mailem.
-- Xcode 16.3, simulátor iOS 18.4. Deno a Postgres 16 nainstalované (testy).
+- Apple Developer Program aktivní (firemní Apple ID jen v Xcode, tým `UV56DGQ2BR`). Test na Adamově iPhonu (iOS 17.6.2) přes `devicectl`, přihlášení testovacím účtem (heslo v `~/.bedrival/dev_accounts.json`).
+- Xcode 16.3 (na TestFlight potřeba Xcode 26), simulátor iOS 18.4. Deno a Postgres 16 nainstalované (testy).
 
 ## Produkt
 Sociální appka pro spánek: každé ráno se noc objeví jako karta, kamarádi ji komentují a lidi se měří ve výzvách. Tón hravý a soutěživý, ne wellness a ne „AI cringe“.
 
 - **Jen iOS** (SwiftUI). Android není v plánu.
 - **Invite-only**: každý dostane 3 pozvánky, další za výhry ve výzvách a milníky sérií. Profil i karty jsou defaultně jen pro přátele.
-- **Ranní karta**: sleep score, hypnogram (fáze v čase, případně s tepem), usnutí a vstávání, délka, délky fází, probuzení, název a komentář, tagy (alkohol, kafe po 15:00, večerní trénink, telefon v posteli, pozdní jídlo, dítě, nemoc…), volitelná fotka.
+- **Ranní karta**: sleep score, hypnogram (fáze v čase, případně s tepem), usnutí a vstávání, délka, délky fází, probuzení, název a komentář, tagy ve dvou sloupcích – kazí: alkohol, nemoc, telefon v posteli, učení; pomáhá: trénink, bez telefonu, čtení, sauna, volitelná fotka.
 - **Karta se zveřejní automaticky** po synchronizaci + notifikace „doplň komentář“. Tagy jen z pevného seznamu.
 - **Feed** karet přátel, komentáře, spánkové reakce místo lajků (**jedna reakce od člověka na kartu**).
 - **Přátelé**: kdo tě pozval, je automaticky kamarád. Žádost o přátelství může poslat kdokoliv komukoliv.
@@ -34,7 +34,7 @@ Sociální appka pro spánek: každé ráno se noc objeví jako karta, kamarádi
 - **Profil**: profilovka, MMA bilance z výzev (výhry-prohry-remízy, např. 12-3-1), stádo oveček (za každého poraženého jeho ovečka), vzájemná bilance se soupeřem.
 - **Série**: odměňuje pravidelnost (usnutí ±30 min od průměru 14 nocí + min. 6 h), streak freeze 1× týdně automaticky (první špatná/chybějící noc v týdnu nepřeruší, ale nepřičte se).
 - Opakované achievementy: Pastýř za každých 10 oveček, Neporazitelný za každých 5 výher v řadě, Švýcarské hodinky za každý další 14denní úsek. Ukradená hodina = noc na poslední neděli v březnu, Dvojí život se vyhodnocuje v pondělí.
-- **Achievementy**: viz dokument (Kóma, Zombie, Noční směna, Ani se nehnul, Hlubinář, Dokonalá noc, Švýcarské hodinky, Dvojí život, Stovka, Navzdory, Pivo vyhrálo, První ovečka, Pastýř, Neporazitelný, Odplata, O chlup, Zapomněl hodinky, Ukradená hodina, Novoroční přeživší…).
+- **Achievementy**: viz dokument (Kóma, Zombie, Noční směna, Ani se nehnul, Hlubinář, Dokonalá noc, Švýcarské hodinky, Dvojí život, Stovka, Navzdory, Pivo vyhrálo, Scroll vyhrál, Nezničitelný, Zkouškové, Regenerace, Detox (každých 7 nocí v řadě bez telefonu), První ovečka, Pastýř, Neporazitelný, Odplata, O chlup, Zapomněl hodinky, Ukradená hodina, Novoroční přeživší…).
 - **Tagy → insighty** („s alkoholem máš o 38 % méně deep“), **týdenní recap** v pondělí, **Sleep Wrapped** na konci roku.
 - Vyřazeno: tlačítko „Jdu spát“, týdenní ligy.
 

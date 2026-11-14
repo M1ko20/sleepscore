@@ -19,6 +19,13 @@ Co je hotové a jak. Nejnovější nahoře. Detaily backendu v `backend.md`, vzh
 13. ~~Notifikace ve zvonečku~~ hotovo (#9). ~~Zneplatnění Apple tokenu~~ (#7), ~~Release bez zápisu do Health~~ (#8), ~~anglické zásady~~ (#3) hotovo.
 14. Další: push přes APNs (#10, Developer Program, pak i pondělní push na recap), nastavení notifikací (#11), test na iPhonu s Garminem.
 
+## 2026-11-14 – Tagy v2 a nové odznaky
+- Domluveno s Adamem: 4 tagy, které spánek kazí (alkohol, nemoc, telefon v posteli, **učení**), a 4, které pomáhají (**trénink, bez telefonu, čtení, sauna**). Kafe po 15:00, večerní trénink, pozdní jídlo a dítě jsou pryč i ze starých nocí (jen testovací/review účty).
+- Migrace `20261114100000_tags_v2.sql` (**nasazená**): `tags.positive`, nový katalog, odznaky Scroll vyhrál, Nezničitelný, Zkouškové, Regenerace (za noc, přepočet při přidání i odebrání tagu) a Detox (každá 7. noc v řadě s „bez telefonu“, `private.recompute_detox`).
+- Appka: úprava karty má tagy ve dvou sloupcích „Kazí“ / „Pomáhá“, texty insightů a ikony odznaků pro nové tagy.
+- `seed_dev.py` / `review_seed.py` používají nové tagy. Review účty znovu nasít až před odesláním k review (`--refresh`).
+- Test `tags_v2_test.sql`, celá lokální sada SQL testů prošla.
+
 ## 2026-11-14 – Apple Developer Program: podepisování
 - Adam má nový (firemní) Apple účet s Developer Programem, Team ID `UV56DGQ2BR`. Na Macu zůstává osobní Apple ID, firemní je jen v Xcode → Accounts.
 - `ios/project.yml`: `DEVELOPMENT_TEAM` + `CODE_SIGN_STYLE: Automatic` pro oba targety. Build pro zařízení (`-allowProvisioningUpdates`) zaregistroval `cz.mikolas.bedrival`, vytvořil vývojový certifikát a profil s HealthKit (+ background delivery), Sign in with Apple a push.

@@ -28,7 +28,7 @@ reports INSERT ─trigger─▶ webhook pro nás (pg_net, bez Edge Function)
 pg_cron každou hodinu v :07 ─▶ private.notification_jobs()  (zítra konec 20:00, recap po 9:00)
 pg_cron denně 3:20 UTC ─▶ private.cleanup_notifications()  (starší 30 dní)
 pg_cron denně 3:40 UTC ─▶ private.expire_pending_challenges()  (čekající výzvy starší 7 dní → cancelled)
-night_tags INSERT ─trigger─▶ Navzdory / Pivo vyhrálo
+night_tags INSERT/DELETE ─trigger─▶ přepočet tagových odznaků noci; no_phone → private.recompute_detox(user)
 reactions, comments, friendships, challenge_participants, challenges,
 debts, user_achievements, posts, challenge_day_scores ─trigger─▶ notifications
 ```
@@ -73,7 +73,7 @@ debts, user_achievements, posts, challenge_day_scores ─trigger─▶ notificat
 - `friendships` – 1 řádek na dvojici (`user_a < user_b`), `pending/accepted`, `requested_by`
 - `nights` – 1 hlavní noc / uživatel / den; usnutí, vstávání, minuty fází, probuzení, tep, `score`, `score_breakdown` (jsonb), `score_version`
 - `night_raw` – úseky fází + tep jako JSON (hypnogram, přepočet). Ne řádek na vzorek (Free tier 500 MB).
-- `tags` / `night_tags` – pevný seznam tagů
+- `tags` / `night_tags` – pevný seznam tagů; `tags.positive` = pomáhá spánku (pravý sloupec výběru). Od 14. 11.: kazí `alcohol`, `sick`, `phone_in_bed`, `studying`; pomáhá `workout`, `no_phone`, `reading`, `sauna`
 - `posts` – feed: `night` (karta noci) nebo `challenge_result`; název, komentář, fotka
 - `comments`, `reactions` (1 reakce / člověk / karta)
 - `challenges` – `duel | free_for_all | team_goal`, sázka (text), `duration_days` 7–30 (horní mez `challenges_duration_max`, starší výzvy výjimkou), `forfeit` (kontumace – soupeř / všichni ostatní smazali účet), `target_score` (jen team_goal), `pending/active/finished/cancelled`
@@ -215,7 +215,8 @@ v3 (2026-11-13, soutěživější): co zařízení nezměří, už se nevynechá
 Čas usnutí se počítá jako „minuty od poledne“ (bez skoku přes půlnoc).
 Referenční noc 7 h 50 min, 1 probuzení, 10 min vzhůru, deep 13 %, REM 19 %: bez historie a tepu → 80; s historií, pravidelně a s tepem na normálu ~89. Váhy a body se doladí na reálných datech.
 Prahy achievementů zůstaly (Dokonalá noc ≥ 95, Navzdory = alkohol + ≥ 85, Pivo vyhrálo < 50) – s v2 jsou vzácnější, jak mají být.
-**Přepočet odznaků noci** (`private.reaward_night`, #37): při každém ingestu noci a při přidání/odebrání tagu alkohol se odznaky té noci smažou a vyhodnotí znovu. Co platí dál, dostane zpět původní `earned_at` a notifikace se neopakuje (`bedrival.reaward`); co už neplatí, zmizí i se svou notifikací.
+**Přepočet odznaků noci** (`private.reaward_night`, #37): při každém ingestu noci a při přidání/odebrání tagu (alkohol, telefon v posteli, nemoc, učení, trénink) se odznaky té noci smažou a vyhodnotí znovu. Co platí dál, dostane zpět původní `earned_at` a notifikace se neopakuje (`bedrival.reaward`); co už neplatí, zmizí i se svou notifikací.
+**Tagové odznaky** (`private.award_tag_achievements`): Navzdory (alkohol + skóre ≥ 85), Pivo vyhrálo (alkohol + < 50), Scroll vyhrál (telefon v posteli + < 50), Nezničitelný (nemoc + ≥ 80), Zkouškové (učení + < 6 h), Regenerace (trénink + ≥ 85). **Detox** (`private.recompute_detox`): každá 7. noc nepřerušené řady nocí s tagem `no_phone`; tagy chodí zpětně a v libovolném pořadí, proto se při změně tagu přepočítá celá historie uživatele (původní `earned_at` zůstává, notifikace se neopakuje).
 Přepočet starých nocí: zatím jen dev data → znovu nahrát (`seed_dev.py --ingest-only`). Až budou skuteční uživatelé, změna vzorce = nová verze + přepočet z `night_raw` (nenapsáno).
 
 ## Série

@@ -70,7 +70,7 @@ enum API {
     }
 
     nonisolated static func tags() async throws -> [Tag] {
-        try await decode(db.from("tags").select("slug,label").order("sort").execute().data)
+        try await decode(db.from("tags").select("slug,label,positive").order("sort").execute().data)
     }
 
     nonisolated static func achievements() async throws -> [AchievementInfo] {
