@@ -56,6 +56,18 @@ final class HealthSync {
         try await store.requestAuthorization(toShare: share, read: [sleepType, hrType])
     }
 
+    /// Ukáže iOS při `requestAuthorization` okno? Jen dokud se uživatel nevyjádřil –
+    /// pak už ne a přístup jde měnit jen ve Zdraví.
+    func needsAuthorizationPrompt() async -> Bool {
+        guard isAvailable else { return false }
+        var share: Set<HKSampleType> = []
+        #if DEBUG
+        share = [sleepType, hrType]
+        #endif
+        let status = try? await store.statusForAuthorizationRequest(toShare: share, read: [sleepType, hrType])
+        return status == .shouldRequest
+    }
+
     /// Je ve Zdraví za posledních `days` dní aspoň jeden spánkový záznam?
     /// Při odmítnutém přístupu iOS vrací prázdno (neřekne, že je zakázaný) → false.
     func hasRecentSleep(days: Int = 14) async -> Bool {
