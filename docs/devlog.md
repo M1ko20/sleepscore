@@ -19,6 +19,12 @@ Co je hotové a jak. Nejnovější nahoře. Detaily backendu v `backend.md`, vzh
 13. ~~Notifikace ve zvonečku~~ hotovo (#9). ~~Zneplatnění Apple tokenu~~ (#7), ~~Release bez zápisu do Health~~ (#8), ~~anglické zásady~~ (#3) hotovo.
 14. Další: push přes APNs (#10, Developer Program, pak i pondělní push na recap), nastavení notifikací (#11), test na iPhonu s Garminem.
 
+## 2026-11-14 – Push a Apple klíč zapnuté
+- Klíč `A8NSKYFS8N` (APNs + Sign in with Apple) → Supabase secrets `APPLE_TEAM_ID`, `APPLE_KEY_ID`, `APPLE_CLIENT_ID`, `APPLE_PRIVATE_KEY`, `PUSH_SECRET`; `.p8` a push secret v `~/.bedrival/` (mimo git).
+- `send-push` nasazená (`--no-verify-jwt`), `private.app_config`: `push_function_url`, `push_secret`. Test: reakce od `jakub` na Adamovu noc → `send-push` `{"sent":1}`, push dorazil na iPhone.
+- Sign in with Apple: provider zapnutý, výměna a zneplatnění tokenu teď mají secrets (`apple-token`, `delete-account`). Ostrý Apple účet Adama ještě nezaložený (potřebuje být „kořen“ bez pozvánky).
+- Xcode: pro macOS 15.7 je nejnovější **26.3** (iOS 26.2 SDK, stačí na TestFlight); 26.4.1+ a 27.x chtějí macOS Tahoe.
+
 ## 2026-11-14 – Nastavení: sdílení Apple Health
 - Pryč tlačítko „DEBUG: vložit noc do Zdraví“ (seeder zůstává jen přes launch argument `-debugSeedHealth`).
 - Sekce Apple Health: co čteme, tlačítko **Sdílet spánek a tep** (systémové okno, dokud se uživatel nevyjádřil – `HealthSync.needsAuthorizationPrompt` přes `statusForAuthorizationRequest`), jinak **Upravit sdílení ve Zdraví** (otevře `x-apple-health://` + pod tlačítkem cesta profilovka → Aplikace → Bedrival). Přímý odkaz na přepínače iOS veřejně nemá, `App-prefs:` neprojde review a stránka appky v Nastavení (`openSettingsURLString`) Zdraví neobsahuje – ověřeno na iPhonu.. Synchronizovat je teď vedlejší textové tlačítko.

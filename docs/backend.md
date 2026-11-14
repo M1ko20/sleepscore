@@ -273,7 +273,7 @@ supabase/tests/local/run.sh cesta/x_test.sql     # jen jeden test
 Testy: `select t_ok(podmínka, 'popis')`, `select t_err($$sql$$, 'část chyby', 'popis')`; role přes `set role authenticated` + `set_config('request.jwt.claim.sub', …)`.
 
 ## Chybí / TODO
-- Push notifikace (APNs): kód hotový (#10, viz Push), zapnout až s Apple Developer Programem.
+- Push notifikace (APNs): zapnuté (#10, viz Push).
 - Sign in with Apple – totéž; do té doby testovací přihlášení e-mailem v dev buildu. Backend pro revokaci tokenu je hotový (viz GDPR), chybí přihlašovací obrazovka (`ASAuthorizationAppleIDProvider` → `Session.signInWithApple`).
 - První uživatel (Adam) nemá pozvánku → profil založit ručně (service role insert do `profiles` + `user_stats`).
 - Insighty z tagů, týdenní recap, Sleep Wrapped.
@@ -330,7 +330,7 @@ Navázání:
 - **#11 nastavení**: hotovo, viz níže.
 
 ## Push (APNs, #10)
-Migrace `20261109120000_push.sql`, Edge Function `send-push`, `_shared/apns.ts`. **Zatím vypnuté** – bez APNs klíče a `push_function_url` se nic neposílá, fronta se jen uklízí.
+Migrace `20261109120000_push.sql`, Edge Function `send-push`, `_shared/apns.ts`. **Zapnuté 14. 11. 2026**: klíč `A8NSKYFS8N` (APNs + Sign in with Apple, Sandbox & Production, `.p8` v `~/.bedrival/`), secrets `APPLE_*` + `PUSH_SECRET` (kopie v `~/.bedrival/push_secret`), `send-push` nasazená, `push_function_url` + `push_secret` v `private.app_config`. Ověřeno: reakce testovacího kamaráda → push na Adamův iPhone (sandbox) za < 1 min.
 
 ```
 pg_cron každou minutu ─▶ private.push_tick()
