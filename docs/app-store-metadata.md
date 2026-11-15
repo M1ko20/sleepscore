@@ -19,7 +19,7 @@ Bedrival je spánek s kamarády. Každé ráno se tvoje noc z Apple Health objev
 
 KARTY A FEED
 • Ranní karta s hypnogramem, délkou, fázemi a probuzeními
-• Název, komentář, fotka a tagy (kafe po 15:00, večerní trénink, telefon v posteli…)
+• Název, komentář, fotka a tagy (alkohol, telefon v posteli, trénink, sauna…)
 • Kamarádi reagují a komentují
 
 SOUBOJE
@@ -44,8 +44,8 @@ Potřebuješ hodinky nebo prsten, které zapisují spánek do Apple Health, a po
 Bedrival není zdravotnický prostředek. Skóre a statistiky jsou orientační a slouží pro zábavu a srovnání s kamarády.
 ```
 
-**Klíčová slova** (97 znaků):
-`spánek,sleep,skóre,kamarádi,výzva,souboj,série,hodinky,zdraví,noc,usínání,fáze,deep,REM,tep,spaní`
+**Klíčová slova** (95 znaků, bez slov z názvu a podtitulu – ty Apple indexuje sám):
+`sleep,skóre,kámoši,výzva,souboj,série,hodinky,prsten,zdraví,noc,usínání,fáze,deep,REM,tep,spaní`
 
 **Co je nového (1.0):** První verze. Dobrou noc.
 
@@ -64,7 +64,7 @@ Bedrival is sleep with friends. Every morning your night from Apple Health shows
 
 CARDS AND FEED
 • Morning card with hypnogram, duration, stages and wake-ups
-• Title, comment, photo and tags (coffee after 3 pm, evening workout, phone in bed…)
+• Title, comment, photo and tags (alcohol, phone in bed, workout, sauna…)
 • Friends react and comment
 
 CHALLENGES
@@ -89,8 +89,8 @@ You need a watch or ring that writes sleep to Apple Health, and an invite from s
 Bedrival is not a medical device. Scores and statistics are indicative and meant for fun and comparison with friends.
 ```
 
-**Keywords** (95 znaků):
-`sleep,tracker,score,friends,challenge,duel,streak,social,health,night,deep,REM,heart rate,habits`
+**Keywords** (93 znaků, bez slov z podtitulu):
+`tracker,score,challenge,duel,streak,social,health,night,deep,REM,heart rate,habits,ring,watch`
 
 **What's New (1.0):** First release. Good night.
 
