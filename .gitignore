@@ -14,3 +14,6 @@ ios/build/
 ios/SleepApp/SleepApp.entitlements
 __pycache__/
 ios/build26/
+tools/promo/preview/node_modules/
+tools/promo/preview/public/
+tools/promo/preview/out/
