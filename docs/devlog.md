@@ -19,6 +19,14 @@ Co je hotové a jak. Nejnovější nahoře. Detaily backendu v `backend.md`, vzh
 13. ~~Notifikace ve zvonečku~~ hotovo (#9). ~~Zneplatnění Apple tokenu~~ (#7), ~~Release bez zápisu do Health~~ (#8), ~~anglické zásady~~ (#3) hotovo.
 14. Další: push přes APNs (#10, Developer Program, pak i pondělní push na recap), nastavení notifikací (#11), test na iPhonu s Garminem.
 
+## 2026-11-17 – App Review: otázka na pozvánky, TestFlight schválený
+- TestFlight (beta review buildu 1.0 (1)) schválený – jde rozeslat kamarádům.
+- Verze 1.0 pro App Store vrácená 16. 11. jako **Guideline 2.1 – Information Needed** (ne chyba v appce): „How does the user obtain the required invite code to enter the app?“ Recenzent se demo účtem přihlásil (iPad Air 11", kompatibilní režim).
+- Web: nová sekce „Nemáš pozvánku?“ (`site/index.html#pozvanka`) – kód od kamaráda (Profil → Pozvánky) nebo e-mailem od nás; tlačítko „Jen na pozvánku“ na ni odkazuje, krátký anglický odstavec pro recenzenta. Žádosti o pozvánku chodí Adamovi na e-mail, kód posílá ze svého profilu.
+- Odpověď v Resolution Center: jak se kód získá (4 kroky) + demo účet + `HEC3XBY6` pro test registrace.
+- Čekající výzvě na review účtu posunuté `created_at` na 16. 11. (jinak by ji `expire_pending_challenges` po 7 dnech zrušil). `review_seed.py --refresh` tohle zatím nedělá.
+- Kdyby se Apple ptal znovu: tlačítko „Nemám pozvánku“ přímo na obrazovce s kódem (nový build).
+
 ## 2026-11-14 – Screenshoty a video do App Storu
 - Demo parta v produkci (`supabase/tests/promo_seed.py`, hesla v `~/.bedrival/promo_state.json`): hrdina Tomáš (@tomas_h) + Ondra, Klára, Matěj, Eliška, Vojta, jen kamarádi mezi sebou. 80 nocí, bilance 8-2-0, 10 oveček, série 27, běžící souboj s Ondrou a společný cíl, čekající výzva od Vojty, včera výhra nad Matějem (obrazovka výsledku s konfetami).
   - Pozor při zakládání: noci nahrávat před výzvami a pak `nights.created_at` posunout na konec spánku. Jinak cron uzávěrky (a pojistka z #35 proti nocím nahraným po uzávěrce) uzavře staré výzvy nulami. Postup je v hlavičce skriptu.
