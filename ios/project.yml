@@ -47,6 +47,9 @@ targets:
       path: SleepApp/Info.plist
       properties:
         CFBundleDisplayName: Bedrival
+        # Verze z MARKETING_VERSION / CURRENT_PROJECT_VERSION (bez toho xcodegen píše natvrdo 1.0 (1)).
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         # Launch screen v barvě pozadí appky (bg #0B0D12) s logem uprostřed, ať při startu nebliká bílá (#16).
         UILaunchScreen:
           UIColorName: LaunchBackground
