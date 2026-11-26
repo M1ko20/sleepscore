@@ -153,6 +153,13 @@ struct Reaction: Codable, Hashable, Sendable {
     }
 }
 
+/// Reakce i s profilem (seznam „kdo jak reagoval“).
+struct ReactionPerson: Decodable, Identifiable, Sendable {
+    let kind: ReactionKind
+    let profile: ProfileLite
+    var id: UUID { profile.id }
+}
+
 struct FeedPost: Decodable, Identifiable, Hashable, Sendable {
     let id: UUID
     var title: String?
@@ -199,6 +206,9 @@ struct FeedPost: Decodable, Identifiable, Hashable, Sendable {
 
     /// Karta bez názvu i tagů = ještě nedoplněná.
     var needsDetails: Bool { (title ?? "").isEmpty && night.tags.isEmpty }
+
+    /// Noc, která skončila dnes (podle mého kalendáře).
+    var isTodaysNight: Bool { night.nightDate == ISODay.today }
 }
 
 struct Comment: Decodable, Identifiable, Hashable, Sendable {
@@ -266,9 +276,10 @@ enum FeedItem: Identifiable, Hashable {
         }
     }
 
-    var createdAt: Date {
+    /// Pořadí ve feedu: noc podle toho, kdy skončila (ne kdy se nahrála), výsledek podle uzavření.
+    var sortDate: Date {
         switch self {
-        case .night(let p): p.createdAt
+        case .night(let p): p.night.sleepEnd
         case .result(let r): r.createdAt
         }
     }

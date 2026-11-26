@@ -15,7 +15,7 @@ struct NightCard: View {
     @State private var shownScore = 0
 
     private var isMine: Bool { post.author.id == me }
-    private var highlight: Bool { isMine && post.needsDetails && Calendar.current.isDateInToday(post.createdAt) }
+    private var highlight: Bool { isMine && post.needsDetails && post.isTodaysNight }
     private var myReaction: ReactionKind? { post.reactions.first { $0.userID == me }?.kind }
     private var night: Night { post.night }
 
@@ -116,7 +116,7 @@ struct NightCard: View {
             if let streak {
                 Text("Série \(streak)").statLabel()
             }
-            Text(Fmt.postStamp(post.createdAt)).font(Font.app.caption.monospacedDigit())
+            Text(Fmt.nightStamp(night.nightDate)).font(Font.app.caption.monospacedDigit())
                 .foregroundStyle(Color.app.textSecondary)
         }
     }

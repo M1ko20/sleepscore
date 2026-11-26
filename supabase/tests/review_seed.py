@@ -21,8 +21,9 @@ Data: 30 nocí s tagy (zjištění), názvy, komentáře a reakce; souboje B×R 
 → R dluží), R×C (skončený, R vyhrál → ovečka, C dluží), R×B běžící, společný cíl C+R+D běžící,
 čekající výzva od D, nepoužitý kód pozvánky od R (pro recenzenta se Sign in with Apple).
 
---refresh: dohraje noci do dneška (ingest přepíše jen svoje noci), názvy u nových karet a
-když neběží žádný souboj R×B, založí nový (od včerejška). Spouštět těsně před odesláním.
+--refresh: dohraje noci do dneška (ingest přepíše jen svoje noci), názvy u nových karet,
+když neběží žádný souboj R×B, založí nový (od včerejška), a když vypršela čekající výzva
+od Dany, pošle novou. Spouštět těsně před odesláním.
 """
 import datetime as dt
 import importlib.util
@@ -294,6 +295,14 @@ def refresh(state):
         state["challenges"]["rb_live"] = challenge(R, [B], [B], -1, stake="Kdo prohraje, vaří")
         save_state(state)
         print("   nový souboj R×B (starý skončil) – noci se propíšou při dalším --refresh nebo zítřejší synchronizaci")
+    # Čekající výzva od Dany po 7 dnech vyprší (expire_pending_challenges) – recenzent ji má vidět.
+    D = users["d"]
+    st, pend = req("GET", f"/rest/v1/challenges?select=id&status=eq.pending&id=eq.{state['challenges'].get('dr_pending')}",
+                   token=R["jwt"])
+    if not pend:
+        state["challenges"]["dr_pending"] = challenge(D, [R], [], None, stake="Prohraný nosí týden kafe")
+        save_state(state)
+        print("   nová čekající výzva od Dany (stará vypršela)")
 
 
 def reset_passwords(state):

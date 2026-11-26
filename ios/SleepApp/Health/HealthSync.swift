@@ -25,7 +25,7 @@ final class HealthSync {
     /// Zavolá se po úspěšném nahrání (feed se obnoví).
     var onUploaded: (() -> Void)?
 
-    private let store = HKHealthStore()
+    let store = HKHealthStore()
     private let sleepType = HKCategoryType(.sleepAnalysis)
     private let hrType = HKQuantityType(.heartRate)
     private var observer: HKObserverQuery?
@@ -47,24 +47,38 @@ final class HealthSync {
 
     // MARK: Oprávnění
 
-    func requestAuthorization() async throws {
-        guard isAvailable else { return }
-        var share: Set<HKSampleType> = []
+    /// Typy, které čteme. Zápis jen v DEBUG (testovací noci v simulátoru).
+    var readTypes: Set<HKObjectType> { [sleepType, hrType] }
+    var shareTypes: Set<HKSampleType> {
         #if DEBUG
-        share = [sleepType, hrType]   // jen kvůli testovacím nocím v simulátoru
+        [sleepType, hrType]
+        #else
+        []
         #endif
-        try await store.requestAuthorization(toShare: share, read: [sleepType, hrType])
     }
 
-    /// Ukáže iOS při `requestAuthorization` okno? Jen dokud se uživatel nevyjádřil –
+    /// Poslední chyba žádosti o přístup (ukazuje se v Nastavení → Apple Health).
+    private(set) var authError: String?
+
+    /// Výsledek `.healthAccessRequest` – o přístup se žádá přes SwiftUI modifikátor, ne přímo
+    /// `store.requestAuthorization`: na iOS 27 přímé volání okno neukázalo a přístup ke čtení
+    /// se vůbec nezaregistroval (ve Zdraví u Bedrivalu jen „Data z Bedrival“).
+    func authorizationFinished(_ result: Result<Bool, Error>) {
+        switch result {
+        case .success:
+            authError = nil
+            log.info("health auth: done")
+        case .failure(let error):
+            authError = "Zdraví odmítlo žádost: \(error.localizedDescription)"
+            log.error("health auth failed: \(String(describing: error), privacy: .public)")
+        }
+    }
+
+    /// Ukáže iOS při žádosti o přístup okno? Jen dokud se uživatel nevyjádřil –
     /// pak už ne a přístup jde měnit jen ve Zdraví.
     func needsAuthorizationPrompt() async -> Bool {
         guard isAvailable else { return false }
-        var share: Set<HKSampleType> = []
-        #if DEBUG
-        share = [sleepType, hrType]
-        #endif
-        let status = try? await store.statusForAuthorizationRequest(toShare: share, read: [sleepType, hrType])
+        let status = try? await store.statusForAuthorizationRequest(toShare: shareTypes, read: readTypes)
         return status == .shouldRequest
     }
 

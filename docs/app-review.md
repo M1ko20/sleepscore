@@ -47,3 +47,9 @@ Profile → Settings (gear) → Soukromí a moje data (Privacy) → Smazat úče
 
 The app UI is in Czech.
 ```
+
+## Komunikace s App Review (verze 1.0, submission 995f3ee6)
+- **2026-11-17** Apple: 2.1 Information Needed – jak uživatel získá pozvánku? Odpověď: kód z Profil → Pozvánky přes share sheet, žádost o pozvánku e-mailem (web `#pozvanka`), kód pro recenzenta.
+- **2026-11-18** Apple: kdo zakládá výzvy, vyhrává se hotovost nebo kredity, jak se kredity mění na peníze? (podezření na hazard / soutěže o peníze, 5.3)
+- **2026-11-22** odpověď: výzvy zakládají uživatelé jen mezi přáteli, žádné peníze, kredity, body ani IAP; výhra = bilance, ovečka, pozvánka navíc; „O co se hraje“ je nepovinný text (max. 200 znaků), appka nic nezprostředkovává, podmínky čl. 3 zakazují hrát o peníze.
+- Kdyby se Apple dál chytal na sázky: zvážit přejmenovat „O co se hraje“ (např. „Trest pro poraženého“) a dluhy na „připomínky“.

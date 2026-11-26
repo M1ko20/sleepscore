@@ -21,7 +21,7 @@ struct ChallengeResultView: View {
 
             VStack(alignment: .leading, spacing: 20) {
                 Spacer()
-                Text(ChallengeCopy.title(challenge, me: me).uppercased() + " · " + Fmt.days(challenge.durationDays).uppercased())
+                Text(((ChallengeCopy.kind(challenge) ?? ChallengeCopy.title(challenge, me: me)) + " · " + Fmt.days(challenge.durationDays)).uppercased())
                     .statLabel()
                 Text(headline)
                     .font(.system(size: 64, weight: .black).width(.condensed))

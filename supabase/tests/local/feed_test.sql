@@ -24,7 +24,9 @@ create function public.t_same(p_user text) returns void language plpgsql as $$
 declare old_n uuid[]; new_n uuid[]; old_r uuid[]; new_r uuid[];
 begin
   perform public.t_as(p_user);
-  old_n := array(select id from public.posts where kind = 'night' order by created_at desc, id desc limit 30);
+  -- noci podle data noci (20261126100000_night_dates.sql), ne podle importu
+  old_n := array(select p.id from public.posts p join public.nights n on n.id = p.night_id
+                 where p.kind = 'night' order by n.night_date desc, n.sleep_end desc, p.id desc limit 30);
   new_n := array(select id from public.feed_night_posts(30));
   old_r := array(select id from public.posts where kind = 'challenge_result' order by created_at desc, id desc limit 20);
   new_r := array(select id from public.feed_result_posts(20));

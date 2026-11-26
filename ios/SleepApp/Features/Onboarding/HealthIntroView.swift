@@ -4,6 +4,7 @@ import SwiftUI
 struct HealthIntroView: View {
     var onDone: () -> Void
     @State private var busy = false
+    @State private var request = 0
 
     var body: some View {
         VStack(alignment: .leading, spacing: 24) {
@@ -26,16 +27,20 @@ struct HealthIntroView: View {
             Button(busy ? "Čekám na Zdraví…" : "Povolit") {
                 busy = true
                 Task {
-                    // Odmítnutí není chyba – appka jen nebude mít data. iOS neřekne, co uživatel povolil.
-                    try? await HealthSync.shared.requestAuthorization()
-                    busy = false
-                    onDone()
+                    // Už rozhodnuté (nebo bez Zdraví) → dál bez okna, nečekat na modifikátor.
+                    if await HealthSync.shared.needsAuthorizationPrompt() { request += 1 }
+                    else { busy = false; onDone() }
                 }
             }
             .buttonStyle(.primary)
             .disabled(busy)
         }
         .padding(Metrics.screenPadding)
+        // Odmítnutí není chyba – appka jen nebude mít data. iOS neřekne, co uživatel povolil.
+        .healthAccessRequest(trigger: request) {
+            busy = false
+            onDone()
+        }
     }
 
     private func row(_ text: String) -> some View {

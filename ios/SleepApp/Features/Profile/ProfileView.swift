@@ -23,8 +23,8 @@ struct ProfileView: View {
                     if let profile = session.profile {
                         ProfileHeader(profile: profile.lite)
                     }
-                    if let summary {
-                        ProfileStatsSections(summary: summary, catalog: feed.achievementCatalog)
+                    if let summary, let me = session.profile?.id {
+                        ProfileStatsSections(userID: me, summary: summary, catalog: feed.achievementCatalog)
                     } else if let error {
                         Text(error).captionStyle()
                     } else {
@@ -50,6 +50,7 @@ struct ProfileView: View {
                 RecapView(recap: $0.recap)
             }
             .navigationDestination(for: ProfileLite.self) { UserProfileView(profile: $0) }
+            .navigationDestination(for: UUID.self) { NightDetailView(postID: $0) }
             .navigationDestination(for: Route.self) { route in
                 switch route {
                 case .friends: FriendsView()
@@ -154,6 +155,8 @@ struct HealthSection: View {
     @State private var health = HealthSync.shared
     /// nil = ještě nezjištěno
     @State private var canPrompt: Bool?
+    /// Změna spustí žádost o přístup ke Zdraví.
+    @State private var request = 0
     @Environment(\.openURL) private var openURL
 
     var body: some View {
@@ -171,18 +174,27 @@ struct HealthSection: View {
                 }
             }
             Text(statusText).captionStyle()
+            if let error = health.authError {
+                Text(error).captionStyle()
+                    .fixedSize(horizontal: false, vertical: true)
+            }
             Button(health.status == .syncing ? "Synchronizuju…" : "Synchronizovat") {
+                // Když se okno o povolení dřív zavřelo bez odpovědi, ukáže se znovu, jinak rovnou sync.
                 Task {
-                    // Když se okno o povolení dřív zavřelo bez odpovědi, ukáže se znovu (jinak nic).
-                    try? await health.requestAuthorization()
-                    await health.sync(force: true)
-                    canPrompt = await health.needsAuthorizationPrompt()
+                    if await health.needsAuthorizationPrompt() { request += 1 }
+                    else { await health.sync(force: true) }
                 }
             }
             .buttonStyle(.plainText)
             .disabled(health.status == .syncing || !health.isAvailable)
         }
         .task { canPrompt = await health.needsAuthorizationPrompt() }
+        .healthAccessRequest(trigger: request) {
+            Task {
+                canPrompt = await health.needsAuthorizationPrompt()
+                await health.sync(force: true)
+            }
+        }
     }
 
     /// Nevyjádřil se → systémové okno a pak synchronizace. Jinak se iOS znovu nezeptá → aplikace Zdraví
@@ -190,11 +202,7 @@ struct HealthSection: View {
     /// stránka appky v Nastavení Zdraví neobsahuje).
     private func share() {
         if canPrompt == true {
-            Task {
-                try? await health.requestAuthorization()
-                canPrompt = await health.needsAuthorizationPrompt()
-                await health.sync(force: true)
-            }
+            request += 1
         } else if let url = URL(string: "x-apple-health://") {
             openURL(url)
         }

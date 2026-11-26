@@ -8,6 +8,8 @@ struct MainTabView: View {
     /// Výsledek výzvy přes celou obrazovku až po dotazu na Zdraví – jinak systémové okno
     /// o povolení zavře (vyskočí a hned zmizí, viděno na iPhonu s nevideným výsledkem).
     @State private var healthAsked = false
+    /// Změna spustí žádost o přístup ke Zdraví (`healthAccessRequest`).
+    @State private var healthRequest = 0
     @State private var tab: Int = {
         #if DEBUG
         let args = ProcessInfo.processInfo.arguments
@@ -63,18 +65,14 @@ struct MainTabView: View {
                 Task { await feed.load() }
                 if let me = session.profile?.id { Task { await challenges.load(me: me) } }
             }
-            // Už rozhodnuté oprávnění se znovu neptá.
-            try? await health.requestAuthorization()
-            healthAsked = true
-            health.startObserving()
-            #if DEBUG
-            if ProcessInfo.processInfo.arguments.contains("-debugSeedHealth") {
-                do { try await DebugHealthSeeder.insertNight() } catch { log.error("seed: \(String(describing: error))") }
-            }
-            #endif
-            await health.sync()
+            // Žádost o přístup jen, když se uživatel ještě nevyjádřil (pokračuje v `onFinish`).
+            // Kdo už rozhodl, synchronizuje hned – nespoléhá se na to, že modifikátor zavolá zpět.
+            if await health.needsAuthorizationPrompt() { healthRequest += 1 } else { await healthAccessReady() }
             // Jen zjistí stav a registruje token; o povolení se appka ptá až kartou ve feedu.
             await Push.shared.start()
+        }
+        .healthAccessRequest(trigger: healthRequest) {
+            Task { await healthAccessReady() }
         }
         .onChange(of: Push.shared.pendingLink) { _, link in
             if link != nil { tab = 0 }
@@ -95,5 +93,19 @@ struct MainTabView: View {
     private var pendingInvites: Int {
         guard let me = session.profile?.id else { return 0 }
         return challenges.waitingForMe(me).count
+    }
+
+    /// Po žádosti o přístup ke Zdraví: sledování nových nocí a první synchronizace.
+    private func healthAccessReady() async {
+        guard !healthAsked else { return }
+        let health = HealthSync.shared
+        healthAsked = true
+        health.startObserving()
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("-debugSeedHealth") {
+            do { try await DebugHealthSeeder.insertNight() } catch { log.error("seed: \(String(describing: error))") }
+        }
+        #endif
+        await health.sync()
     }
 }

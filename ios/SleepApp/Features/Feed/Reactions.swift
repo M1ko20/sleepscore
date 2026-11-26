@@ -26,6 +26,71 @@ struct ReactionSummary: View {
     }
 }
 
+/// Kdo jak reagoval: avatar, jméno, reakce. Počty a moje reakce bere z karty (platí hned),
+/// jména dotáhne jedním dotazem při otevření.
+struct ReactionsSheet: View {
+    let postID: UUID
+    let reactions: [Reaction]
+    let me: UUID?
+
+    @Environment(FriendsStore.self) private var friends
+    @State private var people: [ReactionPerson]?
+    @State private var failed = false
+
+    /// Pořadí: moje první, pak podle seznamu ze serveru (od nejnovější); jen reakce, co na kartě pořád jsou.
+    private var rows: [ReactionPerson] {
+        let kinds = Dictionary(reactions.map { ($0.userID, $0.kind) }, uniquingKeysWith: { a, _ in a })
+        return (people ?? [])
+            .filter { kinds[$0.profile.id] != nil && !friends.isBlocked($0.profile.id) }
+            .map { ReactionPerson(kind: kinds[$0.profile.id]!, profile: $0.profile) }
+            .sorted { ($0.profile.id == me ? 0 : 1) < ($1.profile.id == me ? 0 : 1) }
+    }
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 0) {
+                    if people != nil {
+                        ForEach(rows) { r in
+                            HStack(spacing: 10) {
+                                Avatar(profile: r.profile)
+                                Text(r.profile.id == me ? "Ty" : r.profile.displayName)
+                                    .font(Font.app.body.weight(.semibold))
+                                    .foregroundStyle(Color.app.textPrimary)
+                                    .lineLimit(1)
+                                Spacer(minLength: 8)
+                                Text(r.kind.label).captionStyle()
+                                Image(systemName: r.kind.symbol)
+                                    .font(.system(size: 16, weight: .medium))
+                                    .foregroundStyle(r.profile.id == me ? Color.app.accent : Color.app.textPrimary)
+                                    .frame(width: 24)
+                            }
+                            .frame(minHeight: 52)
+                            .accessibilityElement(children: .combine)
+                            Divider().overlay(Color.app.hairline)
+                        }
+                    } else if failed {
+                        Text("Reakce se nenačetly.").captionStyle().padding(.top, 20)
+                    } else {
+                        ProgressView().tint(Color.app.textSecondary).frame(maxWidth: .infinity, minHeight: 120)
+                    }
+                }
+                .padding(.horizontal, Metrics.screenPadding)
+            }
+            .background(Color.app.bg)
+            .navigationTitle("Reakce · \(reactions.count)")
+            .navigationBarTitleDisplayMode(.inline)
+        }
+        .task {
+            do { people = try await API.reactionPeople(postID: postID) }
+            catch {
+                log.error("reactions load failed: \(String(describing: error))")
+                failed = true
+            }
+        }
+    }
+}
+
 /// Lišta s 5 reakcemi. Moje = žlutá, opětovné klepnutí reakci zruší.
 struct ReactionPicker: View {
     let current: ReactionKind?

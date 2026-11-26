@@ -143,6 +143,7 @@ Pět vlastních ikon, jeden styl (lineární, 1,5 pt tah, jako SF Symbols):
 
 - Ve feedu jen reakce, které někdo dal (ikona + počet), max. 3, zbytek „+2“.
 - Dlouhý stisk na kartě / tlačítko → lišta s 5 ikonami. Moje reakce = žlutá.
+- V detailu karty je souhrn reakcí klepací (šipka `›`) → sheet „Reakce · N“: avatar, jméno, název reakce, ikona (moje první a žlutě). Jména se načtou až při otevření (1 call).
 
 ### Hypnogram (detail)
 ```
@@ -250,7 +251,8 @@ Výzvy                          [+]
 
 BĚŽÍ
   Ty vs Jakub        81,4 : 76,2   den 4/7
-  Partička (4)       2. místo      den 2/14
+  Ty, Jakub, Bára, Cy…  2. místo
+  všichni proti všem · den 2/14
 
 DLUHY
   Tomáš ti dluží     3× pivo
@@ -259,6 +261,7 @@ DLUHY
 HOTOVÉ
   Ty vs Tomáš        výhra   12. 10.
 ```
+- Skupinová výzva nemá vlastní název: titulek = jména hráčů („Ty“ první, před startem i pozvaní, pak jen kdo hraje), na jeden řádek, co se nevejde, utne „…“. Typ („všichni proti všem“, „společný cíl 75“) je první v podtitulku. V recapu max. 3 jména + „…“, na obrazovce výsledku nahoře typ místo jmen.
 
 ### 6. Detail výzvy
 - Hlavička jako plakát: jména, průměry (`scoreXL`), vyhrané dny.
@@ -282,6 +285,11 @@ VÝHRY-PROHRY-REMÍZY       nejlepší 31
 
 PRŮMĚR 30 DNÍ   81   ·   7 h 18
 ─────────────────────────────────
+NOCI              ‹ listopad 2026 ›
+Po Út St Čt Pá So Ne
+ 82 64 77 ·  71 80 59            (skóre, nejlepší obrys accent)
+čt 26. 11.  Název    ▁▃▅▃  7 h 40  82
+─────────────────────────────────
 STÁDO                          9
 (○)(○)(○)(○)
 ─────────────────────────────────
@@ -291,6 +299,9 @@ ODZNAKY                     14/22
 PŘÁTELÉ (6)                     ›
 POZVÁNKY · zbývá 2              ›
 ```
+
+- **Noci:** měsíc jako mřížka (týden od pondělí). Den s nocí = malé číslo dne + skóre na `surface`, bez noci „·“ v `textTertiary`, nejlepší noc měsíce obrys `accent` (žádné barvy podle skóre). Pod mřížkou posledních 5 nocí měsíce (tlačítko „Celý měsíc (N)“ / „Méně“): datum („dnes“, „včera“, „út 24. 11.“), název, mini hypnogram, délka, skóre. Klepnutí na den i řádek → detail noci. Šipky přepínají měsíc, dopředu max. aktuální. Stejné na profilu přítele.
+- Karta ve feedu má v hlavičce **datum noci** (ne čas nahrání) a feed je řazený podle konce spánku.
 
 ### 10. Profil přítele
 Stejný, ale místo nastavení: **vzájemná bilance** nahoře („Ty vs Jakub 7-3“) a primární tlačítko **Vyzvat**.

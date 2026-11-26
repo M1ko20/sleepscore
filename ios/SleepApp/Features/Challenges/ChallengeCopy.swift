@@ -4,15 +4,32 @@ import Foundation
 enum ChallengeCopy {
     static func name(_ p: ProfileLite, me: UUID?) -> String { p.id == me ? "Ty" : p.displayName }
 
-    /// Titulek řádku: „Ty vs Jakub“ / „Partička (4)“
-    static func title(_ c: Challenge, me: UUID?) -> String {
+    /// Titulek: „Ty vs Jakub“ / skupina jménama „Ty, Jakub, Bára“ (typ je v `kind`).
+    /// Dlouhý seznam utne `lineLimit(1)` třemi tečkami; `maxNames` ho zkrátí už tady (recap).
+    static func title(_ c: Challenge, me: UUID?, maxNames: Int? = nil) -> String {
         switch c.type {
         case .duel:
             var names = c.participants.sorted { a, _ in a.userID == me }.map { name($0.profile, me: me) }
             if names.count == 1 { names.append("smazaný účet") }
             return names.joined(separator: " vs ")
-        case .freeForAll: return "Všichni proti všem (\(c.accepted.count))"
-        case .teamGoal: return "Společný cíl \(c.targetScore ?? 0) (\(c.accepted.count))"
+        case .freeForAll, .teamGoal:
+            // Než výzva začne, i pozvaní (kdo odmítl, už ne); pak jen kdo hraje.
+            let started = c.status == .active || c.status == .finished
+            let players = c.participants.filter { started ? $0.status == .accepted : $0.status != .declined }
+            let names = players.sorted { a, _ in a.userID == me }.map { name($0.profile, me: me) }
+            if let maxNames, names.count > maxNames {
+                return names.prefix(maxNames).joined(separator: ", ") + "…"
+            }
+            return names.joined(separator: ", ")
+        }
+    }
+
+    /// Typ skupinové výzvy do podtitulku: „všichni proti všem“, „společný cíl 75“. U souboje nil.
+    static func kind(_ c: Challenge) -> String? {
+        switch c.type {
+        case .duel: nil
+        case .freeForAll: "všichni proti všem"
+        case .teamGoal: "společný cíl \(c.targetScore ?? 0)"
         }
     }
 

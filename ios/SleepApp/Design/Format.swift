@@ -27,6 +27,19 @@ enum Fmt {
         return f.string(from: date)
     }
 
+    /// Hlavička karty noci podle night_date: „dnes“, „včera“, jinak „út 24. 11.“ (jiný rok i s rokem).
+    static func nightStamp(_ iso: String, now: Date = .now) -> String {
+        guard let d = ISODay.date(iso) else { return iso }
+        let cal = Calendar.iso
+        if cal.isDate(d, inSameDayAs: now) { return "dnes" }
+        if let y = cal.date(byAdding: .day, value: -1, to: now), cal.isDate(d, inSameDayAs: y) { return "včera" }
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "cs_CZ")
+        f.timeZone = cal.timeZone
+        f.dateFormat = cal.isDate(d, equalTo: now, toGranularity: .year) ? "EEEEEE d. M." : "EEEEEE d. M. yyyy"
+        return f.string(from: d)
+    }
+
     /// night_date „2026-11-06“ → „čtvrtek 6. 11.“
     static func nightDate(_ iso: String) -> String {
         let p = DateFormatter()
