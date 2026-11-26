@@ -132,6 +132,10 @@ struct ChallengesView: View {
     }
 
     private func subtitle(_ c: Challenge, me: UUID) -> String {
+        [ChallengeCopy.kind(c), status(c, me: me)].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " · ")
+    }
+
+    private func status(_ c: Challenge, me: UUID) -> String {
         switch c.status {
         case .pending:
             if c.type == .duel { return "čeká na soupeře" }

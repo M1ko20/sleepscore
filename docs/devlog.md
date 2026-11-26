@@ -19,6 +19,31 @@ Co je hotové a jak. Nejnovější nahoře. Detaily backendu v `backend.md`, vzh
 13. ~~Notifikace ve zvonečku~~ hotovo (#9). ~~Zneplatnění Apple tokenu~~ (#7), ~~Release bez zápisu do Health~~ (#8), ~~anglické zásady~~ (#3) hotovo.
 14. Další: push přes APNs (#10, Developer Program, pak i pondělní push na recap), nastavení notifikací (#11), test na iPhonu s Garminem.
 
+## 2026-11-26 – Release 1.0.1 (2)
+- Migrace `20261126100000_night_dates.sql` **nasazená**, `e2e.py` proti produkci 42/42.
+- Pojistka ke Zdraví: o přístup se žádá (`healthAccessRequest`) jen při `needsAuthorizationPrompt() == true`, jinak rovnou sync. Kdyby modifikátor nezavolal zpět, appka by dřív nesynchronizovala vůbec (start, onboarding i Nastavení).
+- Noci v profilu: aktuální měsíc se načte znovu při každém zobrazení, seznam ukazuje 5 nocí + „Celý měsíc (N)“.
+- Ověřeno v simulátoru iOS 26.3 proti produkci (demo účet): okno Zdraví s „to read“, nový UI test `NightDatesTests` (feed s daty nocí, reakce → seznam → smazání, výzvy podle jmen, profil s kalendářem, předchozí měsíc, detail) a `ReviewAccountTests` prošly.
+- Verze 1.0.1, build 2, archiv Xcode 26.3.
+
+## 2026-11-26 – Kdo jak reagoval
+- V detailu karty jde klepnout na souhrn reakcí → sheet se seznamem lidí a jejich reakcí (`ReactionsSheet` v `Feed/Reactions.swift`, `API.reactionPeople`). Jména se tahají jen při otevření, feed zůstává bez profilů u reakcí. Zablokovaní se nezobrazí. Bez změny DB (RLS: reakce jen u viditelné karty, profily vidí každý člen). Build OK, v simulátoru neviděno.
+
+## 2026-11-26 – Skupinové výzvy podle jmen
+- Titulek skupinové výzvy byl „Všichni proti všem (4)“. Teď jména hráčů („Ty, Jakub, Bára…“, utne `lineLimit(1)`), typ se přesunul na začátek podtitulku (`ChallengeCopy.title` / `kind`). Recap max. 3 jména + „…“, obrazovka výsledku má nahoře typ. Bez změny DB. UI test `Issue13Tests` hledá řádek podle „všichni proti všem“ bez ohledu na velikost písmen. Build OK, v simulátoru neviděno.
+
+## 2026-11-26 – Datum noci ve feedu, noci v profilu
+- Karta ve feedu ukazovala čas nahrání (`posts.created_at`), ne kdy se spalo. Teď hlavička = datum noci (`Fmt.nightStamp`: „dnes“, „včera“, „út 24. 11.“). Feed se řadí podle data noci – na serveru (`feed_night_posts` podle `night_date`) i v appce (podle konce spánku, výsledky výzev podle uzavření). Zpětně nahrané staré noci už nevyskočí nahoru. „Moje dnešní karta“ a zvýraznění „Doplň název“ = noc s dnešním `night_date`.
+- Profil (můj i přítele): sekce **Noci** pod průměrem – měsíční mřížka se skóre + seznam nocí měsíce, proklik na detail (`Features/Profile/ProfileNights.swift`). 1 call na měsíc (`user_night_posts`), načtené měsíce v paměti. Načtené karty se předají `FeedStore.adopt`, takže detail, reakce i úpravy fungují i u nocí mimo feed.
+- Migrace `20261126100000_night_dates.sql` (nasazeno 26. 11.). Staré buildy nevadí (řadí si po svém podle `created_at`). Nový build bez nasazené migrace profil nenačte („Noci se nenačetly“).
+- Testy: nový `night_dates_test.sql` (11 kontrol), `feed_test` porovnává s řazením podle data noci, celá lokální SQL sada OK, xcodebuild OK. Vzhled v simulátoru/iPhonu zatím neviděný.
+
+## 2026-11-26 – iOS 27: žádost o přístup ke Zdraví
+- Hlášení od testerů na iOS 27: „Sdílet spánek a tep“ nic nedělá, feed hlásí „Nevidíme tvůj spánek“. Ve Zdraví mají u Bedrivalu jen „Data z Bedrival“ a žádné přepínače pro čtení → žádost o čtení se do iOS vůbec nedostala a okno se neukázalo. Chyba se nikde neukázala (`try?`). Na iOS 17 (Adam) funguje.
+- Oprava (neověřená na iOS 27, ten nemáme): místo `HKHealthStore.requestAuthorization` se o přístup žádá SwiftUI modifikátorem `healthDataAccessRequest` (`Health/HealthAccessRequest.swift`, `.healthAccessRequest(trigger:onFinish:)`), a to na startu (`MainTabView` → `healthAccessReady()`), v onboardingu i v Nastavení. Chyba žádosti se zapíše do logu (`health auth failed`) a ukáže se v Nastavení → Apple Health.
+- Karta „Nevidíme tvůj spánek“: cesta přes aplikaci Zdraví (profilovka → Aplikace → Bedrival) a odkaz na Profil → ⚙ → Sdílet. Stará cesta „Nastavení → Zdraví → Přístup k datům…“ od iOS 18 neplatí. Tlačítko teď otevírá Zdraví.
+- Build OK v Xcode 26.3 (Release) i 16.3 (Debug). Další: nový build do TestFlightu, ověřit u testera na iOS 27 a u Adama na iOS 17.
+
 ## 2026-11-17 – App Review: otázka na pozvánky, TestFlight schválený
 - TestFlight (beta review buildu 1.0 (1)) schválený – jde rozeslat kamarádům.
 - Verze 1.0 pro App Store vrácená 16. 11. jako **Guideline 2.1 – Information Needed** (ne chyba v appce): „How does the user obtain the required invite code to enter the app?“ Recenzent se demo účtem přihlásil (iPad Air 11", kompatibilní režim).

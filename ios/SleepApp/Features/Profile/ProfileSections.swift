@@ -15,8 +15,9 @@ struct ProfileHeader: View {
     }
 }
 
-/// Bilance, série, průměr, stádo, odznaky. Sdílené mým profilem i profilem přítele.
+/// Bilance, série, průměr, noci, stádo, odznaky. Sdílené mým profilem i profilem přítele.
 struct ProfileStatsSections: View {
+    let userID: UUID
     let summary: ProfileSummary
     let catalog: [AchievementInfo]
 
@@ -24,6 +25,7 @@ struct ProfileStatsSections: View {
         VStack(alignment: .leading, spacing: 24) {
             recordAndStreak
             average
+            NightsSection(userID: userID)
             if let insights = summary.insights {
                 InsightsSection(insights: insights, nights: summary.nights90 ?? 0)
             }

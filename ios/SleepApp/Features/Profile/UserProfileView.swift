@@ -38,7 +38,7 @@ struct UserProfileView: View {
                         Button("Vyzvat") { challengeTarget = shown }
                             .buttonStyle(.primary)
                         if let actionError { Text(actionError).captionStyle() }
-                        ProfileStatsSections(summary: summary, catalog: feed.achievementCatalog)
+                        ProfileStatsSections(userID: shown.id, summary: summary, catalog: feed.achievementCatalog)
                     } else {
                         friendshipBlock
                     }

@@ -18,6 +18,7 @@ struct NightDetailView: View {
     @State private var blockTarget: ProfileLite?
     @FocusState private var composing: Bool
     @State private var looked = false
+    @State private var showReactions = false
 
     private var me: UUID? { session.profile?.id }
 
@@ -32,6 +33,13 @@ struct NightDetailView: View {
         .background(Color.app.bg)
         .navigationBarTitleDisplayMode(.inline)
         .task { await loadExtras() }
+        .sheet(isPresented: $showReactions) {
+            if let post = store.post(postID) {
+                ReactionsSheet(postID: postID, reactions: post.reactions, me: me)
+                    .presentationDetents([.medium, .large])
+                    .environment(friends)
+            }
+        }
     }
 
     private func content(_ post: FeedPost) -> some View {
@@ -111,7 +119,21 @@ struct NightDetailView: View {
                         Task { await store.react(post.id, me: me, kind: kind) }
                     }
                 }
-                ReactionSummary(reactions: post.reactions, me: me)
+                if !post.reactions.isEmpty {
+                    Button { showReactions = true } label: {
+                        HStack(spacing: 6) {
+                            ReactionSummary(reactions: post.reactions, me: me)
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundStyle(Color.app.textTertiary)
+                        }
+                        .frame(minHeight: 44)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityHint("Kdo jak reagoval")
+                    .accessibilityIdentifier("reactions")
+                }
 
                 commentsSection(post)
             }

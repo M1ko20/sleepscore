@@ -58,7 +58,7 @@ struct RecapView: View {
                 case .draw: "remíza"
                 case nil: nil
                 }
-                return [ChallengeCopy.title(c, me: me), result, ChallengeCopy.score(c, me: me)]
+                return [ChallengeCopy.title(c, me: me, maxNames: 3), result, ChallengeCopy.score(c, me: me)]
                     .compactMap { $0 }.joined(separator: " · ")
             }
     }

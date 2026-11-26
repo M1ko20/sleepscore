@@ -39,7 +39,7 @@ final class FeedStore {
             async let resultsReq = API.challengeResultPosts()
             async let unreadReq = API.unreadNotificationCount()
             try await loadCatalogs()
-            posts = try await postsReq
+            posts = try await postsReq.sorted { $0.night.sleepEnd > $1.night.sleepEnd }
             results = (try? await resultsReq) ?? results
             unreadNotifications = (try? await unreadReq) ?? unreadNotifications
             Push.shared.setBadge(unreadNotifications)
@@ -99,6 +99,14 @@ final class FeedStore {
 
     func post(_ id: UUID) -> FeedPost? { posts.first { $0.id == id } ?? extraPosts.first { $0.id == id } }
 
+    /// Karty načtené jinde (noci v profilu) – ať je detail najde a reakce/úpravy se propíšou.
+    func adopt(_ list: [FeedPost]) {
+        for p in list {
+            if let i = extraPosts.firstIndex(where: { $0.id == p.id }) { extraPosts[i] = p }
+            else if !posts.contains(where: { $0.id == p.id }) { extraPosts.append(p) }
+        }
+    }
+
     /// Karta mimo načtený feed (proklik ze zvonečku) – dotáhne ji jedním dotazem.
     func ensurePost(_ id: UUID) async {
         guard post(id) == nil, let p = try? await API.post(id: id) else { return }
@@ -111,14 +119,14 @@ final class FeedStore {
         if let i = extraPosts.firstIndex(where: { $0.id == id }) { change(&extraPosts[i]) }
     }
 
-    /// Moje dnešní karta nahoru, pak karty nocí a výsledky výzev od nejnovější.
+    /// Moje dnešní noc nahoru, pak noci (podle konce spánku) a výsledky výzev od nejnovější.
     func items(me: UUID?) -> [FeedItem] {
         var nights = posts
         var head: [FeedItem] = []
-        if let me, let i = nights.firstIndex(where: { $0.author.id == me && Calendar.current.isDateInToday($0.createdAt) }) {
+        if let me, let i = nights.firstIndex(where: { $0.author.id == me && $0.isTodaysNight }) {
             head = [.night(nights.remove(at: i))]
         }
-        let rest = (nights.map(FeedItem.night) + results.map(FeedItem.result)).sorted { $0.createdAt > $1.createdAt }
+        let rest = (nights.map(FeedItem.night) + results.map(FeedItem.result)).sorted { $0.sortDate > $1.sortDate }
         return head + rest
     }
 

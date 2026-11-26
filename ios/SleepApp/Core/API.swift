@@ -55,12 +55,19 @@ enum API {
 
     // MARK: Feed
 
-    /// Karty nocí moje a přátel. RPC začíná od přátel, ne od celé tabulky karet (RLS platí dál).
-    /// Stránkování zatím není – až bude, tak keyset přes (created_at, id) s mikrosekundami,
-    /// `ISO8601Format()` zahazuje zlomky sekund a karty ze stejné sekundy by vypadly (#36).
+    /// Karty nocí moje a přátel podle data noci (ne importu). RPC začíná od přátel, ne od celé
+    /// tabulky karet (RLS platí dál). Řadí server, appka to po sobě ještě srovná (`FeedStore`).
+    /// Stránkování zatím není – až bude, tak keyset přes (night_date, id).
     nonisolated static func feed(limit: Int = 30) async throws -> [FeedPost] {
         try await decode(db.rpc("feed_night_posts", params: ["p_limit": limit])
-            .select(FeedPost.select).order("created_at", ascending: false).execute().data)
+            .select(FeedPost.select).execute().data)
+    }
+
+    /// Noci jednoho uživatele mezi dny (včetně), od nejnovější. Cizí vidí jen přítel (RLS).
+    nonisolated static func userNights(_ userID: UUID, from: String, to: String) async throws -> [FeedPost] {
+        struct Params: Encodable { let p_user: UUID; let p_from: String; let p_to: String }
+        return try await decode(db.rpc("user_night_posts", params: Params(p_user: userID, p_from: from, p_to: to))
+            .select(FeedPost.select).execute().data)
     }
 
     nonisolated static func post(id: UUID) async throws -> FeedPost? {
@@ -103,6 +110,13 @@ enum API {
             _ = try await db.from("reactions").delete()
                 .eq("post_id", value: postID).eq("user_id", value: userID).execute().data
         }
+    }
+
+    /// Kdo jak reagoval (seznam v detailu karty). Jen po klepnutí, ve feedu stačí počty.
+    nonisolated static func reactionPeople(postID: UUID) async throws -> [ReactionPerson] {
+        try await decode(db.from("reactions")
+            .select("kind,created_at,profile:profiles(id,username,display_name,avatar_path,timezone)")
+            .eq("post_id", value: postID).order("created_at", ascending: false).execute().data)
     }
 
     nonisolated static func comments(postID: UUID) async throws -> [Comment] {

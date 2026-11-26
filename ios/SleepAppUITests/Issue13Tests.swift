@@ -67,7 +67,7 @@ final class Issue13Tests: XCTestCase {
 
         // výzva založená uživatelem, který smazal účet (creator_id = null)
         app.tabBars.buttons["Výzvy"].tap()
-        let group = app.buttons.matching(NSPredicate(format: "label CONTAINS 'Všichni proti všem'")).firstMatch.waitFor()
+        let group = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'všichni proti všem'")).firstMatch.waitFor()
         shot(app, "08 výzvy – skupinová po smazaném zakladateli + přijatý souboj")
         XCTAssertTrue(app.buttons.matching(NSPredicate(format: "label CONTAINS 'UI Bára'")).firstMatch.exists)
         group.tap()
