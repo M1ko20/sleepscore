@@ -24,7 +24,9 @@ Co je hotové a jak. Nejnovější nahoře. Detaily backendu v `backend.md`, vzh
 - Pojistka ke Zdraví: o přístup se žádá (`healthAccessRequest`) jen při `needsAuthorizationPrompt() == true`, jinak rovnou sync. Kdyby modifikátor nezavolal zpět, appka by dřív nesynchronizovala vůbec (start, onboarding i Nastavení).
 - Noci v profilu: aktuální měsíc se načte znovu při každém zobrazení, seznam ukazuje 5 nocí + „Celý měsíc (N)“.
 - Ověřeno v simulátoru iOS 26.3 proti produkci (demo účet): okno Zdraví s „to read“, nový UI test `NightDatesTests` (feed s daty nocí, reakce → seznam → smazání, výzvy podle jmen, profil s kalendářem, předchozí měsíc, detail) a `ReviewAccountTests` prošly.
-- Verze 1.0.1, build 2, archiv Xcode 26.3.
+- Verze 1.0.1, build 2, archiv Xcode 26.3. `project.yml` teď bere verzi z `MARKETING_VERSION` / `CURRENT_PROJECT_VERSION` (dřív xcodegen psal natvrdo 1.0 (1)).
+- Demo účet osvěžený (`review_seed.py --refresh`, nový souboj R×B, nová čekající výzva od Dany – stará vypršela, refresh to teď dělá sám).
+- App Store Connect (Chrome, Adam: „pošli to“): verze 1.0.1, „Co je nového“ cs + en, build 2, údaje pro review z 1.0, vydání automaticky po schválení. **Odesláno k review 26. 11. 2026 9:23**, stav Waiting for Review. 1.0 je v App Storu (Ready for Distribution).
 
 ## 2026-11-26 – Kdo jak reagoval
 - V detailu karty jde klepnout na souhrn reakcí → sheet se seznamem lidí a jejich reakcí (`ReactionsSheet` v `Feed/Reactions.swift`, `API.reactionPeople`). Jména se tahají jen při otevření, feed zůstává bez profilů u reakcí. Zablokovaní se nezobrazí. Bez změny DB (RLS: reakce jen u viditelné karty, profily vidí každý člen). Build OK, v simulátoru neviděno.
