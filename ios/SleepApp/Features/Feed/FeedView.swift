@@ -169,11 +169,11 @@ struct HealthMissingCard: View {
             Text("Nevidíme tvůj spánek")
                 .font(Font.app.body.weight(.semibold))
                 .foregroundStyle(Color.app.textPrimary)
-            Text("Z Apple Health nám za poslední dva týdny nepřišla žádná noc. Povol přístup ke Spánku a Tepu v Nastavení → Zdraví → Přístup k datům a zařízení → Bedrival. Spánek musí zapisovat hodinky nebo prsten.")
+            Text("Z Apple Health nám za poslední dva týdny nepřišla žádná noc. Povol přístup ke Spánku a Tepu v aplikaci Zdraví: profilovka vpravo nahoře → Aplikace → Bedrival. Když tam Bedrival nemá přepínače pro čtení, klepni v Bedrivalu na Profil → ⚙ → Sdílet spánek a tep. Spánek musí zapisovat hodinky nebo prsten.")
                 .captionStyle()
                 .fixedSize(horizontal: false, vertical: true)
-            Button("Otevřít Nastavení") {
-                if let url = URL(string: UIApplication.openSettingsURLString) { openURL(url) }
+            Button("Otevřít Zdraví") {
+                if let url = URL(string: "x-apple-health://") { openURL(url) }
             }
             .buttonStyle(.secondary)
         }
